@@ -286,6 +286,122 @@ test('a new empty conversation has no big empty block under the text box', async
 })
 
 
+async function forgetStyle(page: Page) {
+  await page.goto('/preferences')
+  await expect(page.getByTestId('bunny-style')).toBeVisible()
+  await page.waitForTimeout(1200)
+  const btn = page.getByRole('button', { name: 'Forget all of these' })
+  if (await btn.isEnabled()) {
+    await btn.click()
+    await expect(page.getByTestId('style-summary')).toContainText('Nothing picked up yet')
+  }
+  await expect(page.getByTestId('style-summary')).toContainText('Nothing picked up yet') // start every test clean
+}
+
+test('thumbs-down offers four reasons; one tap changes how the bunny talks (real database), and Undo puts it back', async ({ users }) => {
+  const [eli] = await users(['Eli'])
+  await forgetStyle(eli.page)
+  await mockBunny(eli.page)
+  await eli.page.goto('/home')
+  await eli.page.getByLabel("Don't save this chat").check()
+  await sayOnHome(eli.page, 'tell me something')
+  await expect(eli.page.getByTestId('bunny-words')).toContainText('(1)')
+
+  // Quiet by default: two icons, no reasons yet.
+  await expect(eli.page.getByTestId('feedback-icons')).toBeVisible()
+  await expect(eli.page.getByTestId('feedback-reasons')).toHaveCount(0)
+  await eli.page.getByRole('button', { name: "This reply wasn't quite right" }).click()
+  const reasons = eli.page.getByTestId('feedback-reasons').getByRole('button')
+  await expect(reasons).toHaveCount(4)
+  await expect(reasons).toHaveText(['Too long', 'Too many questions', 'Too cheery', 'Too serious'])
+
+  await reasons.filter({ hasText: 'Too long' }).click()
+  await expect(eli.page.getByTestId('feedback-ack')).toContainText("I'll keep my replies shorter")
+  await eli.page.getByRole('button', { name: 'Undo' }).click()
+  await expect(eli.page.getByTestId('feedback-ack')).toContainText('back to how it was')
+
+  await eli.page.goto('/preferences')
+  await expect(eli.page.getByTestId('style-summary')).toContainText('Nothing picked up yet', { timeout: 15_000 })
+})
+
+test('a reason sticks: it shows up under Preferences, can be set again without change, and is private', async ({ users }) => {
+  const [eli, alice] = await users(['Eli', 'Alice'])
+  await forgetStyle(eli.page)
+  await mockBunny(eli.page)
+  await eli.page.goto('/home')
+  await eli.page.getByLabel("Don't save this chat").check()
+  await sayOnHome(eli.page, 'tell me something')
+  await expect(eli.page.getByTestId('bunny-words')).toContainText('(1)')
+  await eli.page.getByRole('button', { name: "This reply wasn't quite right" }).click()
+  await eli.page.getByRole('button', { name: 'Too many questions' }).click()
+  await expect(eli.page.getByTestId('feedback-ack')).toContainText('fewer questions')
+
+  await eli.page.goto('/preferences')
+  await expect(eli.page.getByTestId('style-summary')).toContainText('Fewer questions', { timeout: 15_000 })
+
+  // Same reason again on a new reply: nothing to change, and it says so honestly.
+  await eli.page.goto('/home')
+  await eli.page.getByLabel("Don't save this chat").check()
+  await sayOnHome(eli.page, 'and again')
+  // (the fake bunny numbers its replies per page, and that count carries over from the earlier page load)
+  await expect(eli.page.getByTestId('bunny-words')).toContainText('What part felt heaviest?')
+  await eli.page.getByRole('button', { name: "This reply wasn't quite right" }).click()
+  await eli.page.getByRole('button', { name: 'Too many questions' }).click()
+  await expect(eli.page.getByTestId('feedback-ack')).toContainText("I'm already doing that")
+  await expect(eli.page.getByRole('button', { name: 'Undo' })).toHaveCount(0)
+
+  // Private to this account.
+  await alice.page.goto('/preferences')
+  await expect(alice.page.getByTestId('bunny-style')).toBeVisible()
+  await alice.page.waitForTimeout(1500)
+  await expect(alice.page.getByTestId('style-summary')).not.toContainText('Fewer questions')
+  await forgetStyle(eli.page)
+})
+
+test('thumbs-up just says thanks and does not change anything', async ({ users }) => {
+  const [eli] = await users(['Eli'])
+  await forgetStyle(eli.page)
+  await mockBunny(eli.page)
+  await eli.page.goto('/home')
+  await eli.page.getByLabel("Don't save this chat").check()
+  await sayOnHome(eli.page, 'tell me something')
+  await expect(eli.page.getByTestId('bunny-words')).toContainText('(1)')
+  await eli.page.getByRole('button', { name: 'This reply was good' }).click()
+  await expect(eli.page.getByTestId('feedback-ack')).toHaveText('Glad that helped.')
+  await expect(eli.page.getByRole('button', { name: 'Undo' })).toHaveCount(0)
+  await eli.page.goto('/preferences')
+  await expect(eli.page.getByTestId('style-summary')).toContainText('Nothing picked up yet', { timeout: 15_000 })
+})
+
+test('feedback controls come back for each new reply, and appear once on Messages, under the latest reply only', async ({ users }) => {
+  const [eli] = await users(['Eli'])
+  await clearConversations(eli.page)
+  await mockBunny(eli.page)
+  await eli.page.goto('/messages')
+  await eli.page.getByLabel('Tell the bunny something').fill('first thing')
+  await eli.page.getByRole('button', { name: 'Send' }).click()
+  await expect(eli.page.getByTestId('chat-bunny')).toHaveCount(1)
+  await eli.page.getByRole('button', { name: 'This reply was good' }).click()
+  await expect(eli.page.getByTestId('feedback-ack')).toBeVisible()
+  await eli.page.getByLabel('Tell the bunny something').fill('second thing')
+  await eli.page.getByRole('button', { name: 'Send' }).click()
+  await expect(eli.page.getByTestId('chat-bunny')).toHaveCount(2)
+  await expect(eli.page.getByTestId('feedback-icons')).toHaveCount(1) // only under the latest reply, fresh again
+  await expect(eli.page.getByTestId('feedback-ack')).toHaveCount(0)
+  await clearConversations(eli.page)
+})
+
+test('no feedback controls appear on the support card', async ({ users }) => {
+  const [eli] = await users(['Eli'])
+  await mockBunny(eli.page, { reply: () => ({ status: 'support' }) })
+  await eli.page.goto('/home')
+  await eli.page.getByLabel("Don't save this chat").check()
+  await sayOnHome(eli.page, 'everything feels pointless lately')
+  await expect(eli.page.getByTestId('chat-support')).toBeVisible()
+  await expect(eli.page.getByTestId('feedback-icons')).toHaveCount(0)
+})
+
+
 test('phone width: Home, Messages, and the thread have no horizontal scroll', async ({ users }) => {
   const [eli] = await users(['Eli'])
   await eli.page.setViewportSize({ width: 375, height: 800 })

@@ -401,6 +401,39 @@ describe('recommend: videos only where they help', () => {
   })
 })
 
+describe('recommend: "Not sure" is a real mix, and the response says where videos came from', () => {
+  const allPlain = interpretJson({ goal: null, activityIds: ['grounding-54321', 'mindful-pause', 'journaling-prompts'] })
+  const open: CheckinInput = { mood: 3, energy: 4, minutes: 15 }
+
+  it('shows at least one video and one plain idea even when the model only chose plain ones', async () => {
+    const { deps } = makeDeps({ llm: llmScript(allPlain, () => null) })
+    const res = await recommend(deps, open) // screen not set: the "Not sure" default
+    expect(res.status).toBe('ok')
+    if (res.status !== 'ok') return
+    expect(res.picks.some((p) => p.video !== null)).toBe(true)
+    expect(res.picks.some((p) => p.video === null)).toBe(true)
+    // the model's first choice is still first
+    expect(res.picks[0]!.activityId).toBe('grounding-54321')
+  })
+
+  it('"Videos are fine" never shows a plain idea, and "No screen" never shows a video, from the same model answer', async () => {
+    const v = await recommend(makeDeps({ llm: llmScript(allPlain, () => null) }).deps, { ...open, screen: 'video' })
+    expect(v.status).toBe('ok')
+    if (v.status === 'ok') for (const p of v.picks) expect(p.video, p.activityId).not.toBeNull()
+    const n = await recommend(makeDeps({ llm: llmScript(allPlain, () => null) }).deps, { ...open, screen: 'none' })
+    expect(n.status).toBe('ok')
+    if (n.status === 'ok') for (const p of n.picks) expect(p.video, p.activityId).toBeNull()
+  })
+
+  it('passes along which sources answered, once each, and omits the field when unknown', async () => {
+    const withSources = makeDeps({ sources: () => ['integration', 'google', 'integration'] })
+    const res = await recommend(withSources.deps, input)
+    expect(res.status === 'ok' && res.sources).toEqual(['integration', 'google'])
+    const without = await recommend(makeDeps().deps, input)
+    expect(without.status === 'ok' && 'sources' in without).toBe(false)
+  })
+})
+
 // ── filter, exclusions, cap ──────────────────────────────────────────────
 
 describe('recommend: constraints', () => {

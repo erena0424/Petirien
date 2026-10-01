@@ -25,10 +25,15 @@ type Raw = Record<string, unknown>
 
 const isRaw = (v: unknown): v is Raw => !!v && typeof v === 'object' && !Array.isArray(v)
 
+export type SourceUsed = 'integration' | 'google'
+
 /** The DeepSpace integration as a VideoSource. Billing follows src/integrations.ts. */
-export function integrationSource(tools: Pick<ActionTools, 'integration'>): VideoSource {
-  const videos = (r: { success: boolean; data?: unknown }): unknown[] | null =>
-    r.success && isRaw(r.data) && Array.isArray(r.data.videos) ? (r.data.videos as unknown[]) : null
+export function integrationSource(tools: Pick<ActionTools, 'integration'>, onUse?: (s: SourceUsed) => void): VideoSource {
+  const videos = (r: { success: boolean; data?: unknown }): unknown[] | null => {
+    const out = r.success && isRaw(r.data) && Array.isArray(r.data.videos) ? (r.data.videos as unknown[]) : null
+    if (out) onUse?.('integration')
+    return out
+  }
   return {
     async search(q) {
       return videos(await tools.integration<unknown>('youtube/search-videos', { q, maxResults: 6, regionCode: 'US' }))
@@ -50,18 +55,24 @@ const idOf = (item: unknown): string | undefined => {
  * Main source first; the helper only fills gaps. Falls back to the helper when the
  * main source fails, and adds `status` (embeddable) to the main source's details.
  */
-export function withHelper(main: VideoSource, helper?: VideoSource): VideoSource {
+export function withHelper(main: VideoSource, helper?: VideoSource, onUse?: (s: SourceUsed) => void): VideoSource {
   if (!helper) return main
+  const viaGoogle = async (run: () => Promise<unknown[] | null>) => {
+    const out = await run()
+    if (out) onUse?.('google')
+    return out
+  }
   return {
     async search(q) {
-      return (await main.search(q)) ?? helper.search(q)
+      return (await main.search(q)) ?? viaGoogle(() => helper.search(q))
     },
     async details(ids) {
       const items = await main.details(ids)
-      if (items === null) return helper.details(ids) // main failed: use the helper's full answer
+      if (items === null) return viaGoogle(() => helper.details(ids)) // main failed: use the helper's full answer
       if (items.length === 0) return items // answered: nothing there. Do not spend a call to second-guess it.
       const extra = await helper.details(ids).catch(() => null)
       if (!extra) return items // enrichment is best effort
+      onUse?.('google') // only used to check embeddability
       const statusById = new Map<string, unknown>()
       for (const e of extra) if (isRaw(e) && idOf(e) && e.status !== undefined) statusById.set(idOf(e)!, e.status)
       return items.map((it) => {

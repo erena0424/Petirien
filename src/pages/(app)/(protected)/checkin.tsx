@@ -4,9 +4,10 @@
  */
 
 import { useEffect, useRef, useState } from 'react'
-import { useMutations } from 'deepspace'
+import { useAuthProfileReady, useMutations } from 'deepspace'
 import { Button } from '@/components/ui'
 import { formatResetTime } from '@/lib/format'
+import { describeSources } from '@/lib/sources'
 import { requestRecommendations } from '@/lib/recommend-client'
 import { usePreferences } from '@/lib/use-preferences'
 import { useSavedIdeas } from '@/lib/use-saved-ideas'
@@ -34,6 +35,8 @@ const MAX_RETRIES = 2
 export default function CheckinPage() {
   const { put, ready } = useMutations<Record<string, unknown>>('suggestions')
   const saved = useSavedVideos()
+  const { user } = useAuthProfileReady({ requireUser: true })
+  const isOwner = user?.role === 'admin'
   const savedIdeas = useSavedIdeas()
   const preferences = usePreferences()
 
@@ -203,6 +206,7 @@ export default function CheckinPage() {
           retries={retries}
           headingRef={heading}
           canSave={saved.ready && savedIdeas.ready}
+          showSources={isOwner}
           isSaved={(p) => (p.video ? saved.isSaved(p.video.videoId) : savedIdeas.isSaved(p.activityId))}
           onWatch={watch}
           onReject={reject}
@@ -225,6 +229,7 @@ interface ResultProps {
   headingRef: React.RefObject<HTMLHeadingElement | null>
   isSaved: (p: Pick) => boolean
   canSave: boolean
+  showSources: boolean
   onWatch: (p: Pick) => void
   onReject: (p: Pick) => void
   onToggleSave: (p: Pick) => void
@@ -342,6 +347,11 @@ function Result(p: ResultProps) {
         Here are a few ideas
       </h1>
       <Companion>{res.reply}</Companion>
+      {p.showSources && describeSources(res.sources) && (
+        <p data-testid="video-source" className="-mt-2 text-xs text-muted-foreground">
+          {describeSources(res.sources)}
+        </p>
+      )}
       {visible.length > 0 && (
         <ul className="space-y-4">
           {visible.map((pick) => (

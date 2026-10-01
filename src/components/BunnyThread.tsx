@@ -5,6 +5,7 @@ import { AutoTextarea } from './AutoTextarea'
 import { useBunnyChat } from '@/lib/bunny-chat'
 import { MAX_MESSAGES, MAX_MESSAGE_CHARS } from '../reflect/contract'
 import { Bunny } from './Bunny'
+import { ReplyFeedback } from './ReplyFeedback'
 import { SupportCard } from './SupportCard'
 
 /** The conversation as a texting-style log, with the text box. Used on the Messages page. */
@@ -19,6 +20,7 @@ export function BunnyThread() {
 
   const atLimit = chat.thread.length >= MAX_MESSAGES - 2
   const lastIsPerson = chat.thread[chat.thread.length - 1]?.role === 'user'
+  const lastIndex = chat.thread.length - 1
 
   if (chat.support) {
     return (
@@ -48,16 +50,19 @@ export function BunnyThread() {
           {chat.thread.map((m, i) => (
             <li key={i} className={m.role === 'user' ? 'flex justify-end' : 'flex items-end gap-2'}>
               {m.role === 'bunny' && <Bunny animated={false} className="w-12 shrink-0" />}
-              <p
-                data-testid={m.role === 'user' ? 'chat-user' : 'chat-bunny'}
-                className={
-                  m.role === 'user'
-                    ? 'max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-md bg-primary px-4 py-2.5 text-base leading-relaxed text-primary-foreground'
-                    : 'max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-bl-md bg-accent px-4 py-2.5 text-base leading-relaxed text-foreground'
-                }
-              >
-                {m.text}
-              </p>
+              <div className={m.role === 'user' ? 'max-w-[85%]' : 'flex max-w-[85%] flex-col items-start gap-1'}>
+                <p
+                  data-testid={m.role === 'user' ? 'chat-user' : 'chat-bunny'}
+                  className={
+                    m.role === 'user'
+                      ? 'whitespace-pre-wrap rounded-2xl rounded-br-md bg-primary px-4 py-2.5 text-base leading-relaxed text-primary-foreground'
+                      : 'whitespace-pre-wrap rounded-2xl rounded-bl-md bg-accent px-4 py-2.5 text-base leading-relaxed text-foreground'
+                  }
+                >
+                  {m.text}
+                </p>
+                {m.role === 'bunny' && i === lastIndex && !chat.sending && !chat.error && <ReplyFeedback replyKey={`${i}:${m.text}`} />}
+              </div>
             </li>
           ))}
           {chat.sending && (

@@ -8,6 +8,7 @@ import { useBunnyChat } from '@/lib/bunny-chat'
 import { GREETING, partOfDay } from '@/lib/for-now'
 import { MAX_MESSAGE_CHARS } from '../reflect/contract'
 import { Bunny } from './Bunny'
+import { ReplyFeedback } from './ReplyFeedback'
 import { SupportCard } from './SupportCard'
 
 const STARTERS = ["Something's on my mind", 'I had a good moment today', 'I just need to vent']
@@ -57,6 +58,8 @@ export function BunnyHero() {
         >
           {words}
         </div>
+
+        {chat.latest && !chat.sending && !chat.error && isSignedIn && <div className="mt-1"><ReplyFeedback replyKey={`${chat.thread.length}:${chat.latest}`} /></div>}
 
         {chat.error && (
           <div role="alert" data-testid="chat-error" className="mt-3 rounded-xl bg-accent p-3 text-left text-sm text-foreground">

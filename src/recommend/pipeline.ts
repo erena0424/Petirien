@@ -8,7 +8,7 @@
 
 import { z } from 'zod'
 import { GOALS, type Activity } from '../catalog'
-import type { CheckinInput, Degraded, Pick, RecommendResponse, VideoRef } from '../contract'
+import type { CheckinInput, Degraded, Pick, RecommendResponse, VideoRef, VideoSourceUsed } from '../contract'
 import { sanitizeCopy } from './copy'
 import { TEMPLATE_REPLY, deterministicPicks, nextUtcMidnight, templateReason } from './fallback'
 import { filterCatalog } from './filter'
@@ -57,6 +57,8 @@ export interface Deps {
    */
   cacheGet(query: string, opts?: { allowStale?: boolean }): Promise<VideoRef[] | null>
   cachePut(query: string, videos: VideoRef[]): Promise<void>
+  /** Which video sources answered during this request (for the owner's eyes only). */
+  sources?(): VideoSourceUsed[]
   loadContext(): Promise<UserContext>
   bumpUsage(day: string): Promise<void>
   ownsCheckin(id: string): Promise<boolean>
@@ -89,6 +91,28 @@ export function parseCheckinInput(
   const r = inputSchema.safeParse(params)
   if (!r.success) return { ok: false, message: 'Please check the values and try again.' }
   return { ok: true, value: r.data }
+}
+
+// ── shortlist ────────────────────────────────────────────────────────────
+
+/**
+ * The activities to show, best first. In "Not sure" mode (the default) the person
+ * asked for a mix, so when both kinds are available the list always has at least
+ * one with a video and at least one plain idea, however the model ordered them.
+ */
+export function pickShortlist(candidates: Activity[], screen: CheckinInput['screen'], count = MAX_PICKS): Activity[] {
+  if (screen === 'video' || screen === 'none') return candidates.slice(0, count)
+  const video = candidates.find((a) => a.video)
+  const plain = candidates.find((a) => !a.video)
+  const chosen = new Set<Activity>()
+  if (video) chosen.add(video)
+  if (plain) chosen.add(plain)
+  for (const a of candidates) {
+    if (chosen.size >= count) break
+    chosen.add(a)
+  }
+  // Keep the order the candidates came in.
+  return candidates.filter((a) => chosen.has(a)).slice(0, count)
 }
 
 // ── interpret ────────────────────────────────────────────────────────────
@@ -277,7 +301,8 @@ export async function recommend(deps: Deps, input: CheckinInput): Promise<Recomm
     .map((id) => fits.find((a) => a.id === id))
     .filter((a): a is Activity => !!a)
   const fill = deterministicPicks(fits, signals, MAX_PICKS)
-  const shortlist = [...fromModel, ...fill.filter((a) => !fromModel.includes(a))].slice(0, MAX_PICKS)
+  const candidates = [...new Set([...fromModel, ...fill, ...fits])]
+  const shortlist = pickShortlist(candidates, input.screen)
   const reply = interp?.reply ?? TEMPLATE_REPLY
 
   // Videos only where one helps (and never in screen-free mode). Everything else is
@@ -321,5 +346,13 @@ export async function recommend(deps: Deps, input: CheckinInput): Promise<Recomm
     })),
   )
   const picks: Pick[] = ordered.map((p, i) => ({ ...p, suggestionId: suggestionIds[i] ?? '' }))
-  return { status: 'ok', checkinId, reply, picks, degraded: [...new Set(degraded)] }
+  const sources = deps.sources?.()
+  return {
+    status: 'ok',
+    checkinId,
+    reply,
+    picks,
+    degraded: [...new Set(degraded)],
+    ...(sources && sources.length ? { sources: [...new Set(sources)] } : {}),
+  }
 }

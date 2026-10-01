@@ -102,3 +102,30 @@ describe('withHelper', () => {
     expect(h.details).not.toHaveBeenCalled()
   })
 })
+
+describe('reporting which source answered', () => {
+  it('reports the integration when it answers, and the helper only when it was used', async () => {
+    const used: string[] = []
+    const main: VideoSource = { search: async () => [{}], details: async () => [{ id: 'aaaaaaaaaaa' }] }
+    const helper: VideoSource = { search: async () => [{}], details: async () => [{ id: 'aaaaaaaaaaa', status: { embeddable: true } }] }
+    const src = withHelper(main, helper, (s) => used.push(s))
+    await src.search('q')
+    expect(used).toEqual([]) // withHelper only reports the helper; the integration reports itself
+    await src.details(['aaaaaaaaaaa'])
+    expect(used).toEqual(['google']) // used to check embeddability
+    const failing = withHelper({ search: async () => null, details: async () => null }, helper, (s) => used.push(s))
+    used.length = 0
+    await failing.search('q')
+    expect(used).toEqual(['google'])
+  })
+  it('integrationSource reports itself only on a successful answer', async () => {
+    const used: string[] = []
+    const good = integrationSource({ integration: async () => ({ success: true, data: { videos: [] } }) } as never, (s) => used.push(s))
+    await good.search('q')
+    expect(used).toEqual(['integration'])
+    used.length = 0
+    const bad = integrationSource({ integration: async () => ({ success: false }) } as never, (s) => used.push(s))
+    await bad.search('q')
+    expect(used).toEqual([])
+  })
+})

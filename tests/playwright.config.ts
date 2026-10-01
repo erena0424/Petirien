@@ -16,6 +16,9 @@ export default defineConfig({
   testDir: '.',
   testMatch: '**/*.spec.ts',
   timeout: 60_000,
+  // Pages can be slow to appear when the laptop is busy (load averages above 10 were seen), so give
+  // assertions 10s instead of the default 5s.
+  expect: { timeout: 10_000 },
   // One retry: on a busy machine the dev server sometimes rebuilds and reloads the page mid-test. A retry
   // that passes is reported as "flaky" (visible in the output), and a real bug still fails both attempts.
   retries: 1,

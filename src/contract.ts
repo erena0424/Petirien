@@ -53,6 +53,8 @@ export interface Pick {
 /** Which parts of the pipeline fell back to the deterministic path. */
 export type Degraded = 'interpret' | 'rank' | 'video'
 
+export type VideoSourceUsed = 'integration' | 'google' | 'cache'
+
 export type RecommendResponse =
   | {
       status: 'ok'
@@ -61,6 +63,8 @@ export type RecommendResponse =
       reply: string
       picks: Pick[]
       degraded: Degraded[]
+      /** Where the videos came from this time. Shown only to the app owner. */
+      sources?: VideoSourceUsed[]
     }
   /** Activities found but video retrieval failed or was empty. */
   | {

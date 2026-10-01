@@ -9,7 +9,7 @@
 
 import type { ActionHandler, ActionTools } from 'deepspace/worker'
 import type { Env } from '../../worker'
-import type { RecommendResponse, VideoRef } from '../contract'
+import type { RecommendResponse, VideoRef, VideoSourceUsed } from '../contract'
 import { recommend as runPipeline, parseCheckinInput, type Deps, type UserContext } from '../recommend/pipeline'
 import { extractText } from '../recommend/parse'
 import { searchVideos as ytSearch, videoDetails as ytDetails } from '../server/youtube-api'
@@ -42,9 +42,12 @@ export function createDeps(
   const key = env?.YOUTUBE_API_KEY || undefined
   // DeepSpace's integration is the main source; the app's own Google key only backs it up and checks embeddability.
   const helper: VideoSource | undefined = key ? { search: (q) => ytSearch(key, q), details: (ids) => ytDetails(key, ids) } : undefined
-  const youtube = withHelper(integrationSource(tools), helper)
+  const used: VideoSourceUsed[] = []
+  const note = (s: VideoSourceUsed) => void used.push(s)
+  const youtube = withHelper(integrationSource(tools, note), helper, note)
   return {
     now: () => new Date(),
+    sources: () => used,
 
     async llm({ system, user, maxTokens }) {
       const r = await tools.integration<unknown>('anthropic/chat-completion', {
@@ -66,7 +69,9 @@ export function createDeps(
       const data = rec?.data as Row | undefined
       if (!data || typeof data.fetchedAt !== 'number') return null
       if (Date.now() - data.fetchedAt > (opts?.allowStale ? CACHE_STALE_MAX_MS : CACHE_TTL_MS)) return null
-      return Array.isArray(data.results) ? (data.results as VideoRef[]) : null
+      if (!Array.isArray(data.results)) return null
+      used.push('cache')
+      return data.results as VideoRef[]
     },
 
     async cachePut(query, videos) {
