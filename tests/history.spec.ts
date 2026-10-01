@@ -16,6 +16,9 @@ import { test, expect, loadAllTestAccounts } from 'deepspace/testing'
 test.skip(loadAllTestAccounts().length < 2, 'Needs 2 usable test accounts.')
 
 test('a check-in is saved, shown on Home and History, hidden from others, and deletable', async ({ users }) => {
+  // Real server round trip (model and video calls are attempted and degrade),
+  // so it needs more than the 30s default when other specs run in parallel.
+  test.setTimeout(120_000)
   const [alice, bob] = await users(2)
   const note = `pw-test-note-${Date.now()}`
 
