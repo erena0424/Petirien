@@ -20,6 +20,7 @@ export const nav: NavItem[] = [
   { path: '/checkin', label: 'Check in' },
   { path: '/saved', label: 'Saved' },
   { path: '/history', label: 'History' },
+  { path: '/preferences', label: 'Preferences' },
   // The /api-status debug page still exists — add
   // `{ path: '/api-status', label: 'API Status', devOnly: true }` to surface it.
   // ── Features add nav items below this line ──

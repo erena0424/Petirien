@@ -14,6 +14,7 @@ import type { ActionHandler, ActionTools } from 'deepspace/worker'
 import type { Env } from '../../worker'
 import type { VideoRef } from '../contract'
 import { normalizeVideo } from '../recommend/video'
+import { videoDetails as ytDetails } from '../server/youtube-api'
 import { needsRefresh, type SavedData } from '../lib/saved'
 
 export const MAX_PER_CALL = 5
@@ -63,19 +64,24 @@ export async function refreshStale(deps: RefreshDeps, now: number): Promise<Refr
       out.gone++
       continue
     }
+    // YouTube also tells us whether embedding is blocked; keep the mark current.
+    const availability =
+      res.video.embeddable === false ? 'no_embed' : row.data.availability === 'no_embed' && res.video.embeddable === true ? 'ok' : undefined
     await deps.update(row.recordId, {
       title: res.video.title,
       channel: res.video.channel,
       thumbnail: res.video.thumbnail,
       durationSec: res.video.durationSec || row.data.durationSec || 0,
       metaRefreshedAt: now,
+      ...(availability ? { availability } : {}),
     })
     out.refreshed++
   }
   return out
 }
 
-export function createRefreshDeps(userId: string, tools: ActionTools): RefreshDeps {
+export function createRefreshDeps(userId: string, tools: ActionTools, env?: { YOUTUBE_API_KEY?: string }): RefreshDeps {
+  const key = env?.YOUTUBE_API_KEY || undefined
   return {
     async listSaved() {
       // Server actions run with RBAC off: scope to the caller explicitly.
@@ -83,6 +89,12 @@ export function createRefreshDeps(userId: string, tools: ActionTools): RefreshDe
       return r.success ? r.data.records.map((x) => ({ recordId: x.recordId, data: x.data as SavedData })) : []
     },
     async fetchDetails(videoId) {
+      if (key) {
+        // videos.list answers 200 with no items for a removed or private video.
+        const items = await ytDetails(key, [videoId])
+        if (items === null) return { ok: false }
+        return { ok: true, video: items.map(normalizeVideo).find((v): v is VideoRef => v !== null) ?? null }
+      }
       const r = await tools.integration<{ videos?: unknown[] }>('youtube/get-video-details', { id: videoId })
       if (!r.success || !Array.isArray(r.data?.videos)) return { ok: false }
       const first = r.data.videos.map(normalizeVideo).find((v): v is VideoRef => v !== null)
@@ -94,9 +106,9 @@ export function createRefreshDeps(userId: string, tools: ActionTools): RefreshDe
   }
 }
 
-export const refreshSaved: ActionHandler<Env> = async ({ userId, tools }) => {
+export const refreshSaved: ActionHandler<Env> = async ({ userId, tools, env }) => {
   try {
-    return { success: true, data: await refreshStale(createRefreshDeps(userId, tools), Date.now()) }
+    return { success: true, data: await refreshStale(createRefreshDeps(userId, tools, env), Date.now()) }
   } catch (err) {
     console.error('[refreshSaved] failed', err instanceof Error ? err.name : 'unknown')
     return { success: false, error: 'Could not refresh saved videos right now.' }

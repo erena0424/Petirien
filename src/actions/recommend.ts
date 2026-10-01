@@ -12,9 +12,12 @@ import type { Env } from '../../worker'
 import type { RecommendResponse, VideoRef } from '../contract'
 import { recommend as runPipeline, parseCheckinInput, type Deps, type UserContext } from '../recommend/pipeline'
 import { extractText } from '../recommend/parse'
+import { searchVideos as ytSearch, videoDetails as ytDetails } from '../server/youtube-api'
 
 const LLM_MODEL = 'claude-haiku-4-5'
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000
+/** Stale results may be reused when YouTube is down, but never past YouTube's 30-day limit. */
+const CACHE_STALE_MAX_MS = 25 * 24 * 60 * 60 * 1000
 
 type Row = Record<string, unknown>
 
@@ -30,7 +33,8 @@ async function queryOne(tools: ActionTools, collection: string, where: Row) {
   return r.success ? (r.data.records[0] ?? null) : null
 }
 
-export function createDeps(userId: string, tools: ActionTools): Deps {
+export function createDeps(userId: string, tools: ActionTools, env?: { YOUTUBE_API_KEY?: string }): Deps {
+  const key = env?.YOUTUBE_API_KEY || undefined
   return {
     now: () => new Date(),
 
@@ -46,6 +50,7 @@ export function createDeps(userId: string, tools: ActionTools): Deps {
     },
 
     async searchVideos(q) {
+      if (key) return ytSearch(key, q)
       const r = await tools.integration<{ videos?: unknown[] }>('youtube/search-videos', {
         q,
         maxResults: 6,
@@ -55,18 +60,19 @@ export function createDeps(userId: string, tools: ActionTools): Deps {
     },
 
     async videoDetails(ids) {
-      // UNVERIFIED: whether the endpoint accepts several comma-joined ids.
+      if (key) return ytDetails(key, ids)
+      // UNVERIFIED: whether the integration accepts several comma-joined ids.
       const r = await tools.integration<{ videos?: unknown[] }>('youtube/get-video-details', {
         id: ids.join(','),
       })
       return r.success && Array.isArray(r.data?.videos) ? r.data.videos : null
     },
 
-    async cacheGet(query) {
+    async cacheGet(query, opts) {
       const rec = await queryOne(tools, 'searchCache', { query })
       const data = rec?.data as Row | undefined
       if (!data || typeof data.fetchedAt !== 'number') return null
-      if (Date.now() - data.fetchedAt > CACHE_TTL_MS) return null
+      if (Date.now() - data.fetchedAt > (opts?.allowStale ? CACHE_STALE_MAX_MS : CACHE_TTL_MS)) return null
       return Array.isArray(data.results) ? (data.results as VideoRef[]) : null
     },
 
@@ -128,13 +134,13 @@ export function createDeps(userId: string, tools: ActionTools): Deps {
   }
 }
 
-export const recommend: ActionHandler<Env> = async ({ userId, params, tools }) => {
+export const recommend: ActionHandler<Env> = async ({ userId, params, tools, env }) => {
   const parsed = parseCheckinInput(params)
   const respond = (data: RecommendResponse) => ({ success: true as const, data })
   if (!parsed.ok) return respond({ status: 'error', message: parsed.message })
 
   try {
-    return respond(await runPipeline(createDeps(userId, tools), parsed.value))
+    return respond(await runPipeline(createDeps(userId, tools, env), parsed.value))
   } catch (err) {
     // Log the error type only: messages could echo user content.
     console.error('[recommend] failed', err instanceof Error ? err.name : 'unknown')

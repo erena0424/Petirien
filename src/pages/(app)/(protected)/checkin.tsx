@@ -8,6 +8,7 @@ import { useMutations } from 'deepspace'
 import { Button } from '@/components/ui'
 import { formatResetTime } from '@/lib/format'
 import { requestRecommendations } from '@/lib/recommend-client'
+import { usePreferences } from '@/lib/use-preferences'
 import { useSavedVideos } from '@/lib/use-saved'
 import { CheckinForm, EMPTY_FORM, type FormValues } from '@/components/checkin/CheckinForm'
 import { NoneFitPanel, type ReasonChip } from '@/components/checkin/NoneFitPanel'
@@ -30,6 +31,7 @@ const MAX_RETRIES = 2
 export default function CheckinPage() {
   const { put, ready } = useMutations<Record<string, unknown>>('suggestions')
   const saved = useSavedVideos()
+  const preferences = usePreferences()
 
   const [values, setValues] = useState<FormValues>(EMPTY_FORM)
   const [stage, setStage] = useState<Stage>({ kind: 'form' })
@@ -40,6 +42,15 @@ export default function CheckinPage() {
   const [checkinId, setCheckinId] = useState<string | undefined>()
   const lastInput = useRef<CheckinInput | null>(null)
   const heading = useRef<HTMLHeadingElement>(null)
+
+  // Start from the person's usual time, once, unless they already changed it.
+  const appliedUsual = useRef(false)
+  useEffect(() => {
+    if (appliedUsual.current || preferences.status !== 'ready') return
+    appliedUsual.current = true
+    const usual = preferences.prefs.defaultMinutes
+    if (usual) setValues((v) => (v.minutes === EMPTY_FORM.minutes ? { ...v, minutes: usual } : v))
+  }, [preferences.status, preferences.prefs.defaultMinutes])
 
   // Move focus to the new content so screen reader users hear what changed.
   useEffect(() => {

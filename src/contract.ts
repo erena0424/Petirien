@@ -28,6 +28,8 @@ export interface VideoRef {
   thumbnail: string
   durationSec: number
   watchUrl: string
+  /** From YouTube's status when known. `false` means the owner blocked embedding. */
+  embeddable?: boolean
 }
 
 export interface Pick {

@@ -19,6 +19,7 @@ export function buildInterpretPrompt(
   options: Activity[],
   liked: string[],
   disliked: string[],
+  likedTags: string[] = [],
 ): Prompt {
   const system = `${VOICE}
 
@@ -37,6 +38,7 @@ Reply with ONLY a JSON object:
     user_note: input.note ? `<user_note>${input.note}</user_note>` : null,
     previously_helpful_activity_ids: liked,
     previously_not_helpful_activity_ids: disliked,
+    tags_the_person_enjoys: likedTags,
     activities: options.map((a) => ({
       id: a.id,
       title: a.title,

@@ -118,6 +118,12 @@ export interface Env extends DOBindings<typeof __DO_MANIFEST__> {
    * an authenticated app owner/admin. deepspace dev/test set it locally.
    */
   ALLOW_DEBUG_ROUTES?: string
+  /**
+   * The app's own YouTube Data API key (a secret: `deepspace secrets set
+   * YOUTUBE_API_KEY --stdin`). When present, video search uses it directly;
+   * otherwise the DeepSpace YouTube integration is used.
+   */
+  YOUTUBE_API_KEY?: string
 }
 
 export type AppContext = { Bindings: Env }

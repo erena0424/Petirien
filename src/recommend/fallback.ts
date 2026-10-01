@@ -13,12 +13,15 @@ export interface Signals {
   liked: string[]
   /** Activity ids the person said were not helpful. */
   disliked: string[]
+  /** Tags the person said they enjoy (a nudge, not a rule). */
+  likedTags?: string[]
 }
 
 function score(a: Activity, s: Signals): number {
   let n = 0
   if (s.goal && a.goals.includes(s.goal)) n += 2
   if (s.liked.includes(a.id)) n += 1
+  n += 0.5 * a.tags.filter((t) => s.likedTags?.includes(t)).length
   if (s.disliked.includes(a.id)) n -= 2
   if (s.energy <= 2) n -= a.effort * 0.1 // nudge gentler options first
   return n

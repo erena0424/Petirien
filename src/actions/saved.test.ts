@@ -90,3 +90,19 @@ describe('refreshStale', () => {
     expect(updates).toEqual([])
   })
 })
+
+describe('refreshStale: embedding status', () => {
+  it('marks a video that can no longer be embedded', async () => {
+    const { deps, updates } = make([row('stale0000001', 40)], (id) => ({ ok: true, video: { ...video(id), embeddable: false } }))
+    await refreshStale(deps, NOW)
+    expect(updates[0]!.patch.availability).toBe('no_embed')
+  })
+  it('restores a video that can be embedded again, and otherwise leaves availability alone', async () => {
+    const a = make([row('stale0000001', 40, { availability: 'no_embed' })], (id) => ({ ok: true, video: { ...video(id), embeddable: true } }))
+    await refreshStale(a.deps, NOW)
+    expect(a.updates[0]!.patch.availability).toBe('ok')
+    const b = make([row('stale0000002', 40)], (id) => ({ ok: true, video: video(id) }))
+    await refreshStale(b.deps, NOW)
+    expect(b.updates[0]!.patch).not.toHaveProperty('availability')
+  })
+})

@@ -48,8 +48,11 @@ export interface Deps {
   searchVideos(query: string): Promise<unknown[] | null>
   /** Raw detail items for the ids, or null on failure. */
   videoDetails(ids: string[]): Promise<unknown[] | null>
-  /** Enriched videos cached for this query (fresh only), or null. */
-  cacheGet(query: string): Promise<VideoRef[] | null>
+  /**
+   * Enriched videos cached for this query, or null. Fresh only by default;
+   * `allowStale` also accepts older entries (still inside YouTube's 30-day limit).
+   */
+  cacheGet(query: string, opts?: { allowStale?: boolean }): Promise<VideoRef[] | null>
   cachePut(query: string, videos: VideoRef[]): Promise<void>
   loadContext(): Promise<UserContext>
   bumpUsage(day: string): Promise<void>
@@ -100,7 +103,7 @@ async function interpret(
   fits: Activity[],
   ctx: UserContext,
 ): Promise<Interpretation | null> {
-  const prompt = buildInterpretPrompt(input, fits, ctx.liked, ctx.disliked)
+  const prompt = buildInterpretPrompt(input, fits, ctx.liked, ctx.disliked, ctx.prefs.likedTags)
   const text = await deps.llm({ ...prompt, maxTokens: 500 })
   const parsed = interpretSchema.safeParse(parseJsonObject(text))
   if (!parsed.success) return null
@@ -125,26 +128,34 @@ async function retrieve(deps: Deps, activity: Activity, minutes: number): Promis
 
   if (!videos) {
     const raw = await deps.searchVideos(q)
-    if (!raw) return { ok: false }
+    if (!raw) {
+      // YouTube is unreachable or over quota: reuse an older cached result
+      // rather than show nothing. Never retry (a failed call still uses quota).
+      const stale = await deps.cacheGet(q, { allowStale: true })
+      if (!stale) return { ok: false }
+      videos = stale
+    } else {
+      const seen = new Set<string>()
+      let base = raw
+        .map(normalizeVideo)
+        .filter((v): v is VideoRef => v !== null && !seen.has(v.videoId) && !!seen.add(v.videoId))
+        .slice(0, SEARCH_TOP)
 
-    const seen = new Set<string>()
-    let base = raw
-      .map(normalizeVideo)
-      .filter((v): v is VideoRef => v !== null && !seen.has(v.videoId) && !!seen.add(v.videoId))
-      .slice(0, SEARCH_TOP)
-
-    const unknownLength = base.filter((v) => v.durationSec === 0)
-    if (unknownLength.length) {
-      const rawDetails = await deps.videoDetails(unknownLength.map((v) => v.videoId))
-      if (rawDetails) {
-        const details = rawDetails.map(normalizeVideo).filter((v): v is VideoRef => v !== null)
-        base = mergeVideos(base, details)
+      // One lookup for every video whose length (or embeddability) is not yet known.
+      const needDetails = base.filter((v) => v.durationSec === 0 || v.embeddable === undefined)
+      if (needDetails.length) {
+        const rawDetails = await deps.videoDetails(needDetails.map((v) => v.videoId))
+        if (rawDetails) {
+          const details = rawDetails.map(normalizeVideo).filter((v): v is VideoRef => v !== null)
+          base = mergeVideos(base, details)
+        }
       }
+      videos = base
+      if (videos.length) await deps.cachePut(q, videos)
     }
-    videos = base
-    if (videos.length) await deps.cachePut(q, videos)
   }
-  return { ok: true, videos: videos.filter((v) => fitsTime(v, minutes)) }
+  // Only videos of a known, fitting length that the owner has not blocked from embedding.
+  return { ok: true, videos: videos.filter((v) => fitsTime(v, minutes) && v.embeddable !== false) }
 }
 
 // ── rank ─────────────────────────────────────────────────────────────────
@@ -247,7 +258,13 @@ export async function recommend(deps: Deps, input: CheckinInput): Promise<Recomm
   }
   if (!interp) degraded.push('interpret')
 
-  const signals = { goal: input.goal ?? interp?.goal, energy: input.energy, liked: ctx.liked, disliked: ctx.disliked }
+  const signals = {
+    goal: input.goal ?? interp?.goal,
+    energy: input.energy,
+    liked: ctx.liked,
+    disliked: ctx.disliked,
+    likedTags: ctx.prefs.likedTags,
+  }
   const fromModel = (interp?.ids ?? [])
     .map((id) => fits.find((a) => a.id === id))
     .filter((a): a is Activity => !!a)

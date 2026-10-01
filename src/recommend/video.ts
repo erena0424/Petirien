@@ -81,6 +81,8 @@ export function normalizeVideo(raw: unknown): VideoRef | null {
     parseDuration(dig(raw, 'formatted.duration')) ??
     0
 
+  const embeddable = dig(raw, 'status.embeddable') ?? dig(raw, 'embeddable')
+
   return {
     videoId: idCandidate,
     title,
@@ -95,6 +97,7 @@ export function normalizeVideo(raw: unknown): VideoRef | null {
       ]) ?? `https://i.ytimg.com/vi/${idCandidate}/mqdefault.jpg`,
     durationSec: duration,
     watchUrl: firstString(raw, ['links.watch']) ?? `https://www.youtube.com/watch?v=${idCandidate}`,
+    ...(typeof embeddable === 'boolean' ? { embeddable } : {}),
   }
 }
 
@@ -110,6 +113,7 @@ export function mergeVideos(base: VideoRef[], details: VideoRef[]): VideoRef[] {
       channel: d.channel || b.channel,
       thumbnail: d.thumbnail || b.thumbnail,
       durationSec: d.durationSec || b.durationSec,
+      ...(d.embeddable !== undefined ? { embeddable: d.embeddable } : b.embeddable !== undefined ? { embeddable: b.embeddable } : {}),
     }
   })
 }

@@ -33,7 +33,7 @@ function makeDeps(over: Partial<Deps> = {}, opts: { usageToday?: number } = {}) 
       calls.details++
       return []
     },
-    cacheGet: async () => null,
+    cacheGet: async (_q, _opts) => null,
     cachePut: async () => {},
     loadContext: async () => ({
       prefs: { dislikedTags: [], avoid: [], likedTags: [] },
@@ -258,6 +258,47 @@ describe('recommend: retrieval', () => {
     expect(res.status).toBe('ok')
     if (res.status !== 'ok') return
     expect(res.degraded).toContain('video')
+  })
+})
+
+describe('recommend: embeddability and YouTube outages', () => {
+  it('skips videos YouTube says cannot be embedded', async () => {
+    const { deps } = makeDeps({
+      searchVideos: async () => [
+        { ...vid(1), status: { embeddable: false } },
+        { ...vid(2), status: { embeddable: true } },
+      ],
+    })
+    const res = await recommend(deps, input)
+    expect(res.status).toBe('ok')
+    if (res.status !== 'ok') return
+    for (const p of res.picks) expect(p.video.videoId).toBe(vid(2).id)
+  })
+
+  it('asks for details when embeddability is unknown, and keeps a video that turns out fine', async () => {
+    const details = vi.fn(async () => [{ ...vid(1), status: { embeddable: true } }])
+    const { deps } = makeDeps({ searchVideos: async () => [vid(1)], videoDetails: details })
+    const res = await recommend(deps, input)
+    expect(details).toHaveBeenCalled()
+    expect(res.status).toBe('ok')
+  })
+
+  it('falls back to an older cached result when YouTube fails, instead of showing no videos', async () => {
+    const stale = [{ videoId: 'stalevideo1', title: 'Stale but fine', channel: 'C', thumbnail: 't', durationSec: 300, watchUrl: 'w', embeddable: true }]
+    const cacheGet = vi.fn(async (_q: string, opts?: { allowStale?: boolean }) => (opts?.allowStale ? stale : null))
+    const { deps } = makeDeps({ searchVideos: async () => null, cacheGet })
+    const res = await recommend(deps, input)
+    expect(res.status).toBe('ok')
+    if (res.status !== 'ok') return
+    expect(res.picks[0]!.video.videoId).toBe('stalevideo1')
+    expect(cacheGet).toHaveBeenCalledWith(expect.any(String), { allowStale: true })
+  })
+
+  it('does not look at stale results when YouTube works', async () => {
+    const cacheGet = vi.fn(async (_q: string, _opts?: { allowStale?: boolean }) => null)
+    const { deps } = makeDeps({ cacheGet })
+    await recommend(deps, input)
+    expect(cacheGet.mock.calls.every(([, opts]) => !opts?.allowStale)).toBe(true)
   })
 })
 
