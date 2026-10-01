@@ -4,6 +4,7 @@
  */
 
 import { Link } from 'react-router-dom'
+import { Bunny } from '../components/Bunny'
 import { Seo } from '../components/Seo'
 import { DISPLAY_NAME } from '../constants'
 import { seo } from '../seo'
@@ -16,12 +17,13 @@ export default function Landing() {
         data-testid="static-landing"
         className="flex min-h-screen flex-col items-center justify-center px-6 text-center"
       >
-        <p className="mb-3 text-sm font-medium text-primary">{DISPLAY_NAME}</p>
+        <Bunny size={160} />
+        <p className="mb-3 mt-4 text-sm font-semibold text-primary">{DISPLAY_NAME}</p>
         <h1 className="mb-4 max-w-2xl text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
-          A quiet minute and a few gentle ideas
+          A quiet minute and a few small ideas
         </h1>
         <p className="mb-8 max-w-md text-base leading-relaxed text-muted-foreground">
-          Check in with how you feel, and get two or three manageable things to try that fit your energy and your time.
+          Tell me how you feel and how much time you have. I'll find a few small things that fit.
         </p>
         <Link
           to="/home"

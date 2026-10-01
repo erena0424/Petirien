@@ -86,3 +86,24 @@ describe('format', () => {
     expect(formatResetTime('nope')).toBe('tomorrow')
   })
 })
+
+import { formatCheckinDate } from './format'
+import { ENERGY, GOAL_LABELS, HELPFUL_LABELS, MOOD, label } from './labels'
+
+describe('history helpers', () => {
+  it('formats a check-in date with day and time, and tolerates junk', () => {
+    expect(formatCheckinDate('2026-10-01T15:15:00Z')).toMatch(/Oct/)
+    expect(formatCheckinDate('2026-10-01T15:15:00Z')).toContain('·')
+    expect(formatCheckinDate('nope')).toBe('')
+  })
+  it('turns scale numbers into words and ignores unknown values', () => {
+    expect(label(MOOD, 2)).toBe('Low')
+    expect(label(ENERGY, 5)).toBe('Lots')
+    expect(label(MOOD, 9)).toBe('')
+    expect(label(MOOD, undefined)).toBe('')
+  })
+  it('has a label for every goal and every feedback value', () => {
+    expect(Object.keys(GOAL_LABELS).sort()).toEqual(['break', 'calm', 'connect', 'express', 'move'])
+    expect(Object.keys(HELPFUL_LABELS).sort()).toEqual(['no', 'somewhat', 'yes'])
+  })
+})

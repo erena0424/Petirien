@@ -12,6 +12,8 @@ import { CheckinForm, EMPTY_FORM, type FormValues } from '@/components/checkin/C
 import { NoneFitPanel, type ReasonChip } from '@/components/checkin/NoneFitPanel'
 import { PickCard } from '@/components/checkin/PickCard'
 import { WatchPanel, type Helpful } from '@/components/checkin/WatchPanel'
+import { Bunny } from '@/components/Bunny'
+import { CompanionSays } from '@/components/CompanionSays'
 import { SupportCard } from '@/components/SupportCard'
 import type { CheckinInput, Pick, RecommendResponse } from '../../../contract'
 
@@ -101,21 +103,26 @@ export default function CheckinPage() {
     <div className="mx-auto w-full max-w-2xl px-4 py-8">
       {stage.kind === 'form' && (
         <>
-          <h1 ref={heading} className="text-2xl font-semibold tracking-tight text-foreground">
-            Take a moment to check in
-          </h1>
-          <p className="mt-2 mb-8 text-sm leading-relaxed text-muted-foreground">
-            Tell me a little about right now. I&apos;ll suggest two or three gentle things that fit.
-          </p>
+          <div className="mb-8 flex items-center gap-4">
+            <Bunny size={84} />
+            <div>
+              <h1 ref={heading} className="text-2xl font-bold tracking-tight text-foreground">
+                How&apos;s today going?
+              </h1>
+              <p className="mt-1 text-base leading-relaxed text-muted-foreground">
+                A few taps is enough. I&apos;ll find something small that fits.
+              </p>
+            </div>
+          </div>
           <CheckinForm values={values} onChange={setValues} onSubmit={submit} submitting={false} />
         </>
       )}
 
       {stage.kind === 'loading' && (
         <div role="status" aria-live="polite" data-testid="loading" className="flex flex-col items-center gap-4 py-24 text-center">
-          <span aria-hidden className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-          <p className="text-sm text-muted-foreground">Looking for a few gentle ideas…</p>
-          <p className="text-xs text-muted-foreground">This can take several seconds.</p>
+          <Bunny size={128} />
+          <p className="text-base font-medium text-foreground">Looking for a few things for you…</p>
+          <p className="text-sm text-muted-foreground">This can take several seconds.</p>
         </div>
       )}
 
@@ -160,9 +167,7 @@ interface ResultProps {
   onStartOver: () => void
 }
 
-function Companion({ children }: { children: React.ReactNode }) {
-  return <div className="rounded-2xl bg-secondary p-4 text-sm leading-relaxed text-foreground">{children}</div>
-}
+const Companion = CompanionSays
 
 function Result(p: ResultProps) {
   const { res } = p
@@ -170,7 +175,7 @@ function Result(p: ResultProps) {
   if (res.status === 'support') {
     return (
       <div className="space-y-5" data-testid="support-result">
-        <h1 ref={p.headingRef} tabIndex={-1} className="text-xl font-semibold text-foreground outline-none">
+        <h1 ref={p.headingRef} tabIndex={-1} className="text-xl font-bold text-foreground outline-none">
           I&apos;m glad you said something
         </h1>
         <p className="text-sm leading-relaxed text-muted-foreground">
@@ -187,7 +192,7 @@ function Result(p: ResultProps) {
   if (res.status === 'capped') {
     return (
       <div className="space-y-4" data-testid="capped-result">
-        <h1 ref={p.headingRef} tabIndex={-1} className="text-xl font-semibold text-foreground outline-none">
+        <h1 ref={p.headingRef} tabIndex={-1} className="text-xl font-bold text-foreground outline-none">
           That&apos;s enough for today
         </h1>
         <Companion>
@@ -203,7 +208,7 @@ function Result(p: ResultProps) {
   if (res.status === 'error') {
     return (
       <div className="space-y-4" role="alert" data-testid="error-result">
-        <h1 ref={p.headingRef} tabIndex={-1} className="text-xl font-semibold text-foreground outline-none">
+        <h1 ref={p.headingRef} tabIndex={-1} className="text-xl font-bold text-foreground outline-none">
           That didn&apos;t work
         </h1>
         <Companion>{res.message}</Companion>
@@ -220,7 +225,7 @@ function Result(p: ResultProps) {
   if (res.status === 'nothing_fits') {
     return (
       <div className="space-y-4" data-testid="nothing-fits-result">
-        <h1 ref={p.headingRef} tabIndex={-1} className="text-xl font-semibold text-foreground outline-none">
+        <h1 ref={p.headingRef} tabIndex={-1} className="text-xl font-bold text-foreground outline-none">
           Nothing small enough
         </h1>
         <Companion>{res.reply}</Companion>
@@ -234,7 +239,7 @@ function Result(p: ResultProps) {
   if (res.status === 'no_video') {
     return (
       <div className="space-y-5" data-testid="no-video-result">
-        <h1 ref={p.headingRef} tabIndex={-1} className="text-xl font-semibold text-foreground outline-none">
+        <h1 ref={p.headingRef} tabIndex={-1} className="text-xl font-bold text-foreground outline-none">
           A few ideas
         </h1>
         <Companion>{res.reply}</Companion>
@@ -262,8 +267,8 @@ function Result(p: ResultProps) {
   const visible = res.picks.filter((pick) => !p.hidden.includes(pick.suggestionId))
   return (
     <div className="space-y-5" data-testid="ok-result">
-      <h1 ref={p.headingRef} tabIndex={-1} className="text-xl font-semibold text-foreground outline-none">
-        A few ideas for you
+      <h1 ref={p.headingRef} tabIndex={-1} className="text-xl font-bold text-foreground outline-none">
+        Here are a few ideas
       </h1>
       <Companion>{res.reply}</Companion>
       {visible.length > 0 && (

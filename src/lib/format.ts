@@ -11,3 +11,12 @@ export function formatResetTime(iso: string): string {
   if (Number.isNaN(d.getTime())) return 'tomorrow'
   return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
 }
+
+/** "Thu, Oct 1 · 3:15 PM" in the viewer's locale and time zone. */
+export function formatCheckinDate(iso: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  const day = d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })
+  const time = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+  return `${day} · ${time}`
+}

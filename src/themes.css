@@ -16,33 +16,35 @@
  *   4. Switch to it via `data-theme` on <html> in index.html.
  */
 
-/* Calm: white-based, spacious, readable. Palette from the product brief.
- * Contrast (WCAG): text on bg 13.8, muted on bg 4.9, muted on card 5.1,
- * white on primary 6.5, primary on selected 5.7. Border is decorative. */
+/* Calm: cool white with the bunny's colors. Sky blue and lavender are the soft
+ * surfaces; the deeper periwinkle is for buttons and links; text is the bunny's
+ * navy outline darkened. Contrast (WCAG): text on bg 12.5, muted on bg 5.4,
+ * muted on sky 4.9, muted on lavender 4.75, white on primary 6.2, primary on
+ * sky 5.4. Input borders are 3.0:1 on bg so unselected choices stay visible. */
 [data-theme="calm"] {
   color-scheme: light;
-  --color-background: #fafaf8;
-  --color-foreground: #252b29;
+  --color-background: #f8fafd;
+  --color-foreground: #26304a;
   --color-card: #ffffff;
-  --color-card-foreground: #252b29;
+  --color-card-foreground: #26304a;
   --color-popover: #ffffff;
-  --color-popover-foreground: #252b29;
-  --color-primary: #426653;
+  --color-popover-foreground: #26304a;
+  --color-primary: #4a5da6;
   --color-primary-foreground: #ffffff;
-  --color-secondary: #edf3ee;
-  --color-secondary-foreground: #252b29;
-  --color-muted: #f1f4f0;
-  --color-muted-foreground: #66706b;
-  --color-accent: #edf3ee;
-  --color-accent-foreground: #252b29;
+  --color-secondary: #e6f0fb;
+  --color-secondary-foreground: #26304a;
+  --color-muted: #eef2f8;
+  --color-muted-foreground: #5b6783;
+  --color-accent: #eee9f6;
+  --color-accent-foreground: #26304a;
   --color-destructive: #b42318;
   --color-destructive-foreground: #ffffff;
-  --color-border: #e3e7e2;
-  --color-input: #c9d0ca;
-  --color-ring: #426653;
-  --shadow-card: 0 1px 2px 0 rgba(37, 43, 41, 0.04);
-  --shadow-card-hover: 0 2px 8px 0 rgba(37, 43, 41, 0.08);
-  --color-shell: #fafaf8;
+  --color-border: #dce3ee;
+  --color-input: #8591ab;
+  --color-ring: #4a5da6;
+  --shadow-card: 0 1px 2px 0 rgba(38, 48, 74, 0.06);
+  --shadow-card-hover: 0 2px 8px 0 rgba(38, 48, 74, 0.1);
+  --color-shell: #f8fafd;
   --color-shell-panel: #ffffff;
 }
 

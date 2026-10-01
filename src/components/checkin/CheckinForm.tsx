@@ -1,5 +1,6 @@
 import { Button, Textarea } from '@/components/ui'
 import type { CheckinInput } from '../../contract'
+import { ENERGY, MOOD } from '@/lib/labels'
 import { ChoiceGroup } from '../ChoiceGroup'
 
 export interface FormValues {
@@ -12,20 +13,6 @@ export interface FormValues {
 
 export const EMPTY_FORM: FormValues = { mood: null, energy: null, minutes: 10, goal: '', note: '' }
 
-const MOOD = [
-  { value: 1, label: 'Very low' },
-  { value: 2, label: 'Low' },
-  { value: 3, label: 'Okay' },
-  { value: 4, label: 'Good' },
-  { value: 5, label: 'Great' },
-]
-const ENERGY = [
-  { value: 1, label: 'Drained' },
-  { value: 2, label: 'Low' },
-  { value: 3, label: 'Medium' },
-  { value: 4, label: 'Good' },
-  { value: 5, label: 'Lots' },
-]
 const MINUTES = [5, 10, 15, 20, 30].map((m) => ({ value: m, label: `${m} min` }))
 const GOALS = [
   { value: 'calm', label: 'Calm down' },
