@@ -270,6 +270,7 @@ describe('recommend: constraints', () => {
     expect(res.status).toBe('nothing_fits')
     expect(calls.search).toEqual([])
     expect(calls.llm).toBe(0)
+    expect(calls.usage).toBe(0) // free runs do not count toward the daily cap
   })
 
   it('honors exclusions on a re-run', async () => {
@@ -318,6 +319,7 @@ describe('recommend: crisis handling', () => {
     expect(calls.search).toEqual([])
     expect(calls.checkins[0]).not.toHaveProperty('note')
     expect(calls.suggestions).toEqual([])
+    expect(calls.usage).toBe(0)
   })
 
   it('returns support when the model raises the flag, and does not store the note', async () => {

@@ -216,8 +216,6 @@ export async function recommend(deps: Deps, input: CheckinInput): Promise<Recomm
     return { status: 'support', checkinId: await persistCheckin({ note: false }) }
   }
 
-  await deps.bumpUsage(now.toISOString().slice(0, 10))
-
   const { activities: fits } = filterCatalog({
     minutes: input.minutes,
     energy: input.energy,
@@ -234,6 +232,10 @@ export async function recommend(deps: Deps, input: CheckinInput): Promise<Recomm
         'Nothing in my small list fits that amount of time and energy right now. Resting counts too, and your saved videos are still here.',
     }
   }
+
+  // The cap protects spend, so only runs that go on to model and video calls count.
+  // Crisis and "nothing fits" exits above cost nothing and are not counted.
+  await deps.bumpUsage(now.toISOString().slice(0, 10))
 
   const degraded: Degraded[] = []
 

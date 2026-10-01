@@ -17,6 +17,9 @@ export default defineConfig({
   testMatch: '**/*.spec.ts',
   timeout: 30_000,
   retries: 0,
+  // Two workers: several specs share the local dev server and its database, and
+  // the scaffold's own timing-sensitive tests flake under heavier parallel load.
+  workers: 2,
   use: {
     baseURL: BASE_URL,
     headless: true,
