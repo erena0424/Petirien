@@ -17,5 +17,8 @@
 
 export const integrations: Record<string, { billing: 'developer' | 'user' }> = {
   google: { billing: 'user' },
-  // openai: { billing: 'developer' },
+  // Each signed-in person pays for their own check-ins (free plan: 500 credits,
+  // 1 credit = $0.01). Sign-in is required anyway; no anonymous spend.
+  youtube: { billing: 'user' },
+  anthropic: { billing: 'user' },
 }
