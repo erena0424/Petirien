@@ -44,8 +44,12 @@ export default function HistoryPage() {
     const id = deleting
     setDeleting(null)
     if (!id) return
-    for (const s of byCheckin.get(id) ?? []) await removeSuggestion.remove(s.recordId)
-    await removeCheckin.remove(id)
+    try {
+      for (const s of byCheckin.get(id) ?? []) await removeSuggestion.removeConfirmed(s.recordId)
+      await removeCheckin.removeConfirmed(id)
+    } catch {
+      /* shown as a toast by the data layer */
+    }
   }
 
   return (

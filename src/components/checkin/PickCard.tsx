@@ -2,15 +2,18 @@ import { Play } from 'lucide-react'
 import { Button } from '@/components/ui'
 import { formatDuration } from '@/lib/format'
 import type { Pick } from '../../contract'
+import { SaveButton } from '../SaveButton'
 import { Instructions } from './Instructions'
 
 interface Props {
   pick: Pick
+  saved: boolean
   onWatch: () => void
   onReject: () => void
+  onToggleSave: () => void
 }
 
-export function PickCard({ pick, onWatch, onReject }: Props) {
+export function PickCard({ pick, saved, onWatch, onReject, onToggleSave }: Props) {
   const { video } = pick
   const length = formatDuration(video.durationSec)
   return (
@@ -42,6 +45,7 @@ export function PickCard({ pick, onWatch, onReject }: Props) {
           <Play aria-hidden className="h-4 w-4" />
           Watch
         </Button>
+        <SaveButton saved={saved} onToggle={onToggleSave} label={video.title} />
         <Button variant="ghost" onClick={onReject} aria-label={`Not this one: ${video.title}`}>
           Not this one
         </Button>

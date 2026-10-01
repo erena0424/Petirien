@@ -39,6 +39,9 @@ export default function HomePage() {
         <Link to="/checkin" className={primary}>
           Check in
         </Link>
+        <Link to="/saved" className={secondary}>
+          Saved videos
+        </Link>
         <Link to="/history" className={secondary}>
           Past check-ins
         </Link>

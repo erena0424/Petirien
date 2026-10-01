@@ -3,12 +3,15 @@ import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui'
 import type { Pick } from '../../contract'
 import { YouTubePlayer } from '../YouTubePlayer'
+import { SaveButton } from '../SaveButton'
 import { Instructions } from './Instructions'
 
 export type Helpful = 'yes' | 'somewhat' | 'no'
 
 interface Props {
   pick: Pick
+  saved: boolean
+  onToggleSave: () => void
   onBack: () => void
   onStartOver: () => void
   onFeedback: (helpful: Helpful) => void
@@ -26,7 +29,7 @@ const OPTIONS: { value: Helpful; label: string }[] = [
  * Player, then a feedback card. Feedback asks whether the idea was useful,
  * never whether the person feels better.
  */
-export function WatchPanel({ pick, onBack, onStartOver, onFeedback }: Props) {
+export function WatchPanel({ pick, saved, onToggleSave, onBack, onStartOver, onFeedback }: Props) {
   const [phase, setPhase] = useState<Phase>('playing')
 
   return (
@@ -43,6 +46,9 @@ export function WatchPanel({ pick, onBack, onStartOver, onFeedback }: Props) {
       <div>
         <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{pick.activityTitle}</p>
         <h2 className="mt-1 text-lg font-semibold leading-snug text-foreground">{pick.video.title}</h2>
+        <div className="mt-3">
+          <SaveButton saved={saved} onToggle={onToggleSave} label={pick.video.title} />
+        </div>
       </div>
 
       {(phase === 'playing' || phase === 'unavailable') && (

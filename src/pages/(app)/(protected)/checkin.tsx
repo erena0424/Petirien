@@ -8,6 +8,7 @@ import { useMutations } from 'deepspace'
 import { Button } from '@/components/ui'
 import { formatResetTime } from '@/lib/format'
 import { requestRecommendations } from '@/lib/recommend-client'
+import { useSavedVideos } from '@/lib/use-saved'
 import { CheckinForm, EMPTY_FORM, type FormValues } from '@/components/checkin/CheckinForm'
 import { NoneFitPanel, type ReasonChip } from '@/components/checkin/NoneFitPanel'
 import { Instructions } from '@/components/checkin/Instructions'
@@ -28,6 +29,7 @@ const MAX_RETRIES = 2
 
 export default function CheckinPage() {
   const { put, ready } = useMutations<Record<string, unknown>>('suggestions')
+  const saved = useSavedVideos()
 
   const [values, setValues] = useState<FormValues>(EMPTY_FORM)
   const [stage, setStage] = useState<Stage>({ kind: 'form' })
@@ -91,6 +93,15 @@ export default function CheckinPage() {
     if (lastInput.current) void run(lastInput.current, { exclude: next, checkinId })
   }
 
+  function toggleSave(p: Pick) {
+    if (saved.isSaved(p.video.videoId)) {
+      void saved.unsave(p.video.videoId)
+    } else {
+      void saved.save(p.video, p.activityId)
+      write(p.suggestionId, { status: 'saved' })
+    }
+  }
+
   function watch(p: Pick) {
     write(p.suggestionId, { status: 'opened' })
     setWatching(p)
@@ -131,6 +142,8 @@ export default function CheckinPage() {
         <WatchPanel
           key={watching.suggestionId}
           pick={watching}
+          saved={saved.isSaved(watching.video.videoId)}
+          onToggleSave={() => toggleSave(watching)}
           onBack={() => setWatching(null)}
           onStartOver={startOver}
           onFeedback={feedback}
@@ -143,8 +156,10 @@ export default function CheckinPage() {
           hidden={hidden}
           retries={retries}
           headingRef={heading}
+          isSaved={saved.isSaved}
           onWatch={watch}
           onReject={reject}
+          onToggleSave={toggleSave}
           onNoneFit={(r) => stage.res.status === 'ok' && noneFit(stage.res, r)}
           onRetrySame={() => lastInput.current && void run(lastInput.current, { exclude: excluded, checkinId })}
           onEdit={() => setStage({ kind: 'form' })}
@@ -160,8 +175,10 @@ interface ResultProps {
   hidden: string[]
   retries: number
   headingRef: React.RefObject<HTMLHeadingElement | null>
+  isSaved: (videoId: string) => boolean
   onWatch: (p: Pick) => void
   onReject: (p: Pick) => void
+  onToggleSave: (p: Pick) => void
   onNoneFit: (r: ReasonChip) => void
   onRetrySame: () => void
   onEdit: () => void
@@ -278,7 +295,14 @@ function Result(p: ResultProps) {
       {visible.length > 0 && (
         <ul className="space-y-4">
           {visible.map((pick) => (
-            <PickCard key={pick.suggestionId} pick={pick} onWatch={() => p.onWatch(pick)} onReject={() => p.onReject(pick)} />
+            <PickCard
+              key={pick.suggestionId}
+              pick={pick}
+              saved={p.isSaved(pick.video.videoId)}
+              onWatch={() => p.onWatch(pick)}
+              onReject={() => p.onReject(pick)}
+              onToggleSave={() => p.onToggleSave(pick)}
+            />
           ))}
         </ul>
       )}
