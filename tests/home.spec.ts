@@ -102,11 +102,11 @@ test('the suggestion for right now can be saved, and saved items appear on Home'
   await expect(dana.page.getByTestId('home-saved').getByRole('listitem')).toHaveCount(1)
   await expect(dana.page.getByTestId('home-saved')).toContainText('Idea')
 
-  // Nobody else sees it.
-  const [alice] = await users(['Alice'])
-  await alice.page.goto('/home')
-  await alice.page.waitForTimeout(1500)
-  await expect(alice.page.getByTestId('home-saved').getByText('Idea')).toHaveCount(0)
+  // Nobody else sees it. Bob is used because no other spec saves ideas in his account.
+  const [bob] = await users(['Bob'])
+  await bob.page.goto('/home')
+  await bob.page.waitForTimeout(1500)
+  await expect(bob.page.getByTestId('home-saved').getByText('Idea')).toHaveCount(0)
 
   await clearDana(dana.page)
 })

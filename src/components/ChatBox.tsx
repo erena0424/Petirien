@@ -43,19 +43,24 @@ export function ChatBox() {
   const userCount = messages.filter((m) => m.role === 'user').length
   const atLimit = messages.length >= MAX_MESSAGES - 2
 
+  /** Ask the bunny to answer the conversation as it stands. */
+  async function ask(conversation: ChatMessage[]) {
+    setError(null)
+    setSending(true)
+    const res = await callAction<ReplyResponse>('reflectReply', { messages: conversation })
+    setSending(false)
+    if (res?.status === 'ok') setMessages([...conversation, { role: 'bunny', text: res.reply }])
+    else if (res?.status === 'support') setPhase('support')
+    else setError(failure(res))
+  }
+
   async function send(text: string) {
     const clean = text.trim()
     if (!clean || sending) return
     const next: ChatMessage[] = [...messages, { role: 'user', text: clean }]
     setMessages(next)
     setDraftText('')
-    setError(null)
-    setSending(true)
-    const res = await callAction<ReplyResponse>('reflectReply', { messages: next })
-    setSending(false)
-    if (res?.status === 'ok') setMessages([...next, { role: 'bunny', text: res.reply }])
-    else if (res?.status === 'support') setPhase('support')
-    else setError(failure(res))
+    await ask(next)
   }
 
   async function wrapUp() {
@@ -206,9 +211,14 @@ export function ChatBox() {
       )}
 
       {error && (
-        <p role="alert" data-testid="chat-error" className="rounded-xl bg-accent p-3 text-sm text-foreground">
-          {error}
-        </p>
+        <div role="alert" data-testid="chat-error" className="rounded-xl bg-accent p-3 text-sm text-foreground">
+          <p>{error}</p>
+          {messages[messages.length - 1]?.role === 'user' && !sending && (
+            <Button className="mt-2" size="sm" variant="outline" onClick={() => void ask(messages)}>
+              Try again
+            </Button>
+          )}
+        </div>
       )}
 
       {phase === 'writing' ? (
