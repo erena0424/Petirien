@@ -71,7 +71,7 @@ export default function HistoryPage() {
 
         {checkins.status === 'ready' && checkins.records.length === 0 && (
           <div data-testid="history-empty" className="flex flex-col items-center py-12 text-center">
-            <Bunny size={120} />
+            <Bunny className="w-48 sm:w-60" />
             <p className="mt-4 text-lg font-semibold text-foreground">Nothing here yet</p>
             <p className="mt-1 max-w-xs text-muted-foreground">Your check-ins will show up here after you try one.</p>
             <Link

@@ -17,7 +17,7 @@ export default function Landing() {
         data-testid="static-landing"
         className="flex min-h-screen flex-col items-center justify-center px-6 text-center"
       >
-        <Bunny size={160} />
+        <Bunny className="w-56 sm:w-72" />
         <p className="mb-3 mt-4 text-sm font-semibold text-primary">{DISPLAY_NAME}</p>
         <h1 className="mb-4 max-w-2xl text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
           A quiet minute and a few small ideas

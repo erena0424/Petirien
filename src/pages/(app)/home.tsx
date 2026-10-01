@@ -26,7 +26,7 @@ export default function HomePage() {
 
   return (
     <div className="mx-auto flex min-h-full w-full max-w-2xl flex-col justify-center px-4 py-12">
-      <Bunny size={150} className="-ml-2" />
+      <Bunny className="-ml-3 w-56 sm:w-72" />
       <h1 className="mt-4 text-3xl font-bold leading-tight tracking-tight text-foreground sm:text-4xl">
         Not sure what would help? Let&apos;s find something small.
       </h1>

@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils'
 
 interface Props {
-  /** Pixel size (square). */
+  /** Intrinsic pixel size (square); set the displayed size with width classes. */
   size?: number
   /** Animated by default; people who prefer reduced motion always get the still frame. */
   animated?: boolean
@@ -9,7 +9,7 @@ interface Props {
 }
 
 /** The companion. Decorative: the words beside it carry the meaning. */
-export function Bunny({ size = 96, animated = true, className }: Props) {
+export function Bunny({ size = 300, animated = true, className }: Props) {
   const common = {
     width: size,
     height: size,

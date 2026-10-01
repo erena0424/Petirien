@@ -104,7 +104,7 @@ export default function CheckinPage() {
       {stage.kind === 'form' && (
         <>
           <div className="mb-8 flex items-center gap-4">
-            <Bunny size={84} />
+            <Bunny className="w-28 shrink-0 sm:w-40" />
             <div>
               <h1 ref={heading} className="text-2xl font-bold tracking-tight text-foreground">
                 How&apos;s today going?
@@ -120,7 +120,7 @@ export default function CheckinPage() {
 
       {stage.kind === 'loading' && (
         <div role="status" aria-live="polite" data-testid="loading" className="flex flex-col items-center gap-4 py-24 text-center">
-          <Bunny size={128} />
+          <Bunny className="w-48 sm:w-64" />
           <p className="text-base font-medium text-foreground">Looking for a few things for you…</p>
           <p className="text-sm text-muted-foreground">This can take several seconds.</p>
         </div>
