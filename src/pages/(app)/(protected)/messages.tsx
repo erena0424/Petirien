@@ -43,7 +43,7 @@ export default function MessagesPage() {
         </Button>
       </div>
 
-      <div className="mt-6 grid gap-6 md:grid-cols-[17rem_1fr]">
+      <div className="mt-6 grid items-start gap-6 md:grid-cols-[17rem_1fr]">
         <nav aria-label="Conversations" className="md:max-h-[70vh] md:overflow-y-auto">
           {!chat.conversationsReady && <p className="text-sm text-muted-foreground">Loading…</p>}
           {chat.conversationsReady && chat.conversations.length === 0 && (
@@ -81,7 +81,7 @@ export default function MessagesPage() {
           </ul>
         </nav>
 
-        <div className="flex min-h-[24rem] flex-col rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-card)]">
+        <div className="flex flex-col rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-card)]">
           <BunnyThread />
           {canWriteNotes && (
             <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-border pt-3 text-sm">

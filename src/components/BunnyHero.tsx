@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Send } from 'lucide-react'
 import { AuthOverlay, useAuthStatus } from 'deepspace'
 import { Button } from '@/components/ui'
+import { AutoTextarea } from './AutoTextarea'
 import { useBunnyChat } from '@/lib/bunny-chat'
 import { GREETING, partOfDay } from '@/lib/for-now'
 import { MAX_MESSAGE_CHARS } from '../reflect/contract'
@@ -79,7 +80,7 @@ export function BunnyHero() {
         )}
 
         <form
-          className="mt-3 flex items-center gap-2"
+          className="mt-3 flex items-end gap-2"
           onSubmit={(e) => {
             e.preventDefault()
             if (text.trim()) submit(text)
@@ -88,13 +89,19 @@ export function BunnyHero() {
           <label htmlFor="hero-input" className="sr-only">
             Tell the bunny something
           </label>
-          <input
+          <AutoTextarea
             id="hero-input"
             value={text}
             maxLength={MAX_MESSAGE_CHARS}
             onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault()
+                if (text.trim()) submit(text)
+              }
+            }}
             placeholder="Tell the bunny something…"
-            className="h-12 min-w-0 flex-1 rounded-xl border border-input bg-card px-4 text-base text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            className="min-w-0 flex-1"
           />
           <Button type="submit" size="icon" aria-label="Send" disabled={chat.sending || !text.trim()}>
             <Send aria-hidden className="h-4 w-4" />

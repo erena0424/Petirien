@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Send } from 'lucide-react'
-import { Button, Textarea } from '@/components/ui'
+import { Button } from '@/components/ui'
+import { AutoTextarea } from './AutoTextarea'
 import { useBunnyChat } from '@/lib/bunny-chat'
 import { MAX_MESSAGES, MAX_MESSAGE_CHARS } from '../reflect/contract'
 import { Bunny } from './Bunny'
@@ -34,7 +35,7 @@ export function BunnyThread() {
   }
 
   return (
-    <section aria-label="Conversation" data-testid="chat" className="flex min-h-0 flex-1 flex-col gap-4">
+    <section aria-label="Conversation" data-testid="chat" className="flex flex-col gap-4">
       {chat.thread.length === 0 ? (
         <div className="flex items-end gap-3">
           <Bunny animated={false} className="w-20 shrink-0" />
@@ -43,7 +44,7 @@ export function BunnyThread() {
           </p>
         </div>
       ) : (
-        <ol className="space-y-3" aria-label="Messages" data-testid="chat-log">
+        <ol className="max-h-[55vh] space-y-3 overflow-y-auto pr-1" aria-label="Messages" data-testid="chat-log">
           {chat.thread.map((m, i) => (
             <li key={i} className={m.role === 'user' ? 'flex justify-end' : 'flex items-end gap-2'}>
               {m.role === 'bunny' && <Bunny animated={false} className="w-12 shrink-0" />}
@@ -96,10 +97,9 @@ export function BunnyThread() {
             <label htmlFor="chat-input" className="sr-only">
               Tell the bunny something
             </label>
-            <Textarea
+            <AutoTextarea
               id="chat-input"
               value={text}
-              rows={2}
               maxLength={MAX_MESSAGE_CHARS}
               onChange={(e) => setText(e.target.value)}
               onKeyDown={(e) => {
@@ -111,7 +111,6 @@ export function BunnyThread() {
                 }
               }}
               placeholder="Tell the bunny something…"
-              className="border-input bg-card"
             />
           </div>
           <Button type="submit" size="icon" aria-label="Send" disabled={chat.sending || !text.trim()}>

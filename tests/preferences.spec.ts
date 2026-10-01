@@ -117,3 +117,48 @@ test('delete everything removes check-ins, saved videos, and preferences', async
   await bob.page.goto('/preferences')
   await expect(bob.page.getByLabel('Closing my eyes')).not.toBeChecked({ timeout: 15_000 })
 })
+
+test('how the bunny talks: choices save at once, persist, can be cleared, and stay private', async ({ users }) => {
+  const [bob, alice] = await users(['Bob', 'Alice'])
+  await deleteEverything(bob.page)
+  await bob.page.goto('/preferences')
+  await expect(bob.page.getByTestId('bunny-style')).toBeVisible()
+  await expect(bob.page.getByTestId('style-summary')).toContainText('Nothing picked up yet')
+
+  const section = bob.page.getByTestId('bunny-style')
+  await section.getByText('Gentle and calm', { exact: true }).click()
+  await expect(bob.page.getByTestId('style-saved')).toBeVisible()
+  await section.getByText('Short', { exact: true }).click()
+  await section.getByText('Fewer questions', { exact: true }).click()
+  await expect(bob.page.getByTestId('style-summary')).toContainText('Gentle and calm, Short, Fewer questions')
+
+  // Persisted in the real database, separate from "Save preferences".
+  await bob.page.reload()
+  await expect(bob.page.getByTestId('style-summary')).toContainText('Gentle and calm, Short, Fewer questions', { timeout: 15_000 })
+  await expect(bob.page.getByTestId('bunny-style').getByLabel('Gentle and calm')).toBeChecked()
+
+  // Saving the ordinary preferences does not wipe it.
+  await bob.page.getByText('Closing my eyes', { exact: true }).click()
+  await bob.page.getByRole('button', { name: 'Save preferences' }).click()
+  await expect(bob.page.getByTestId('prefs-saved')).toBeVisible()
+  await bob.page.reload()
+  await expect(bob.page.getByTestId('style-summary')).toContainText('Gentle and calm', { timeout: 15_000 })
+
+  // One choice can be cleared on its own, then everything.
+  await bob.page.getByTestId('bunny-style').getByText('No preference').nth(1).click() // length
+  await expect(bob.page.getByTestId('style-summary')).not.toContainText('Short')
+  await bob.page.getByRole('button', { name: 'Forget all of these' }).click()
+  await expect(bob.page.getByTestId('style-summary')).toContainText('Nothing picked up yet')
+
+  // Private: Alice has her own, untouched.
+  await bob.page.getByTestId('bunny-style').getByText('Upbeat and cheerful', { exact: true }).click()
+  await expect(bob.page.getByTestId('style-saved')).toBeVisible()
+  await alice.page.goto('/preferences')
+  await expect(alice.page.getByTestId('bunny-style')).toBeVisible()
+  await alice.page.waitForTimeout(1500)
+  await expect(alice.page.getByTestId('style-summary')).not.toContainText('Upbeat')
+
+  await deleteEverything(bob.page) // and Delete everything removes it too
+  await bob.page.goto('/preferences')
+  await expect(bob.page.getByTestId('style-summary')).toContainText('Nothing picked up yet', { timeout: 15_000 })
+})

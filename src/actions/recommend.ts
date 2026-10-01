@@ -13,6 +13,7 @@ import type { RecommendResponse, VideoRef } from '../contract'
 import { recommend as runPipeline, parseCheckinInput, type Deps, type UserContext } from '../recommend/pipeline'
 import { extractText } from '../recommend/parse'
 import { searchVideos as ytSearch, videoDetails as ytDetails } from '../server/youtube-api'
+import { integrationSource, withHelper, type VideoSource } from '../server/youtube-source'
 
 const LLM_MODEL = 'claude-haiku-4-5'
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000
@@ -39,6 +40,9 @@ export function createDeps(
   env?: { YOUTUBE_API_KEY?: string; OWNER_USER_ID?: string },
 ): Deps {
   const key = env?.YOUTUBE_API_KEY || undefined
+  // DeepSpace's integration is the main source; the app's own Google key only backs it up and checks embeddability.
+  const helper: VideoSource | undefined = key ? { search: (q) => ytSearch(key, q), details: (ids) => ytDetails(key, ids) } : undefined
+  const youtube = withHelper(integrationSource(tools), helper)
   return {
     now: () => new Date(),
 
@@ -53,24 +57,9 @@ export function createDeps(
       return r.success ? extractText(r.data) : null
     },
 
-    async searchVideos(q) {
-      if (key) return ytSearch(key, q)
-      const r = await tools.integration<{ videos?: unknown[] }>('youtube/search-videos', {
-        q,
-        maxResults: 6,
-        regionCode: 'US',
-      })
-      return r.success && Array.isArray(r.data?.videos) ? r.data.videos : null
-    },
+    searchVideos: (q) => youtube.search(q),
 
-    async videoDetails(ids) {
-      if (key) return ytDetails(key, ids)
-      // UNVERIFIED: whether the integration accepts several comma-joined ids.
-      const r = await tools.integration<{ videos?: unknown[] }>('youtube/get-video-details', {
-        id: ids.join(','),
-      })
-      return r.success && Array.isArray(r.data?.videos) ? r.data.videos : null
-    },
+    videoDetails: (ids) => youtube.details(ids),
 
     async cacheGet(query, opts) {
       const rec = await queryOne(tools, 'searchCache', { query })

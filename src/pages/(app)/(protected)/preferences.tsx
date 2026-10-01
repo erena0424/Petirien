@@ -3,7 +3,7 @@
  * and a way to delete everything. All private to the signed-in person.
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useMutations, useQuery } from 'deepspace'
 import { Button, ConfirmModal } from '@/components/ui'
 import { CheckChips } from '@/components/CheckChips'
@@ -19,11 +19,12 @@ import {
 } from '@/lib/preferences'
 import { SCREEN_CHOICES } from '@/components/checkin/CheckinForm'
 import { usePreferences } from '@/lib/use-preferences'
+import { STYLE_KEYS, STYLE_LABELS, describeStyle, type BunnyStyle, type StyleKey } from '../../../reflect/style'
 
 type Minutes = number | 0
 
 export default function PreferencesPage() {
-  const { status, prefs, ready, save } = usePreferences()
+  const { status, prefs, style, setStyle, ready, save } = usePreferences()
   const [draft, setDraft] = useState<Preferences>(prefs)
   const [loaded, setLoaded] = useState(false)
   const [saved, setSaved] = useState<'idle' | 'saving' | 'done' | 'failed'>('idle')
@@ -134,6 +135,8 @@ export default function PreferencesPage() {
         </form>
       )}
 
+      {status === 'ready' && <BunnyStyleSettings style={style} ready={ready} onChange={setStyle} />}
+
       <DeleteEverything />
     </div>
   )
@@ -239,6 +242,91 @@ function DeleteEverything() {
         description={`This will permanently delete ${counts.checkins} check-in${counts.checkins === 1 ? '' : 's'}, ${conversations.records.length} conversation${conversations.records.length === 1 ? '' : 's'}, ${journal.records.length} journal entr${journal.records.length === 1 ? 'y' : 'ies'}, ${counts.saved} saved item${counts.saved === 1 ? '' : 's'}, and your preferences.`}
         confirmText="Delete everything"
       />
+    </section>
+  )
+}
+
+/**
+ * How the bunny talks with you. A tiny fixed set of choices: the bunny also picks
+ * these up on its own when you say how you like it to talk, and this is where you
+ * can see, change, or clear them. It never stores what you say here.
+ */
+function BunnyStyleSettings({
+  style,
+  ready,
+  onChange,
+}: {
+  style: BunnyStyle
+  ready: boolean
+  onChange: (next: BunnyStyle) => Promise<boolean>
+}) {
+  const [saved, setSaved] = useState(false)
+  // Quick taps must all stick: keep the latest choices here and save from them, never from a stale copy.
+  const [local, setLocal] = useState<BunnyStyle>(style)
+  const latest = useRef<BunnyStyle>(style)
+  const pending = useRef(0)
+  const learned = describeStyle(local)
+
+  // Take in changes that arrive from the server (for example what the bunny picked up), unless a save is in flight.
+  useEffect(() => {
+    if (pending.current === 0) {
+      latest.current = style
+      setLocal(style)
+    }
+  }, [style])
+
+  async function commit(next: BunnyStyle) {
+    latest.current = next
+    setLocal(next)
+    setSaved(false)
+    pending.current++
+    const ok = await onChange(latest.current) // always the newest choices, even if earlier saves are still running
+    pending.current--
+    if (pending.current === 0) setSaved(ok)
+  }
+
+  async function set(key: StyleKey, value: string) {
+    const next = { ...latest.current } as Record<string, string | undefined>
+    if (value) next[key] = value
+    else delete next[key]
+    await commit(next as BunnyStyle)
+  }
+
+  return (
+    <section className="mt-14 border-t border-border pt-8" aria-labelledby="style-heading" data-testid="bunny-style">
+      <h2 id="style-heading" className="text-lg font-semibold text-foreground">
+        How the bunny talks with you
+      </h2>
+      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+        The bunny picks this up by itself when you tell it how you like it to talk, like &ldquo;shorter please&rdquo;. It only
+        remembers these style choices, never what you say. Change or clear any of them here.
+      </p>
+      <p data-testid="style-summary" className="mt-3 text-sm text-foreground">
+        {learned.length ? `Right now: ${learned.join(', ')}.` : 'Nothing picked up yet.'}
+      </p>
+
+      <div className="mt-6 space-y-6">
+        {STYLE_KEYS.map((key) => (
+          <ChoiceGroup<string>
+            key={key}
+            legend={STYLE_LABELS[key].question}
+            value={local[key] ?? ''}
+            onChange={(v) => void set(key, v)}
+            options={[{ value: '', label: 'No preference' }, ...Object.entries(STYLE_LABELS[key].options).map(([value, label]) => ({ value, label }))]}
+          />
+        ))}
+      </div>
+
+      <div className="mt-6 flex flex-wrap items-center gap-3">
+        <Button variant="outline" disabled={!ready || learned.length === 0} onClick={() => void commit({})}>
+          Forget all of these
+        </Button>
+        {saved && (
+          <p role="status" data-testid="style-saved" className="text-sm font-medium text-foreground">
+            Saved.
+          </p>
+        )}
+      </div>
     </section>
   )
 }

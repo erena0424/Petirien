@@ -15,6 +15,7 @@ import type { Env } from '../../worker'
 import type { VideoRef } from '../contract'
 import { normalizeVideo } from '../recommend/video'
 import { videoDetails as ytDetails } from '../server/youtube-api'
+import { integrationSource, withHelper } from '../server/youtube-source'
 import { needsRefresh, type SavedData } from '../lib/saved'
 
 export const MAX_PER_CALL = 5
@@ -82,6 +83,7 @@ export async function refreshStale(deps: RefreshDeps, now: number): Promise<Refr
 
 export function createRefreshDeps(userId: string, tools: ActionTools, env?: { YOUTUBE_API_KEY?: string }): RefreshDeps {
   const key = env?.YOUTUBE_API_KEY || undefined
+  const youtube = withHelper(integrationSource(tools), key ? { search: async () => null, details: (ids) => ytDetails(key, ids) } : undefined)
   return {
     async listSaved() {
       // Server actions run with RBAC off: scope to the caller explicitly.
@@ -89,16 +91,10 @@ export function createRefreshDeps(userId: string, tools: ActionTools, env?: { YO
       return r.success ? r.data.records.map((x) => ({ recordId: x.recordId, data: x.data as SavedData })) : []
     },
     async fetchDetails(videoId) {
-      if (key) {
-        // videos.list answers 200 with no items for a removed or private video.
-        const items = await ytDetails(key, [videoId])
-        if (items === null) return { ok: false }
-        return { ok: true, video: items.map(normalizeVideo).find((v): v is VideoRef => v !== null) ?? null }
-      }
-      const r = await tools.integration<{ videos?: unknown[] }>('youtube/get-video-details', { id: videoId })
-      if (!r.success || !Array.isArray(r.data?.videos)) return { ok: false }
-      const first = r.data.videos.map(normalizeVideo).find((v): v is VideoRef => v !== null)
-      return { ok: true, video: first ?? null }
+      // An empty list means YouTube answered and the video is gone; null means we could not ask.
+      const items = await youtube.details([videoId])
+      if (items === null) return { ok: false }
+      return { ok: true, video: items.map(normalizeVideo).find((v): v is VideoRef => v !== null) ?? null }
     },
     async update(recordId, patch) {
       await tools.update('savedVideos', recordId, patch)

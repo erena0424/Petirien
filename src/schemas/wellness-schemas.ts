@@ -193,6 +193,8 @@ export const preferencesSchema: CollectionSchema = {
     /** Older yes/no version of `screenMode`; still read so existing rows keep working. */
     num('screenFree'),
     select('screenMode', ['auto', 'video', 'none']),
+    /** How the bunny talks to this person: fixed vocabulary only (see reflect/style.ts). */
+    json('bunnyStyle'),
   ],
   permissions: ownerOnly,
 }

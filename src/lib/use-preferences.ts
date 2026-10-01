@@ -1,8 +1,16 @@
 import { useMemo } from 'react'
 import { useMutations, useQuery } from 'deepspace'
+import { normalizeStyle, type BunnyStyle } from '../reflect/style'
 import { DEFAULT_PREFERENCES, normalizePreferences, type Preferences, type ScreenMode } from './preferences'
 
-type Row = { likedTags?: string[]; avoid?: string[]; defaultMinutes?: number; screenMode?: string; screenFree?: number }
+type Row = {
+  likedTags?: string[]
+  avoid?: string[]
+  defaultMinutes?: number
+  screenMode?: string
+  screenFree?: number
+  bunnyStyle?: unknown
+}
 
 /** The signed-in person's preferences (one row per person; the database enforces it). */
 export function usePreferences() {
@@ -24,6 +32,21 @@ export function usePreferences() {
     [record],
   )
 
+  const style = useMemo<BunnyStyle>(() => normalizeStyle(record?.data.bunnyStyle), [record])
+
+  /** Sets or clears one part of how the bunny talks. Applies at once, separately from Save preferences. */
+  async function setStyle(next: BunnyStyle): Promise<boolean> {
+    if (!ready) return false
+    const clean = normalizeStyle(next)
+    try {
+      if (record) await putConfirmed(record.recordId, { bunnyStyle: clean })
+      else await createConfirmed({ bunnyStyle: clean })
+      return true
+    } catch {
+      return false
+    }
+  }
+
   async function save(next: Preferences): Promise<boolean> {
     if (!ready) return false
     const clean = normalizePreferences(next)
@@ -42,5 +65,5 @@ export function usePreferences() {
     }
   }
 
-  return { status: query.status, prefs, hasRecord: !!record, ready, save }
+  return { status: query.status, prefs, style, setStyle, hasRecord: !!record, ready, save }
 }

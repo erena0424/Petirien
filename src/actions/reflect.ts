@@ -11,6 +11,7 @@ import { z } from 'zod'
 import { writeAutoNote, type AutoNoteDeps } from '../reflect/auto-notes'
 import type { ChatMessage } from '../reflect/contract'
 import { parseMessages, reflectReply, type ReflectDeps } from '../reflect/pipeline'
+import { normalizeStyle } from '../reflect/style'
 
 const LLM_MODEL = 'claude-haiku-4-5'
 
@@ -51,6 +52,21 @@ export function createReflectDeps(userId: string, tools: ActionTools, env?: { OW
           notes: Array.isArray(d.notes) ? (d.notes as unknown[]).filter((x): x is string => typeof x === 'string') : [],
         }
       })
+    },
+
+    async loadStyle() {
+      const r = await tools.query<Row>('preferences', { where: { userId }, limit: 1 })
+      const row = r.success ? (r.data.records[0]?.data as Row | undefined) : undefined
+      return normalizeStyle(row?.bunnyStyle)
+    },
+
+    async saveStyle(next) {
+      // Only the fixed vocabulary can reach this point; normalize again so nothing else can be written.
+      const clean = normalizeStyle(next)
+      const r = await tools.query<Row>('preferences', { where: { userId }, limit: 1 })
+      const rec = r.success ? r.data.records[0] : undefined
+      if (rec) await tools.update('preferences', rec.recordId as string, { bunnyStyle: clean })
+      else await tools.create('preferences', { userId, bunnyStyle: clean })
     },
 
     async usageToday() {

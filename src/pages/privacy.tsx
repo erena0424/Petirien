@@ -65,6 +65,8 @@ export default function Privacy() {
               while) the bunny writes a short note about it: a title, a few sentences, and a few feeling words. You can read
               and delete them under Journal.
             </li>
+            <li>Your preferences: what to avoid, what you like, your usual time, and how you like the bunny to talk.</li>
+            <li>A simple count of how many times you asked for ideas or chatted today, to keep usage fair.</li>
           </ul>
           <p>
             It has no ads or analytics. You sign in with GitHub or Google through
@@ -87,7 +89,9 @@ export default function Privacy() {
             and your few most recent journal notes (so it can remember you), goes to Anthropic&apos;s Claude through
             DeepSpace so the bunny can answer. When it writes a note, the saved messages go again to write it. The bunny is
             an AI, not a person and not a therapist. It does not keep a hidden profile of you: what it remembers is the
-            journal notes you can read and delete.
+            journal notes you can read and delete. The one thing it learns on its own is how you like it to talk (for
+            example short replies or a cheerful tone), chosen only from a small fixed list, never from what you say. You
+            can see and change it under Preferences.
           </p>
           <p>
             <strong>For ideas to try,</strong> an AI service also sees your answers (feeling, energy, time, what would help)

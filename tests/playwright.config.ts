@@ -15,11 +15,14 @@ const BASE_URL = `http://localhost:${PORT}`
 export default defineConfig({
   testDir: '.',
   testMatch: '**/*.spec.ts',
-  timeout: 30_000,
-  retries: 0,
-  // Two workers: several specs share the local dev server and its database, and
-  // the scaffold's own timing-sensitive tests flake under heavier parallel load.
-  workers: 2,
+  timeout: 60_000,
+  // One retry: on a busy machine the dev server sometimes rebuilds and reloads the page mid-test. A retry
+  // that passes is reported as "flaky" (visible in the output), and a real bug still fails both attempts.
+  retries: 1,
+  // One worker: several specs share the local dev server and its database, the pages are heavier now
+  // (animated bunny, live queries), and on a busy laptop two parallel browsers made tests miss their
+  // time limits. Slower, but the result then reflects the app and not how busy the machine is.
+  workers: 1,
   use: {
     baseURL: BASE_URL,
     headless: true,

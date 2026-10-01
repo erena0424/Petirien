@@ -27,6 +27,7 @@ import {
   TEMPLATE_ACK,
   type EarlierNote,
 } from './llm'
+import { mergeStyle, type BunnyStyle } from './style'
 
 /** Bunny replies and summaries per person per UTC day. The app owner is exempt. */
 export const REFLECT_DAILY_CAP = 80
@@ -39,6 +40,10 @@ export interface ReflectDeps {
   bumpUsage(): Promise<void>
   /** The person's most recent visible journal notes, newest first. Optional background. */
   recentNotes?(): Promise<EarlierNote[]>
+  /** How the person likes the bunny to talk (fixed vocabulary only). */
+  loadStyle?(): Promise<BunnyStyle>
+  /** Stores the new style. Called only when something actually changed. */
+  saveStyle?(next: BunnyStyle): Promise<void>
   /** The app owner is never capped. */
   exempt: boolean
 }
@@ -77,7 +82,8 @@ export async function reflectReply(deps: ReflectDeps, messages: ChatMessage[]): 
   await deps.bumpUsage()
 
   const earlier = (await deps.recentNotes?.().catch(() => [] as EarlierNote[])) ?? []
-  const text = await deps.llm({ ...buildReplyPrompt(messages, earlier), maxTokens: 300 })
+  const style = (await deps.loadStyle?.().catch(() => ({}) as BunnyStyle)) ?? {}
+  const text = await deps.llm({ ...buildReplyPrompt(messages, earlier, style), maxTokens: 300 })
   const parsed = replySchema.safeParse(parseJsonObject(text))
   if (!parsed.success) {
     // Fail visibly rather than invent a reply: the person's message is still on screen and they can resend.
@@ -85,6 +91,12 @@ export async function reflectReply(deps: ReflectDeps, messages: ChatMessage[]): 
   }
   // Layer 2: the model's own flag.
   if (parsed.data.needsSupportResources) return { status: 'support' }
+
+  // Learn how the person likes to be talked to, only when something changed. A failure here never affects the reply.
+  if (deps.saveStyle && parsed.data.styleChange !== undefined) {
+    const { next, changed } = mergeStyle(style, parsed.data.styleChange)
+    if (changed) await deps.saveStyle(next).catch(() => undefined)
+  }
   return { status: 'ok', reply: cleanReply(parsed.data.reply) ?? TEMPLATE_ACK }
 }
 

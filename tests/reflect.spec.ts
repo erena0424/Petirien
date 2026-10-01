@@ -231,6 +231,61 @@ test('failures keep what you wrote and offer Try again; the daily limit is expla
   await expect(eli.page.getByTestId('chat-error')).toContainText("That's enough chatting for today")
 })
 
+test('the text box grows as you type, stops growing at a limit, and shrinks back after sending', async ({ users }) => {
+  const [eli] = await users(['Eli'])
+  await mockBunny(eli.page)
+  await eli.page.goto('/home')
+  await eli.page.getByLabel("Don't save this chat").check()
+  const box = eli.page.getByLabel('Tell the bunny something')
+  const height = async () => (await box.boundingBox())!.height
+
+  const one = await height()
+  await box.fill('line one\nline two\nline three\nline four\nline five')
+  const five = await height()
+  expect(five).toBeGreaterThan(one + 40) // grew with the text
+
+  await box.fill(Array.from({ length: 40 }, (_, i) => `line ${i + 1}`).join('\n'))
+  const forty = await height()
+  expect(forty).toBeLessThan(260) // capped, then it scrolls
+  expect(await box.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true)
+
+  await box.fill('hello')
+  await eli.page.getByRole('button', { name: 'Send' }).click()
+  await expect(eli.page.getByTestId('bunny-words')).toContainText('(1)')
+  expect(Math.abs((await height()) - one)).toBeLessThan(4) // back to one line
+})
+
+test('Shift+Enter makes a new line and Enter sends', async ({ users }) => {
+  const [eli] = await users(['Eli'])
+  const seen = await mockBunny(eli.page)
+  await eli.page.goto('/home')
+  await eli.page.getByLabel("Don't save this chat").check()
+  const box = eli.page.getByLabel('Tell the bunny something')
+  await box.click()
+  await box.pressSequentially('first')
+  await box.press('Shift+Enter')
+  await box.pressSequentially('second')
+  await box.press('Enter')
+  await expect(eli.page.getByTestId('bunny-words')).toContainText('(1)')
+  expect(seen.reply[0].messages[0].text).toBe('first\nsecond')
+})
+
+test('a new empty conversation has no big empty block under the text box', async ({ users }) => {
+  const [eli] = await users(['Eli'])
+  await mockBunny(eli.page)
+  await eli.page.goto('/messages')
+  await eli.page.getByRole('button', { name: 'New conversation' }).click()
+  const thread = eli.page.getByTestId('chat')
+  await expect(thread).toBeVisible()
+  const card = thread.locator('xpath=..')
+  const cardBox = (await card.boundingBox())!
+  const checkbox = (await eli.page.getByLabel("Don't save this chat").boundingBox())!
+  // The card ends right after the last control, with only its padding below.
+  expect(cardBox.y + cardBox.height - (checkbox.y + checkbox.height)).toBeLessThan(40)
+  expect(cardBox.height).toBeLessThan(420)
+})
+
+
 test('phone width: Home, Messages, and the thread have no horizontal scroll', async ({ users }) => {
   const [eli] = await users(['Eli'])
   await eli.page.setViewportSize({ width: 375, height: 800 })
