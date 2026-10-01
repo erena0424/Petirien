@@ -37,6 +37,17 @@ describe('sanitizeCopy', () => {
     expect(sanitizeCopy(42, 100)).toBeNull()
     expect(sanitizeCopy('x'.repeat(101), 100)).toBeNull()
   })
+  it('turns em and en dashes into plain punctuation', () => {
+    expect(sanitizeCopy('Try this\u2014pick whatever sounds right.', 100)).toBe('Try this, pick whatever sounds right.')
+    expect(sanitizeCopy('Five \u2013 ten minutes', 100)).toBe('Five, ten minutes')
+  })
+  it('rejects stock marketing phrases and exclamation marks so template copy is used instead', () => {
+    expect(sanitizeCopy('This fits perfectly in your day.', 100)).toBeNull()
+    expect(sanitizeCopy('A great journey starts here.', 100)).toBeNull()
+    expect(sanitizeCopy('Unlock your calm.', 100)).toBeNull()
+    expect(sanitizeCopy('You can do it!', 100)).toBeNull()
+    expect(sanitizeCopy('Five minutes, nothing to set up.', 100)).toBe('Five minutes, nothing to set up.')
+  })
   it('does not reject ordinary words that merely contain a forbidden stem', () => {
     expect(sanitizeCopy('A secure, quiet pace.', 100)).toBe('A secure, quiet pace.')
   })

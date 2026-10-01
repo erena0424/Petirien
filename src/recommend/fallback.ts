@@ -51,7 +51,7 @@ export function deterministicPicks(options: Activity[], s: Signals, count = 3): 
 }
 
 export const TEMPLATE_REPLY =
-  'Thanks for checking in. Here are a few gentle options that fit the time and energy you have. Pick whatever feels easiest, or none of them.'
+  'Here are a few things that fit your time and energy. Pick whatever feels easiest, or none of them.'
 
 export function templateReason(a: Activity, v: VideoRef): string {
   const mins = Math.max(1, Math.round(v.durationSec / 60))
