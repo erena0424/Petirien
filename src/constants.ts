@@ -1,6 +1,9 @@
 /** App name — replaced by the CLI during scaffolding */
 export const APP_NAME = 'petirien'
 
+/** Name shown to people. `APP_NAME` is the deploy lease and must stay lowercase. */
+export const DISPLAY_NAME = 'Petirien'
+
 /** Immutable app identity — data scope keys to this, so renames never
  *  strand your records.
  *

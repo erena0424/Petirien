@@ -117,9 +117,13 @@ export function createDeps(userId: string, tools: ActionTools): Deps {
     },
 
     async saveSuggestions(checkinId, rows) {
+      const ids: string[] = []
       for (const row of rows) {
-        await tools.create('suggestions', { userId, checkinId, status: 'shown', ...row })
+        const r = await tools.create('suggestions', { userId, checkinId, status: 'shown', ...row })
+        if (!r.success) throw new Error('suggestion_not_saved')
+        ids.push(r.data.recordId)
       }
+      return ids
     },
   }
 }

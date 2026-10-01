@@ -51,6 +51,7 @@ function makeDeps(over: Partial<Deps> = {}, opts: { usageToday?: number } = {}) 
     },
     saveSuggestions: async (_id, rows) => {
       calls.suggestions.push(...rows)
+      return rows.map((_, i) => `sug_${calls.suggestions.length - rows.length + i + 1}`)
     },
     ...over,
   }
@@ -117,6 +118,7 @@ describe('recommend: happy path', () => {
     expect(res.degraded).toEqual([])
     expect(res.picks[0]!.reason).toBe('A short, steady one that fits your time.')
     expect(calls.suggestions.length).toBe(res.picks.length)
+    expect(res.picks.map((p) => p.suggestionId)).toEqual(res.picks.map((_, i) => `sug_${i + 1}`))
     expect(calls.usage).toBe(1)
   })
 

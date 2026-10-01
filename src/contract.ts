@@ -31,6 +31,8 @@ export interface VideoRef {
 }
 
 export interface Pick {
+  /** Id of the stored `suggestions` row, so the client can record feedback on it. */
+  suggestionId: string
   activityId: string
   activityTitle: string
   video: VideoRef

@@ -62,7 +62,8 @@ export interface Deps {
     intent?: string
     note?: string
   }): Promise<string>
-  saveSuggestions(checkinId: string, rows: SuggestionRow[]): Promise<void>
+  /** Returns the new row ids, in the same order as `rows`. */
+  saveSuggestions(checkinId: string, rows: SuggestionRow[]): Promise<string[]>
 }
 
 const inputSchema = z.object({
@@ -152,7 +153,7 @@ async function rank(
   deps: Deps,
   input: CheckinInput,
   groups: RankGroup[],
-): Promise<{ picks: Pick[]; degraded: boolean }> {
+): Promise<{ picks: Omit<Pick, 'suggestionId'>[]; degraded: boolean }> {
   const byActivity = new Map(groups.map((g) => [g.activity.id, g]))
   const chosen = new Map<string, { video: VideoRef; reason: string | null }>()
 
@@ -274,7 +275,7 @@ export async function recommend(deps: Deps, input: CheckinInput): Promise<Recomm
   if (ranked.degraded) degraded.push('rank')
 
   const checkinId = await persistCheckin({ note: true, intent: interp?.intent })
-  await deps.saveSuggestions(
+  const suggestionIds = await deps.saveSuggestions(
     checkinId,
     ranked.picks.map((p) => ({
       activityId: p.activityId,
@@ -284,6 +285,7 @@ export async function recommend(deps: Deps, input: CheckinInput): Promise<Recomm
       rank: p.rank,
     })),
   )
-  return { status: 'ok', checkinId, reply, picks: ranked.picks, degraded: [...new Set(degraded)] }
+  const picks: Pick[] = ranked.picks.map((p, i) => ({ ...p, suggestionId: suggestionIds[i] ?? '' }))
+  return { status: 'ok', checkinId, reply, picks, degraded: [...new Set(degraded)] }
 }
 

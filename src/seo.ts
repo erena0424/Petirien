@@ -16,7 +16,7 @@
  * publishes a Disallow-all robots.txt and no sitemap).
  */
 
-import { APP_NAME } from './constants'
+import { DISPLAY_NAME } from './constants'
 
 /** Injected by prerender.ts: `https://<name>.app.space` from wrangler.toml, or
  *  what `deepspace deploy` passes (staging: spacestest.com). Absent in unit
@@ -24,13 +24,13 @@ import { APP_NAME } from './constants'
 declare const __DEEPSPACE_SITE_ORIGIN__: string | undefined
 
 export const seo = {
-  title: APP_NAME,
-  description: `${APP_NAME} is a real-time collaborative app.`,
+  title: `${DISPLAY_NAME} | Everyday emotional support`,
+  description: `${DISPLAY_NAME} helps you check in and find a few gentle, manageable ideas that fit your energy and time. Not therapy or medical advice.`,
   /** Public origin for canonical URLs, og:url, and the sitemap — no trailing
    *  slash. Replace with the custom domain once one is attached, e.g.
    *  'https://www.example.com'. */
   origin: typeof __DEEPSPACE_SITE_ORIGIN__ === 'string' ? __DEEPSPACE_SITE_ORIGIN__ : 'http://localhost',
   /** 1200×630 preview image, root-relative to public/ (e.g. '/og.png'). */
   // ogImage: '/og.png',
-  noindex: false,
+  noindex: true,
 }
