@@ -1,8 +1,13 @@
 /**
- * Wellness collections. Every user-content collection is owner-only and the
- * admin role gets no read access to it: the app owner should not be able to
- * read people's check-in notes. `usage` and `searchCache` are written only by
+ * Wellness collections. Every user-content collection is owner-only for EVERY
+ * role, including admin: nobody, not even the app owner, can read another
+ * person's check-in notes. `usage` and `searchCache` are written only by
  * server actions, so members cannot forge counters or poison the cache.
+ *
+ * Admin must still be able to use the app for itself. The app owner is pinned
+ * to the admin role, so denying admin everything (an earlier version did)
+ * stopped the owner from saving videos, seeing their own history, or setting
+ * preferences. Admin therefore gets the same "own rows only" access as members.
  */
 
 import type { CollectionSchema } from 'deepspace/schema'
@@ -46,11 +51,11 @@ const select = (name: string, options: string[], required = false): Column => ({
   required,
 })
 
-/** Owner-only, no admin read. */
+/** Own rows only, for members and admin alike. */
 const ownerOnly = {
   viewer: { read: false, create: false, update: false, delete: false },
   member: { read: 'own', create: true, update: 'own', delete: 'own' },
-  admin: { read: false, create: false, update: false, delete: false },
+  admin: { read: 'own', create: true, update: 'own', delete: 'own' },
 } as const
 
 export const checkinsSchema: CollectionSchema = {
@@ -89,6 +94,7 @@ export const suggestionsSchema: CollectionSchema = {
   permissions: {
     ...ownerOnly,
     member: { read: 'own', create: false, update: 'own', delete: 'own' },
+    admin: { read: 'own', create: false, update: 'own', delete: 'own' },
   },
 }
 

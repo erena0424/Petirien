@@ -9,9 +9,35 @@ describe('wellness schemas', () => {
     for (const s of schemas) expect(lintSchema(s), s.name).toEqual([])
   })
 
-  it('never give the admin role read access to user content', () => {
-    for (const s of schemas.filter((x) => USER_CONTENT.includes(x.name))) {
-      expect(s.permissions.admin?.read, s.name).toBe(false)
+  it('lets every role touch only its OWN rows, so nobody (not even admin) can read others\' notes', () => {
+    for (const s of schemas.filter((x) => ['checkins', 'suggestions', 'savedVideos', 'preferences'].includes(x.name))) {
+      for (const role of ['member', 'admin'] as const) {
+        expect(s.permissions[role]?.read, `${s.name}/${role}`).toBe('own')
+        expect(s.permissions[role]?.update, `${s.name}/${role}`).toBe('own')
+        expect(s.permissions[role]?.delete, `${s.name}/${role}`).toBe('own')
+      }
+      expect(s.permissions.viewer?.read, s.name).toBe(false)
+    }
+  })
+
+  it('lets the app owner (pinned to admin) use their own data: admin may create wherever members may', () => {
+    for (const s of schemas.filter((x) => ['checkins', 'suggestions', 'savedVideos', 'preferences'].includes(x.name))) {
+      expect(s.permissions.admin?.create, s.name).toBe(s.permissions.member?.create)
+    }
+    // Specifically the writes the owner does from the browser:
+    for (const name of ['checkins', 'savedVideos', 'preferences']) {
+      expect(schemas.find((x) => x.name === name)?.permissions.admin?.create, name).toBe(true)
+    }
+  })
+
+  it('never lets any role read all rows of user content or the server-only collections', () => {
+    for (const s of schemas.filter((x) => ['checkins', 'suggestions', 'savedVideos', 'preferences', 'usage', 'searchCache'].includes(x.name))) {
+      for (const role of ['viewer', 'member', 'admin'] as const) expect(s.permissions[role]?.read, `${s.name}/${role}`).not.toBe(true)
+    }
+    for (const name of ['searchCache', 'usage']) {
+      const s = schemas.find((x) => x.name === name)!
+      expect(s.permissions.admin?.create, name).toBe(false)
+      expect(s.permissions.admin?.update, name).toBe(false)
     }
   })
 
