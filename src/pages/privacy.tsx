@@ -55,11 +55,12 @@ export default function Privacy() {
             <li>Your check-ins: how you feel, your energy, your time, what would help, and the optional note you write.</li>
             <li>The ideas it suggested, and whether you said they were useful.</li>
             <li>Videos and ideas you save, with any note you add to them.</li>
+            <li>Journal entries: when you talk to the bunny and press Save to my journal, the bunny&apos;s notes (a title, a few sentences, and a few feeling words) are saved.</li>
             <li>Your preferences: what to avoid, what you like, and your usual time.</li>
             <li>A simple count of how many times you asked for ideas today, to keep usage fair.</li>
           </ul>
           <p>
-            It does not save a chat transcript, and it has no ads or analytics. You sign in with GitHub or Google through
+            It does not save what you say to the bunny. Only the notes you choose to save are kept, and nothing is kept if you close the page first. It has no ads or analytics. You sign in with GitHub or Google through
             DeepSpace, the platform this app runs on, which keeps your sign-in session.
           </p>
         </Section>
@@ -75,10 +76,16 @@ export default function Privacy() {
 
         <Section title="Where your words go">
           <p>
-            <strong>An AI service.</strong> To choose and explain ideas, your answers (feeling, energy, time, what would
-            help) and your optional note are sent to Anthropic&apos;s Claude, through DeepSpace. The note goes only in that
-            first step. The second step sees only your time, energy and goal, and the titles and lengths of videos. Leave the
-            note blank if you would rather not share it.
+            <strong>When you talk to the bunny,</strong> each message you send, along with the earlier messages in that chat,
+            goes to Anthropic&apos;s Claude through DeepSpace so the bunny can answer. The bunny is an AI, not a person and
+            not a therapist. When you ask for notes, the chat goes again to write them. None of it is kept unless you save
+            the notes.
+          </p>
+          <p>
+            <strong>For ideas to try,</strong> an AI service also sees your answers (feeling, energy, time, what would help)
+            and your optional note, to choose and explain ideas. The note goes only in that first step. The second step sees
+            only your time, energy and goal, and the titles and lengths of videos. Leave the note blank if you would rather
+            not share it.
           </p>
           <p>
             <strong>YouTube.</strong> Video ideas come from YouTube, found with fixed search phrases for each activity,
@@ -106,11 +113,14 @@ export default function Privacy() {
               One check-in: open <strong>History</strong> and press Delete.
             </li>
             <li>
+              One journal entry: open <strong>Journal</strong> and press Delete.
+            </li>
+            <li>
               One saved video or idea: open <strong>Saved</strong> and press Remove.
             </li>
             <li>
               Everything: open <strong>Preferences</strong> and press <strong>Delete everything</strong>. This removes your
-              check-ins and notes, suggestions, saved videos and ideas, and preferences.
+              check-ins and notes, journal entries, suggestions, saved videos and ideas, and preferences.
             </li>
           </ul>
           <p>

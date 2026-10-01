@@ -80,6 +80,6 @@ describe('daysInMonthWithCheckin / encouragement', () => {
     }
     expect(encouragement(3, 3)).toBe('3 days in a row. That counts.')
     expect(encouragement(0, 4)).toBe('4 days this month you showed up for yourself.')
-    expect(encouragement(1, 1)).toBe('You checked in this month. That counts.')
+    expect(encouragement(1, 1)).toBe('You did something for yourself this month. That counts.')
   })
 })

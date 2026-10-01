@@ -70,10 +70,10 @@ export function daysInMonthWithCheckin(days: Set<string>, year: number, month: n
   return n
 }
 
-/** Short, kind, and only ever positive. Returns null when there is nothing to celebrate yet. */
+/** Short, kind, and only ever positive. A day counts when the person did something for themselves. Returns null when there is nothing to celebrate yet. */
 export function encouragement(streak: number, monthCount: number): string | null {
   if (streak >= 2) return `${streak} days in a row. That counts.`
   if (monthCount >= 2) return `${monthCount} days this month you showed up for yourself.`
-  if (monthCount === 1) return 'You checked in this month. That counts.'
+  if (monthCount === 1) return 'You did something for yourself this month. That counts.'
   return null
 }

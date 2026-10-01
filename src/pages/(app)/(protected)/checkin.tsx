@@ -155,10 +155,10 @@ export default function CheckinPage() {
             <Bunny className="w-28 shrink-0 sm:w-40" />
             <div>
               <h1 ref={heading} className="text-2xl font-bold tracking-tight text-foreground">
-                How&apos;s today going?
+                Let&apos;s do something little
               </h1>
               <p className="mt-1 text-base leading-relaxed text-muted-foreground">
-                A few taps is enough. I&apos;ll find something small that fits.
+                Two taps is enough. I&apos;ll find something small that fits.
               </p>
             </div>
           </div>

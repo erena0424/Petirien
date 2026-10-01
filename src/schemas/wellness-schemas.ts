@@ -119,6 +119,14 @@ export const savedVideosSchema: CollectionSchema = {
   permissions: ownerOnly,
 }
 
+/** Journal entries the bunny wrote and the person chose to save. Never the chat itself. */
+export const journalEntriesSchema: CollectionSchema = {
+  name: 'journalEntries',
+  ownerField: 'userId',
+  columns: [userId, text('title', true), json('notes'), json('feelings'), text('bunnyNote')],
+  permissions: ownerOnly,
+}
+
 /** Activities saved without a video (steps only). One per person per activity. */
 export const savedIdeasSchema: CollectionSchema = {
   name: 'savedIdeas',

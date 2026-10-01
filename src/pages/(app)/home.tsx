@@ -8,6 +8,7 @@
 import { Link } from 'react-router-dom'
 import { useQuery } from 'deepspace'
 import { Bunny } from '@/components/Bunny'
+import { ChatBox } from '@/components/ChatBox'
 import { MonthCalendar } from '@/components/MonthCalendar'
 import { SaveButton } from '@/components/SaveButton'
 import { Instructions } from '@/components/checkin/Instructions'
@@ -15,6 +16,7 @@ import { checkinDays, currentStreak, daysInMonthWithCheckin, encouragement } fro
 import { GREETING, PART_LABEL, orderSavedForNow, partOfDay, pickForNow } from '@/lib/for-now'
 import { formatCheckinDate } from '@/lib/format'
 import { ENERGY, MOOD, label } from '@/lib/labels'
+import { useJournal } from '@/lib/use-journal'
 import { usePreferences } from '@/lib/use-preferences'
 import { useSavedIdeas } from '@/lib/use-saved-ideas'
 import { useSavedVideos } from '@/lib/use-saved'
@@ -38,8 +40,10 @@ export default function HomePage() {
   const videos = useSavedVideos()
   const ideas = useSavedIdeas()
   const prefs = usePreferences()
+  const journal = useJournal()
 
-  const days = checkinDays(checkins.records.map((r) => r.createdAt))
+  // A day counts when you did something for yourself: a check-in or a saved journal entry.
+  const days = checkinDays([...checkins.records.map((r) => r.createdAt), ...journal.records.map((r) => r.createdAt)])
   const daySet = new Set(days.keys())
   const streak = currentStreak(daySet, now)
   const month = daysInMonthWithCheckin(daySet, now.getFullYear(), now.getMonth())
@@ -60,13 +64,20 @@ export default function HomePage() {
         <Bunny className="w-28 shrink-0 sm:w-36" />
         <div>
           <h1 className="text-2xl font-bold leading-tight tracking-tight text-foreground sm:text-3xl">{GREETING[partOfDay(now)]}</h1>
-          <p className="mt-1 text-base text-muted-foreground">Not sure what would help? Let&apos;s find something small.</p>
+          <p className="mt-1 text-base text-muted-foreground">Say what&apos;s on your mind, or let&apos;s find something small to do.</p>
         </div>
       </div>
 
+      <section className={`${card} mt-6`} aria-label="Talk to the bunny">
+        <ChatBox />
+      </section>
+
       <div className="mt-6 flex flex-wrap gap-3">
-        <Link to="/checkin" className={primary}>
-          Check in
+        <Link to="/checkin" className={primary} data-testid="do-something">
+          Do something little for yourself
+        </Link>
+        <Link to="/journal" className={secondary}>
+          Journal
         </Link>
         <Link to="/saved" className={secondary}>
           Saved
@@ -84,7 +95,7 @@ export default function HomePage() {
             </p>
           )}
         </div>
-        <p className="mt-1 text-sm text-muted-foreground">Each filled day is a day you checked in.</p>
+        <p className="mt-1 text-sm text-muted-foreground">Each filled day is a day you did something for yourself.</p>
         <div className="mt-4">
           <MonthCalendar days={days} now={now} />
         </div>
