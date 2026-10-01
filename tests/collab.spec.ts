@@ -31,6 +31,10 @@ test.skip(
     '--password-stdin`, or fetch existing pool accounts with `npx deepspace test accounts recover --all`.',
 )
 
+// The scaffold's own API-status checks look for a brief loading state and flake when the
+// machine is busy. They exercise a debug page, not this product, so retry rather than fail.
+test.describe.configure({ retries: 2 })
+
 test('each browser renders its own signed-in account', async ({ users }) => {
   const [a, b] = await users(2)
 

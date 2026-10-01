@@ -76,10 +76,10 @@ const fireError = (page: Page, code: number) =>
 /** Alice is a throwaway test account: start every test from an empty library. */
 async function clearAllSaved(page: Page) {
   await page.goto('/saved')
-  await expect(page.getByRole('heading', { name: 'Saved videos' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Saved', exact: true })).toBeVisible()
   await page.waitForTimeout(1200) // let the list arrive
   for (let i = 0; i < 20; i++) {
-    const items = page.getByTestId('saved-item')
+    const items = page.locator('[data-testid="saved-item"], [data-testid="saved-idea"]')
     if ((await items.count()) === 0) return
     await items.first().getByRole('button', { name: /Remove from saved/ }).click()
     await page.getByRole('button', { name: 'Remove', exact: true }).click()
@@ -116,7 +116,7 @@ test('save from an idea, it persists, is private, and Save is a toggle', async (
 
   // Private: Bob cannot see Alice's saved video.
   await bob.page.goto('/saved')
-  await expect(bob.page.getByRole('heading', { name: 'Saved videos' })).toBeVisible()
+  await expect(bob.page.getByRole('heading', { name: 'Saved', exact: true })).toBeVisible()
   await bob.page.waitForTimeout(1500)
   await expect(bob.page.getByText(title(1))).toHaveCount(0)
 
@@ -206,9 +206,62 @@ test('the library is reachable directly and shows a friendly empty state', async
   const [alice] = await users(1)
   await clearAllSaved(alice.page)
   await alice.page.goto('/home')
-  await alice.page.getByRole('link', { name: 'Saved videos' }).click()
+  await alice.page.getByRole('main').getByRole('link', { name: 'Saved', exact: true }).click()
   await expect(alice.page).toHaveURL(/\/saved/)
-  await expect(alice.page.getByRole('heading', { name: 'Saved videos' })).toBeVisible()
+  await expect(alice.page.getByRole('heading', { name: 'Saved', exact: true })).toBeVisible()
   await expect(alice.page.getByRole('alert')).toHaveCount(0)
   await expect(alice.page.getByTestId('saved-empty')).toBeVisible()
+})
+
+const ideaResponse = {
+  status: 'ok',
+  checkinId: 'c',
+  reply: 'Two ideas.',
+  degraded: [],
+  picks: [
+    { suggestionId: 'none_i1', activityId: 'grounding-54321', activityTitle: '5-4-3-2-1 grounding', video: null, reason: 'Name things you can see, feel, and hear around you to come back to the room.', rank: 1 },
+    pick(1, 'chair-yoga', 'Chair yoga'),
+  ],
+}
+
+test('a plain idea (no video) can be saved, persists with its note, is private, and can be removed', async ({ users }) => {
+  const [alice, bob] = await users(['Alice', 'Bob'])
+  await clearAllSaved(alice.page)
+  await alice.page.route('**/api/actions/recommend', (r) =>
+    r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, data: ideaResponse }) }),
+  )
+  await alice.page.goto('/checkin')
+  await alice.page.getByText('Low', { exact: true }).first().click()
+  await alice.page.getByText('Medium', { exact: true }).click()
+  await alice.page.getByRole('button', { name: 'Show me a few ideas' }).click()
+
+  // The plain idea has steps open and no Watch button; the video idea beside it still has one.
+  const idea = alice.page.getByTestId('idea-card')
+  await expect(idea).toHaveCount(1)
+  await expect(idea.getByText('Name five things you can see')).toBeVisible()
+  await expect(idea.getByRole('button', { name: /^Watch/ })).toHaveCount(0)
+  await expect(alice.page.getByTestId('pick-card')).toHaveCount(1)
+
+  const save = idea.getByRole('button', { name: /^Save: 5-4-3-2-1 grounding/ })
+  await save.click()
+  await expect(idea.getByRole('button', { name: /Remove from saved: 5-4-3-2-1 grounding/ })).toHaveAttribute('aria-pressed', 'true')
+
+  // On the Saved page, after a reload, with a note that sticks.
+  await alice.page.goto('/saved')
+  const saved = alice.page.getByTestId('saved-idea').filter({ hasText: '5-4-3-2-1 grounding' })
+  await expect(saved).toHaveCount(1, { timeout: 15_000 })
+  await saved.getByLabel('Your note').fill(`ideas note ${run}`)
+  await saved.getByLabel('Your note').blur()
+  await alice.page.waitForTimeout(800)
+  await alice.page.reload()
+  await expect(alice.page.getByTestId('saved-idea').filter({ hasText: '5-4-3-2-1 grounding' }).getByLabel('Your note')).toHaveValue(`ideas note ${run}`, { timeout: 15_000 })
+
+  // Private.
+  await bob.page.goto('/saved')
+  await expect(bob.page.getByRole('heading', { name: 'Saved', exact: true })).toBeVisible()
+  await bob.page.waitForTimeout(1500)
+  await expect(bob.page.getByText('5-4-3-2-1 grounding')).toHaveCount(0)
+
+  await clearAllSaved(alice.page)
+  await expect(alice.page.getByTestId('saved-empty')).toBeVisible({ timeout: 15_000 })
 })

@@ -40,6 +40,12 @@ export interface Activity {
   tags: string[]
   /** One gentle sentence shown to the user. */
   blurb: string
+  /**
+   * True when a video genuinely helps (someone guiding a meditation, or
+   * demonstrating a stretch or a craft). False for things the written steps
+   * cover on their own, which are offered without a video.
+   */
+  video: boolean
   /** What you need before starting. Hand-written. */
   needs: string
   /** Three to five short steps. Hand-written, never model-generated. */
@@ -63,6 +69,7 @@ export const CATALOG: Activity[] = [
     setting: 'seated',
     tags: ['guided'],
     blurb: 'A steady in-hold-out-hold rhythm, led by a voice, that gives your mind one simple thing to follow.',
+    video: false,
     needs: 'Somewhere to sit',
     steps: [
       'Sit comfortably and let your shoulders drop.',
@@ -84,6 +91,7 @@ export const CATALOG: Activity[] = [
     setting: 'lying',
     tags: ['guided', 'eyes-closed'],
     blurb: 'Lie down and move your attention slowly from head to toe. Nothing to fix, just notice.',
+    video: true,
     needs: 'A place to lie down',
     steps: [
       'Lie on your back and let your arms rest.',
@@ -105,6 +113,7 @@ export const CATALOG: Activity[] = [
     setting: 'seated',
     tags: ['no-voice', 'eyes-closed'],
     blurb: 'A few minutes of stillness with just a timer and a gentle bell. No one talking.',
+    video: false,
     needs: 'A chair or cushion, and a timer',
     steps: [
       'Sit comfortably and set the timer.',
@@ -126,6 +135,7 @@ export const CATALOG: Activity[] = [
     setting: 'seated',
     tags: ['guided', 'eyes-closed'],
     blurb: 'Send warm wishes to yourself and to people you care about, guided step by step.',
+    video: true,
     needs: 'Somewhere quiet to sit',
     steps: [
       'Sit comfortably and take a few slow breaths.',
@@ -147,6 +157,7 @@ export const CATALOG: Activity[] = [
     setting: 'lying',
     tags: ['no-voice', 'music', 'eyes-closed'],
     blurb: 'Soft rain, no words, no tasks. Close your eyes or just look out the window.',
+    video: true,
     needs: 'Headphones or speakers',
     steps: [
       'Get comfortable, lying down or in a chair.',
@@ -168,6 +179,7 @@ export const CATALOG: Activity[] = [
     setting: 'seated',
     tags: ['guided'],
     blurb: 'Name things you can see, feel, and hear around you to come back to the room.',
+    video: false,
     needs: 'Nothing, just look around',
     steps: [
       'Name five things you can see.',
@@ -189,6 +201,7 @@ export const CATALOG: Activity[] = [
     setting: 'seated',
     tags: ['guided'],
     blurb: 'A few minutes to stop what you are doing, breathe, and reset before the next thing.',
+    video: false,
     needs: 'Somewhere to sit',
     steps: [
       'Stop what you\'re doing and put your hands down.',
@@ -211,6 +224,7 @@ export const CATALOG: Activity[] = [
     setting: 'desk',
     tags: ['follow-along'],
     blurb: 'Loosen your neck, shoulders, and back without leaving your chair.',
+    video: true,
     needs: 'A chair',
     steps: [
       'Sit tall and roll your shoulders back a few times.',
@@ -232,6 +246,7 @@ export const CATALOG: Activity[] = [
     setting: 'seated',
     tags: ['follow-along', 'guided'],
     blurb: 'Slow, seated movements you can do in regular clothes. Go as gently as you like.',
+    video: true,
     needs: 'A sturdy chair',
     steps: [
       'Sit near the front edge with both feet on the floor.',
@@ -253,6 +268,7 @@ export const CATALOG: Activity[] = [
     setting: 'floor',
     tags: ['follow-along', 'guided'],
     blurb: 'Easy stretches on the floor at a slow pace, made for beginners.',
+    video: true,
     needs: 'A mat or a soft floor',
     steps: [
       'Clear a little floor space.',
@@ -274,6 +290,7 @@ export const CATALOG: Activity[] = [
     setting: 'seated',
     tags: ['follow-along'],
     blurb: 'Small, slow movements for the place where many of us hold the day.',
+    video: true,
     needs: 'A chair',
     steps: [
       'Sit tall and let your arms hang.',
@@ -295,6 +312,7 @@ export const CATALOG: Activity[] = [
     setting: 'floor',
     tags: ['guided', 'eyes-closed'],
     blurb: 'Rest with your legs up a wall or sofa and let your body be held.',
+    video: true,
     needs: 'A wall or sofa, and a clear floor',
     steps: [
       'Sit sideways next to a wall.',
@@ -316,6 +334,7 @@ export const CATALOG: Activity[] = [
     setting: 'standing',
     tags: ['follow-along', 'music'],
     blurb: 'Walk in place or around the room with a friendly, low-key guide. Gets you moving without going out.',
+    video: true,
     needs: 'A little floor space',
     steps: [
       'Clear a path, or stay in one spot.',
@@ -337,6 +356,7 @@ export const CATALOG: Activity[] = [
     setting: 'standing',
     tags: ['follow-along', 'music'],
     blurb: 'A few minutes of loose, silly movement to music. No one is watching.',
+    video: true,
     needs: 'A little space',
     steps: [
       'Put on a song you like, or follow the video.',
@@ -359,6 +379,7 @@ export const CATALOG: Activity[] = [
     setting: 'desk',
     tags: ['follow-along', 'needs-supplies', 'music'],
     blurb: 'Simple shapes and patterns to copy. A pen and any scrap of paper is enough.',
+    video: true,
     needs: 'Paper and any pen',
     steps: [
       'Grab some paper and a pen.',
@@ -380,6 +401,7 @@ export const CATALOG: Activity[] = [
     setting: 'desk',
     tags: ['follow-along', 'needs-supplies', 'music'],
     blurb: 'A relaxed, beginner-friendly painting to follow. Mistakes are part of the look.',
+    video: true,
     needs: 'Watercolors or a paint set, a brush, paper, and a cup of water',
     steps: [
       'Set out your paints, brush, paper, and water.',
@@ -401,6 +423,7 @@ export const CATALOG: Activity[] = [
     setting: 'desk',
     tags: ['guided', 'needs-supplies'],
     blurb: 'A few gentle questions to write about, just for you. Skip any that do not fit.',
+    video: false,
     needs: 'Paper or a notes app',
     steps: [
       'Get something to write with.',
@@ -422,6 +445,7 @@ export const CATALOG: Activity[] = [
     setting: 'desk',
     tags: ['follow-along', 'needs-supplies'],
     blurb: 'Fold one simple paper shape, step by step. Something small to make and keep.',
+    video: true,
     needs: 'A square sheet of paper',
     steps: [
       'Cut or fold a sheet of paper into a square.',
@@ -443,6 +467,7 @@ export const CATALOG: Activity[] = [
     setting: 'desk',
     tags: ['guided', 'needs-supplies'],
     blurb: 'Write a few lines to someone who helped you. You decide whether to send it.',
+    video: false,
     needs: 'Paper and a pen',
     steps: [
       'Think of someone who helped you, even in a small way.',
@@ -464,6 +489,7 @@ export const CATALOG: Activity[] = [
     setting: 'desk',
     tags: ['needs-supplies', 'music', 'follow-along'],
     blurb: 'Fill in a pattern with colors you like, with calm music in the background.',
+    video: true,
     needs: 'A mandala page, and pencils or markers',
     steps: [
       'Print or find a mandala to color.',

@@ -67,3 +67,16 @@ describe('catalog instructions', () => {
     }
   })
 })
+
+describe('video flag', () => {
+  it('is set on every activity, with both kinds present', () => {
+    for (const a of CATALOG) expect(typeof a.video, a.id).toBe('boolean')
+    expect(CATALOG.some((a) => a.video)).toBe(true)
+    expect(CATALOG.some((a) => !a.video)).toBe(true)
+  })
+  it('keeps videos for guided meditations, stretching, yoga and follow-along crafts, and not for plain written exercises', () => {
+    const byId = (id: string) => CATALOG.find((a) => a.id === id)!
+    for (const id of ['body-scan', 'loving-kindness', 'desk-stretch', 'chair-yoga', 'gentle-yoga', 'doodle-along']) expect(byId(id).video, id).toBe(true)
+    for (const id of ['grounding-54321', 'mindful-pause', 'journaling-prompts', 'gratitude-note']) expect(byId(id).video, id).toBe(false)
+  })
+})

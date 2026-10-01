@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui'
-import type { Pick } from '../../contract'
+import type { Pick, VideoRef } from '../../contract'
 import { YouTubePlayer } from '../YouTubePlayer'
 import { SaveButton } from '../SaveButton'
 import { Instructions } from './Instructions'
@@ -9,7 +9,7 @@ import { Instructions } from './Instructions'
 export type Helpful = 'yes' | 'somewhat' | 'no'
 
 interface Props {
-  pick: Pick
+  pick: Pick & { video: VideoRef }
   saved: boolean
   onToggleSave: () => void
   onBack: () => void

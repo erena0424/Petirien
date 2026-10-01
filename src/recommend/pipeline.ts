@@ -18,7 +18,8 @@ import { buildInterpretPrompt, buildRankPrompt, type RankGroup } from './prompts
 import { detectCrisis } from './safety'
 import { fitsTime, mergeVideos, normalizeVideo } from './video'
 
-export const DAILY_CAP = 12
+/** Runs per person per UTC day that go on to paid model or video work. The app owner is exempt. */
+export const DAILY_CAP = 25
 const MAX_PICKS = 3
 const SEARCH_TOP = 4
 const CANDIDATES_PER_ACTIVITY = 3
@@ -30,6 +31,8 @@ export interface UserContext {
   /** Activity ids with feedback "no". */
   disliked: string[]
   usageToday: number
+  /** The app owner is never capped (they pay for their own testing). */
+  exempt?: boolean
 }
 
 export interface SuggestionRow {
@@ -77,6 +80,7 @@ const inputSchema = z.object({
   note: z.string().max(1000).optional(),
   excludeActivityIds: z.array(z.string().max(80)).max(30).optional(),
   checkinId: z.string().max(120).optional(),
+  screen: z.enum(['auto', 'none']).optional(),
 })
 
 export function parseCheckinInput(
@@ -160,11 +164,14 @@ async function retrieve(deps: Deps, activity: Activity, minutes: number): Promis
 
 // ── rank ─────────────────────────────────────────────────────────────────
 
+/** A pick that has a real video. Ideas without a video are assembled separately. */
+type RankedPick = Omit<Pick, 'suggestionId' | 'video'> & { video: VideoRef }
+
 async function rank(
   deps: Deps,
   input: CheckinInput,
   groups: RankGroup[],
-): Promise<{ picks: Omit<Pick, 'suggestionId'>[]; degraded: boolean }> {
+): Promise<{ picks: RankedPick[]; degraded: boolean }> {
   const byActivity = new Map(groups.map((g) => [g.activity.id, g]))
   const chosen = new Map<string, { video: VideoRef; reason: string | null }>()
 
@@ -208,7 +215,7 @@ async function rank(
 export async function recommend(deps: Deps, input: CheckinInput): Promise<RecommendResponse> {
   const now = deps.now()
   const ctx = await deps.loadContext()
-  if (ctx.usageToday >= DAILY_CAP) return { status: 'capped', resetsAt: nextUtcMidnight(now) }
+  if (!ctx.exempt && ctx.usageToday >= DAILY_CAP) return { status: 'capped', resetsAt: nextUtcMidnight(now) }
 
   const base = { mood: input.mood, energy: input.energy, minutes: input.minutes, goal: input.goal }
 
@@ -272,39 +279,46 @@ export async function recommend(deps: Deps, input: CheckinInput): Promise<Recomm
   const shortlist = [...fromModel, ...fill.filter((a) => !fromModel.includes(a))].slice(0, MAX_PICKS)
   const reply = interp?.reply ?? TEMPLATE_REPLY
 
+  // Videos only where one helps (and never in screen-free mode). Everything else is
+  // offered as a plain idea with written steps, which also saves search quota and a model call.
+  const wantsVideo = (a: Activity) => input.screen !== 'none' && a.video
+  const videoActivities = shortlist.filter(wantsVideo)
+
   // Retrieve (independent per activity; one failure does not sink the rest).
   const retrieved = await Promise.all(
-    shortlist.map(async (activity) => ({ activity, r: await retrieve(deps, activity, input.minutes) })),
+    videoActivities.map(async (activity) => ({ activity, r: await retrieve(deps, activity, input.minutes) })),
   )
   if (retrieved.some((x) => !x.r.ok)) degraded.push('video')
   const groups: RankGroup[] = retrieved
     .filter((x): x is { activity: Activity; r: { ok: true; videos: VideoRef[] } } => x.r.ok && x.r.videos.length > 0)
     .map((x) => ({ activity: x.activity, videos: x.r.videos.slice(0, CANDIDATES_PER_ACTIVITY) }))
 
-  if (groups.length === 0) {
-    return {
-      status: 'no_video',
-      checkinId: await persistCheckin({ note: true, intent: interp?.intent }),
-      reply,
-      activities: shortlist.map((a) => ({ activityId: a.id, title: a.title, blurb: a.blurb })),
-    }
+  const videoFor = new Map<string, RankedPick>()
+  if (groups.length > 0) {
+    const ranked = await rank(deps, input, groups)
+    if (ranked.degraded) degraded.push('rank')
+    for (const p of ranked.picks) videoFor.set(p.activityId, p)
   }
 
-  const ranked = await rank(deps, input, groups)
-  if (ranked.degraded) degraded.push('rank')
+  // Assemble in the chosen order: the video where we have one, otherwise the plain idea.
+  const ordered = shortlist.slice(0, MAX_PICKS).map((a, i) => {
+    const v = videoFor.get(a.id)
+    return v
+      ? { activityId: a.id, activityTitle: a.title, video: v.video as VideoRef | null, reason: v.reason, rank: i + 1 }
+      : { activityId: a.id, activityTitle: a.title, video: null as VideoRef | null, reason: a.blurb, rank: i + 1 }
+  })
 
   const checkinId = await persistCheckin({ note: true, intent: interp?.intent })
   const suggestionIds = await deps.saveSuggestions(
     checkinId,
-    ranked.picks.map((p) => ({
+    ordered.map((p) => ({
       activityId: p.activityId,
-      videoId: p.video.videoId,
-      title: p.video.title,
+      videoId: p.video?.videoId ?? '',
+      title: p.video?.title ?? p.activityTitle,
       reason: p.reason,
       rank: p.rank,
     })),
   )
-  const picks: Pick[] = ranked.picks.map((p, i) => ({ ...p, suggestionId: suggestionIds[i] ?? '' }))
+  const picks: Pick[] = ordered.map((p, i) => ({ ...p, suggestionId: suggestionIds[i] ?? '' }))
   return { status: 'ok', checkinId, reply, picks, degraded: [...new Set(degraded)] }
 }
-

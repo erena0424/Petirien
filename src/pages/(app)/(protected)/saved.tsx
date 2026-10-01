@@ -21,6 +21,7 @@ import {
   needsRefresh,
   type SavedData,
 } from '@/lib/saved'
+import { useSavedIdeas } from '@/lib/use-saved-ideas'
 import { useSavedVideos } from '@/lib/use-saved'
 import { watchUrl, type PlayerErrorKind } from '@/lib/youtube'
 import { getActivity } from '../../../catalog'
@@ -29,12 +30,15 @@ type Filter = 'all' | (typeof CATEGORY_ORDER)[number]
 
 const REFRESH_KEY = 'petirien.savedRefreshTried'
 
+type Removing = { kind: 'video'; videoId: string } | { kind: 'idea'; activityId: string } | null
+
 export default function SavedPage() {
   const saved = useSavedVideos()
+  const ideas = useSavedIdeas()
   const [filter, setFilter] = useState<Filter>('all')
-  const [removing, setRemoving] = useState<string | null>(null)
+  const [removing, setRemoving] = useState<Removing>(null)
 
-  // Try to refresh stale details once per browser session. Best effort: a failure changes nothing.
+  // Try to refresh stale video details once per browser session. Best effort: a failure changes nothing.
   useEffect(() => {
     if (saved.status !== 'ready') return
     if (!saved.records.some((r) => needsRefresh(r.data))) return
@@ -47,37 +51,45 @@ export default function SavedPage() {
     void callAction('refreshSaved')
   }, [saved.status, saved.records])
 
-  const visible = saved.records.filter((r) => filter === 'all' || categoryOf(r.data.activityId) === filter)
-  const presentCategories = CATEGORY_ORDER.filter((c) => saved.records.some((r) => categoryOf(r.data.activityId) === c))
+  const status = saved.status === 'error' || ideas.status === 'error' ? 'error' : saved.status === 'ready' && ideas.status === 'ready' ? 'ready' : 'loading'
+
+  // One list, newest first: videos and plain ideas together.
+  const items = [
+    ...saved.records.map((r) => ({ kind: 'video' as const, createdAt: r.createdAt, category: categoryOf(r.data.activityId), rec: r })),
+    ...ideas.records.map((r) => ({ kind: 'idea' as const, createdAt: r.createdAt, category: categoryOf(r.data.activityId), rec: r })),
+  ].sort((x, y) => (x.createdAt < y.createdAt ? 1 : -1))
+
+  const visible = items.filter((i) => filter === 'all' || i.category === filter)
+  const presentCategories = CATEGORY_ORDER.filter((c) => items.some((i) => i.category === c))
   const anyWithheld = saved.records.some((r) => displayMeta(r.data).withheld)
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-8">
-      <h1 className="text-2xl font-bold tracking-tight text-foreground">Saved videos</h1>
+      <h1 className="text-2xl font-bold tracking-tight text-foreground">Saved</h1>
       <p className="mt-2 text-base text-muted-foreground">
-        Things you liked, ready whenever you are. No check-in needed.
+        Videos and ideas you liked, ready whenever you are. No check-in needed.
       </p>
 
       <div className="mt-8">
-        {saved.status === 'loading' && (
+        {status === 'loading' && (
           <p role="status" className="py-12 text-center text-muted-foreground">
-            Loading your saved videos…
+            Loading what you saved…
           </p>
         )}
 
-        {saved.status === 'error' && (
+        {status === 'error' && (
           <div role="alert" className="rounded-2xl border border-border bg-card p-5">
-            <p className="font-medium text-foreground">We couldn&apos;t load your saved videos.</p>
+            <p className="font-medium text-foreground">We couldn&apos;t load what you saved.</p>
             <p className="mt-1 text-sm text-muted-foreground">Check your connection and reload the page.</p>
           </div>
         )}
 
-        {saved.status === 'ready' && saved.records.length === 0 && (
+        {status === 'ready' && items.length === 0 && (
           <div data-testid="saved-empty" className="flex flex-col items-center py-12 text-center">
             <Bunny className="w-48 sm:w-60" />
             <p className="mt-4 text-lg font-semibold text-foreground">Nothing saved yet</p>
             <p className="mt-1 max-w-xs text-muted-foreground">
-              When an idea looks good, tap Save and it will wait for you here.
+              When an idea or a video looks good, tap Save and it will wait for you here.
             </p>
             <Link
               to="/checkin"
@@ -88,7 +100,7 @@ export default function SavedPage() {
           </div>
         )}
 
-        {saved.status === 'ready' && saved.records.length > 0 && (
+        {status === 'ready' && items.length > 0 && (
           <>
             {presentCategories.length > 1 && (
               <div className="mb-6">
@@ -111,16 +123,27 @@ export default function SavedPage() {
             )}
 
             <ul className="space-y-4" data-testid="saved-list">
-              {visible.map((r) => (
-                <SavedCard
-                  key={r.recordId}
-                  recordId={r.recordId}
-                  data={r.data}
-                  onRemove={() => setRemoving(r.recordId)}
-                  onNote={(note) => void saved.setNote(r.recordId, note)}
-                  onAvailability={(a) => void saved.setAvailability(r.recordId, a)}
-                />
-              ))}
+              {visible.map((i) =>
+                i.kind === 'video' ? (
+                  <SavedCard
+                    key={i.rec.recordId}
+                    recordId={i.rec.recordId}
+                    data={i.rec.data}
+                    onRemove={() => setRemoving({ kind: 'video', videoId: i.rec.data.videoId })}
+                    onNote={(note) => void saved.setNote(i.rec.recordId, note)}
+                    onAvailability={(a) => void saved.setAvailability(i.rec.recordId, a)}
+                  />
+                ) : (
+                  <SavedIdeaCard
+                    key={i.rec.recordId}
+                    recordId={i.rec.recordId}
+                    activityId={i.rec.data.activityId}
+                    note={i.rec.data.userNote ?? ''}
+                    onRemove={() => setRemoving({ kind: 'idea', activityId: i.rec.data.activityId })}
+                    onNote={(note) => void ideas.setNote(i.rec.recordId, note)}
+                  />
+                ),
+              )}
             </ul>
             {visible.length === 0 && <p className="text-muted-foreground">Nothing saved in this group yet.</p>}
           </>
@@ -131,16 +154,67 @@ export default function SavedPage() {
         open={removing !== null}
         onClose={() => setRemoving(null)}
         onConfirm={() => {
-          const id = removing
+          const r = removing
           setRemoving(null)
-          const rec = saved.records.find((r) => r.recordId === id)
-          if (rec) void saved.unsave(rec.data.videoId)
+          if (r?.kind === 'video') void saved.unsave(r.videoId)
+          if (r?.kind === 'idea') void ideas.unsave(r.activityId)
         }}
-        title="Remove this saved video?"
-        description="It will be removed from your saved videos, along with your note."
+        title="Remove this from saved?"
+        description="It will be removed from what you saved, along with your note."
         confirmText="Remove"
       />
     </div>
+  )
+}
+
+/** A saved idea: the activity and its steps, no video. */
+function SavedIdeaCard({
+  recordId,
+  activityId,
+  note: initialNote,
+  onRemove,
+  onNote,
+}: {
+  recordId: string
+  activityId: string
+  note: string
+  onRemove: () => void
+  onNote: (note: string) => void
+}) {
+  const activity = getActivity(activityId)
+  const [note, setNote] = useState(initialNote)
+  if (!activity) return null
+  return (
+    <li data-testid="saved-idea" className="overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-card)]">
+      <div className="p-4">
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Idea</p>
+        <h2 className="mt-1 text-base font-semibold leading-snug text-foreground">{activity.title}</h2>
+        <p className="mt-2 text-sm leading-relaxed text-foreground">{activity.blurb}</p>
+      </div>
+      <div className="px-4 pb-2">
+        <Instructions activityId={activity.id} />
+      </div>
+      <div className="px-4 pb-4">
+        <label htmlFor={`note-${recordId}`} className="text-sm font-medium text-foreground">
+          Your note
+        </label>
+        <Textarea
+          id={`note-${recordId}`}
+          value={note}
+          rows={2}
+          maxLength={500}
+          onChange={(e) => setNote(e.target.value)}
+          onBlur={() => note !== initialNote && onNote(note)}
+          placeholder="Why you saved it, or how to make it easier"
+          className="mt-1 border-input bg-card"
+        />
+      </div>
+      <div className="flex flex-wrap gap-2 border-t border-border bg-background/60 px-4 py-3">
+        <Button variant="ghost" onClick={onRemove} aria-label={`Remove from saved: ${activity.title}`}>
+          Remove
+        </Button>
+      </div>
+    </li>
   )
 }
 

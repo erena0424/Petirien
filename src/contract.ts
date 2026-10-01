@@ -18,6 +18,11 @@ export interface CheckinInput {
   excludeActivityIds?: string[]
   /** Existing check-in to extend when re-running after "none fit". */
   checkinId?: string
+  /**
+   * `auto` (default): videos only for activities where a video helps.
+   * `none`: no screen at all; ideas only, no video search.
+   */
+  screen?: 'auto' | 'none'
 }
 
 /** A real video, only ever built from retrieval results. */
@@ -37,7 +42,8 @@ export interface Pick {
   suggestionId: string
   activityId: string
   activityTitle: string
-  video: VideoRef
+  /** `null` for screen-free ideas, which have no video. */
+  video: VideoRef | null
   /** One or two sentences, written from supplied metadata only. */
   reason: string
   rank: number

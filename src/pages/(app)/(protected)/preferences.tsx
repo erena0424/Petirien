@@ -106,6 +106,17 @@ export default function PreferencesPage() {
             options={[{ value: 0, label: 'No usual' }, ...MINUTE_CHOICES.map((m) => ({ value: m, label: `${m} min` }))]}
           />
 
+          <ChoiceGroup<'auto' | 'none'>
+            legend="How do you usually want ideas?"
+            hint="Videos only show up where they help, like guided meditation or stretching."
+            value={draft.screenFree ? 'none' : 'auto'}
+            onChange={(v) => change({ screenFree: v === 'none' })}
+            options={[
+              { value: 'auto', label: 'Videos where they help' },
+              { value: 'none', label: 'No screen, just ideas' },
+            ]}
+          />
+
           <div className="flex flex-wrap items-center gap-3">
             <Button type="submit" size="lg" disabled={!ready} loading={saved === 'saving'}>
               Save preferences
@@ -140,17 +151,19 @@ function DeleteEverything() {
   const checkins = useQuery<Record<string, unknown>>('checkins')
   const suggestions = useQuery<Record<string, unknown>>('suggestions')
   const saved = useQuery<Record<string, unknown>>('savedVideos')
+  const ideas = useQuery<Record<string, unknown>>('savedIdeas')
   const prefs = useQuery<Record<string, unknown>>('preferences')
   const mCheckins = useMutations<Record<string, unknown>>('checkins')
   const mSuggestions = useMutations<Record<string, unknown>>('suggestions')
   const mSaved = useMutations<Record<string, unknown>>('savedVideos')
+  const mIdeas = useMutations<Record<string, unknown>>('savedIdeas')
   const mPrefs = useMutations<Record<string, unknown>>('preferences')
 
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState<'idle' | 'done' | 'failed'>('idle')
 
-  const counts: Counts = { checkins: checkins.records.length, suggestions: suggestions.records.length, saved: saved.records.length }
+  const counts: Counts = { checkins: checkins.records.length, suggestions: suggestions.records.length, saved: saved.records.length + ideas.records.length }
   const total = counts.checkins + counts.suggestions + counts.saved + prefs.records.length
 
   async function run() {
@@ -160,6 +173,7 @@ function DeleteEverything() {
       for (const r of suggestions.records) await mSuggestions.removeConfirmed(r.recordId)
       for (const r of checkins.records) await mCheckins.removeConfirmed(r.recordId)
       for (const r of saved.records) await mSaved.removeConfirmed(r.recordId)
+      for (const r of ideas.records) await mIdeas.removeConfirmed(r.recordId)
       for (const r of prefs.records) await mPrefs.removeConfirmed(r.recordId)
       setResult('done')
     } catch {
@@ -175,7 +189,7 @@ function DeleteEverything() {
         Delete my data
       </h2>
       <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-        This removes all your check-ins and notes, the ideas I suggested, your saved videos, and these preferences.
+        This removes all your check-ins and notes, the ideas I suggested, your saved videos and ideas, and these preferences.
         It can&apos;t be undone. Your sign-in account itself is not deleted.
       </p>
       <Button
@@ -207,7 +221,7 @@ function DeleteEverything() {
         onClose={() => setOpen(false)}
         onConfirm={() => void run()}
         title="Delete everything?"
-        description={`This will permanently delete ${counts.checkins} check-in${counts.checkins === 1 ? '' : 's'}, ${counts.saved} saved video${counts.saved === 1 ? '' : 's'}, and your preferences.`}
+        description={`This will permanently delete ${counts.checkins} check-in${counts.checkins === 1 ? '' : 's'}, ${counts.saved} saved item${counts.saved === 1 ? '' : 's'}, and your preferences.`}
         confirmText="Delete everything"
       />
     </section>

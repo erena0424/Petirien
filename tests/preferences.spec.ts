@@ -34,6 +34,7 @@ test('preferences save, persist, shape the check-in, and stay private', async ({
   await bob.page.getByText('Someone talking me through it', { exact: true }).click()
   await bob.page.getByText('Quiet, with no talking', { exact: true }).click()
   await bob.page.getByText('15 min', { exact: true }).click()
+  await bob.page.getByText('No screen, just ideas', { exact: true }).click()
   await bob.page.getByRole('button', { name: 'Save preferences' }).click()
   await expect(bob.page.getByTestId('prefs-saved')).toBeVisible()
 
@@ -42,10 +43,12 @@ test('preferences save, persist, shape the check-in, and stay private', async ({
   await expect(bob.page.getByLabel('Someone talking me through it')).toBeChecked({ timeout: 15_000 })
   await expect(bob.page.getByLabel('Quiet, with no talking')).toBeChecked()
   await expect(bob.page.getByLabel('15 min')).toBeChecked()
+  await expect(bob.page.getByLabel('No screen, just ideas')).toBeChecked()
 
-  // The check-in starts from the usual time.
+  // The check-in starts from the usual time and the no-screen choice.
   await bob.page.goto('/checkin')
   await expect(bob.page.getByLabel('15 min')).toBeChecked({ timeout: 15_000 })
+  await expect(bob.page.getByLabel('No screen, just ideas')).toBeChecked()
 
   // Private: Alice has her own, untouched preferences.
   await alice.page.goto('/preferences')
@@ -53,6 +56,7 @@ test('preferences save, persist, shape the check-in, and stay private', async ({
   await alice.page.waitForTimeout(1200)
   await expect(alice.page.getByLabel('Someone talking me through it')).not.toBeChecked()
   await expect(alice.page.getByLabel('15 min')).not.toBeChecked()
+  await expect(alice.page.getByLabel('Videos where they help')).toBeChecked()
 
   await deleteEverything(bob.page)
 })

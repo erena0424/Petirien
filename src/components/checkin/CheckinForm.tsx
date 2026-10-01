@@ -10,9 +10,10 @@ export interface FormValues {
   minutes: number | null
   goal: NonNullable<CheckinInput['goal']> | ''
   note: string
+  screen: 'auto' | 'none'
 }
 
-export const EMPTY_FORM: FormValues = { mood: null, energy: null, minutes: 10, goal: '', note: '' }
+export const EMPTY_FORM: FormValues = { mood: null, energy: null, minutes: 10, goal: '', note: '', screen: 'auto' }
 
 const MINUTES = [5, 10, 15, 20, 30].map((m) => ({ value: m, label: `${m} min` }))
 const GOALS = [
@@ -33,6 +34,7 @@ export function toInput(v: FormValues): CheckinInput | null {
     minutes: v.minutes,
     ...(v.goal ? { goal: v.goal } : {}),
     ...(note ? { note } : {}),
+    ...(v.screen === 'none' ? { screen: 'none' as const } : {}),
   }
 }
 
@@ -64,6 +66,17 @@ export function CheckinForm({ values, onChange, onSubmit, submitting }: Props) {
         value={values.goal}
         onChange={(v) => set('goal', v)}
         options={[...GOALS]}
+      />
+
+      <ChoiceGroup<'auto' | 'none'>
+        legend="Screen or no screen?"
+        hint="Videos only show up where they help, like guided meditation or stretching."
+        value={values.screen}
+        onChange={(v) => set('screen', v)}
+        options={[
+          { value: 'auto', label: 'Videos where they help' },
+          { value: 'none', label: 'No screen, just ideas' },
+        ]}
       />
 
       <div>

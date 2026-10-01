@@ -35,9 +35,11 @@ export interface Preferences {
   likedTags: string[]
   avoid: string[]
   defaultMinutes: number | null
+  /** Prefers ideas with no video and no screen. */
+  screenFree: boolean
 }
 
-export const DEFAULT_PREFERENCES: Preferences = { likedTags: [], avoid: [], defaultMinutes: null }
+export const DEFAULT_PREFERENCES: Preferences = { likedTags: [], avoid: [], defaultMinutes: null, screenFree: false }
 
 const KNOWN_TAGS = new Set(CATALOG.flatMap((a) => a.tags))
 
@@ -55,6 +57,7 @@ export function normalizePreferences(input: Partial<Preferences> | null | undefi
     likedTags,
     avoid,
     defaultMinutes: typeof m === 'number' && MINUTE_CHOICES.includes(m) ? m : null,
+    screenFree: input?.screenFree === true,
   }
 }
 

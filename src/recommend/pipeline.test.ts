@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { getActivity } from '../catalog'
 import type { CheckinInput } from '../contract'
 import { DAILY_CAP, parseCheckinInput, recommend, type Deps, type SuggestionRow } from './pipeline'
 
@@ -63,13 +64,13 @@ function makeDeps(over: Partial<Deps> = {}, opts: { usageToday?: number } = {}) 
   return { deps, calls }
 }
 
-const input: CheckinInput = { mood: 2, energy: 2, minutes: 10, goal: 'calm' }
+const input: CheckinInput = { mood: 3, energy: 4, minutes: 15, goal: 'move' }
 
 const interpretJson = (over: Record<string, unknown> = {}) =>
   JSON.stringify({
-    goal: 'calm',
-    activityIds: ['box-breathing', 'body-scan', 'silent-sit'],
-    reply: 'That sounds like a heavy day. Here are a few quiet things that fit.',
+    goal: 'move',
+    activityIds: ['desk-stretch', 'chair-yoga', 'neck-shoulders'],
+    reply: 'Here are a few easy ways to get moving.',
     intent: 'wants to settle',
     needsSupportResources: false,
     ...over,
@@ -131,22 +132,22 @@ describe('recommend: happy path', () => {
     const res = await recommend(deps, input)
     expect(res.status).toBe('ok')
     if (res.status !== 'ok') return
-    for (const p of res.picks) expect(p.video.videoId).toMatch(/^vid0000000[123]$/)
+    for (const p of res.picks) expect(p.video!.videoId).toMatch(/^vid0000000[123]$/)
     expect(res.degraded).toContain('rank')
   })
 
   it('drops activity ids the filter removed or the model invented', async () => {
     const { deps } = makeDeps({
-      llm: llmScript(interpretJson({ activityIds: ['made-up', 'easy-watercolor', 'box-breathing'] }), () => null),
+      llm: llmScript(interpretJson({ activityIds: ['made-up', 'gentle-yoga', 'desk-stretch'] }), () => null),
     })
-    // energy 2 means effort 1 only: easy-watercolor (effort 2) is filtered out.
-    const res = await recommend(deps, input)
+    // 5 minutes: gentle-yoga needs at least 8, so the filter removes it.
+    const res = await recommend(deps, { ...input, minutes: 5 })
     expect(res.status).toBe('ok')
     if (res.status !== 'ok') return
     const ids = res.picks.map((p) => p.activityId)
     expect(ids).not.toContain('made-up')
-    expect(ids).not.toContain('easy-watercolor')
-    expect(ids).toContain('box-breathing')
+    expect(ids).not.toContain('gentle-yoga')
+    expect(ids).toContain('desk-stretch')
   })
 
   it('falls back to deterministic choices when both model calls fail', async () => {
@@ -201,7 +202,7 @@ describe('recommend: retrieval', () => {
     const res = await recommend(deps, input) // 10 minutes
     expect(res.status).toBe('ok')
     if (res.status !== 'ok') return
-    for (const p of res.picks) expect(p.video.durationSec).toBeLessThanOrEqual(12 * 60)
+    for (const p of res.picks) expect(p.video!.durationSec).toBeLessThanOrEqual(12 * 60)
   })
 
   it('asks for details only when search results lack a length, and merges them', async () => {
@@ -214,16 +215,19 @@ describe('recommend: retrieval', () => {
     expect(details).toHaveBeenCalled()
     expect(res.status).toBe('ok')
     if (res.status !== 'ok') return
-    expect(res.picks[0]!.video.durationSec).toBe(300)
+    expect(res.picks[0]!.video!.durationSec).toBe(300)
   })
 
-  it('drops videos whose length cannot be verified', async () => {
+  it('offers plain ideas instead of videos whose length cannot be verified', async () => {
     const { deps } = makeDeps({
       searchVideos: async () => [{ id: vid(1).id, title: 'No length' }],
       videoDetails: async () => null,
     })
     const res = await recommend(deps, input)
-    expect(res.status).toBe('no_video')
+    expect(res.status).toBe('ok')
+    if (res.status !== 'ok') return
+    expect(res.picks.length).toBeGreaterThan(0)
+    for (const p of res.picks) expect(p.video).toBeNull()
   })
 
   it('uses the cache and skips YouTube on a hit', async () => {
@@ -236,17 +240,22 @@ describe('recommend: retrieval', () => {
     expect(search).not.toHaveBeenCalled()
     expect(res.status).toBe('ok')
     if (res.status !== 'ok') return
-    expect(res.picks[0]!.video.videoId).toBe('cachedvid01')
+    expect(res.picks[0]!.video!.videoId).toBe('cachedvid01')
   })
 
-  it('returns no_video with the activities when YouTube fails, and does not retry', async () => {
+  it('falls back to plain ideas with steps when YouTube fails, and does not retry', async () => {
     const search = vi.fn(async () => null)
     const { deps } = makeDeps({ searchVideos: search })
     const res = await recommend(deps, input)
-    expect(res.status).toBe('no_video')
-    if (res.status !== 'no_video') return
-    expect(res.activities.length).toBeGreaterThan(0)
-    expect(search.mock.calls.length).toBe(res.activities.length) // once per activity
+    expect(res.status).toBe('ok')
+    if (res.status !== 'ok') return
+    expect(res.degraded).toContain('video')
+    expect(res.picks.length).toBeGreaterThan(0)
+    for (const p of res.picks) {
+      expect(p.video).toBeNull()
+      expect(p.reason).toBe(getActivity(p.activityId)!.blurb)
+    }
+    expect(search.mock.calls.length).toBe(res.picks.length) // once per video activity, never retried
   })
 
   it('still returns picks when only some activities fail to retrieve', async () => {
@@ -272,7 +281,7 @@ describe('recommend: embeddability and YouTube outages', () => {
     const res = await recommend(deps, input)
     expect(res.status).toBe('ok')
     if (res.status !== 'ok') return
-    for (const p of res.picks) expect(p.video.videoId).toBe(vid(2).id)
+    for (const p of res.picks) expect(p.video!.videoId).toBe(vid(2).id)
   })
 
   it('asks for details when embeddability is unknown, and keeps a video that turns out fine', async () => {
@@ -290,7 +299,7 @@ describe('recommend: embeddability and YouTube outages', () => {
     const res = await recommend(deps, input)
     expect(res.status).toBe('ok')
     if (res.status !== 'ok') return
-    expect(res.picks[0]!.video.videoId).toBe('stalevideo1')
+    expect(res.picks[0]!.video!.videoId).toBe('stalevideo1')
     expect(cacheGet).toHaveBeenCalledWith(expect.any(String), { allowStale: true })
   })
 
@@ -299,6 +308,88 @@ describe('recommend: embeddability and YouTube outages', () => {
     const { deps } = makeDeps({ cacheGet })
     await recommend(deps, input)
     expect(cacheGet.mock.calls.every(([, opts]) => !opts?.allowStale)).toBe(true)
+  })
+})
+
+describe('recommend: videos only where they help', () => {
+  const mixed = interpretJson({ goal: null, activityIds: ['grounding-54321', 'desk-stretch', 'journaling-prompts'] })
+  const mixedInput: CheckinInput = { mood: 3, energy: 4, minutes: 15 }
+
+  it('gives plain ideas for activities where a video does not help, and a video for those where it does', async () => {
+    const searched: string[] = []
+    const { deps } = makeDeps({
+      llm: llmScript(mixed, () => null),
+      searchVideos: async (q) => {
+        searched.push(q)
+        return [vid(1), vid(2)]
+      },
+    })
+    const res = await recommend(deps, mixedInput)
+    expect(res.status).toBe('ok')
+    if (res.status !== 'ok') return
+    expect(res.picks.map((p) => p.activityId)).toEqual(['grounding-54321', 'desk-stretch', 'journaling-prompts'])
+    expect(res.picks.map((p) => p.video === null)).toEqual([true, false, true])
+    expect(res.picks[0]!.reason).toBe(getActivity('grounding-54321')!.blurb)
+    // Only the activity where a video helps is searched.
+    expect(searched).toEqual([getActivity('desk-stretch')!.searchQuery])
+  })
+
+  it('only offers the video activities to the ranking call', async () => {
+    let rankPrompt = ''
+    const { deps } = makeDeps({
+      llm: llmScript(mixed, (user) => {
+        rankPrompt = user
+        return null
+      }),
+    })
+    await recommend(deps, mixedInput)
+    const sent = (JSON.parse(rankPrompt).activities as { activityId: string }[]).map((a) => a.activityId)
+    expect(sent).toEqual(['desk-stretch'])
+  })
+
+  it('stores plain ideas as suggestions without a video id', async () => {
+    const { deps, calls } = makeDeps({ llm: llmScript(mixed, () => null) })
+    await recommend(deps, mixedInput)
+    const idea = calls.suggestions.find((r) => r.activityId === 'grounding-54321')!
+    expect(idea.videoId).toBe('')
+    expect(idea.title).toBe(getActivity('grounding-54321')!.title)
+  })
+
+  it('screen-free mode: no video search, no ranking call, plain ideas only', async () => {
+    const search = vi.fn(async () => [vid(1)])
+    const { deps, calls } = makeDeps({ llm: llmScript(interpretJson(), () => null), searchVideos: search })
+    const res = await recommend(deps, { ...input, screen: 'none' })
+    expect(res.status).toBe('ok')
+    if (res.status !== 'ok') return
+    expect(search).not.toHaveBeenCalled()
+    expect(calls.llm).toBe(1) // interpret only
+    expect(res.picks.length).toBeGreaterThan(0)
+    for (const p of res.picks) {
+      expect(p.video).toBeNull()
+      expect(p.suggestionId).toMatch(/^sug_/)
+    }
+  })
+
+  it('screen-free mode still honors time, exclusions, and the cap', async () => {
+    const a = makeDeps()
+    expect((await recommend(a.deps, { ...input, minutes: 1, screen: 'none' })).status).toBe('nothing_fits')
+    const b = makeDeps({}, { usageToday: DAILY_CAP })
+    expect((await recommend(b.deps, { ...input, screen: 'none' })).status).toBe('capped')
+  })
+
+  it('exempts the app owner from the daily cap but not other people', async () => {
+    const owner = makeDeps({
+      loadContext: async () => ({ prefs: { dislikedTags: [], avoid: [], likedTags: [] }, liked: [], disliked: [], usageToday: DAILY_CAP + 50, exempt: true }),
+    })
+    expect((await recommend(owner.deps, input)).status).toBe('ok')
+    const other = makeDeps({}, { usageToday: DAILY_CAP })
+    expect((await recommend(other.deps, input)).status).toBe('capped')
+  })
+
+  it('rejects an unknown screen value', () => {
+    expect(parseCheckinInput({ ...input, screen: 'none' }).ok).toBe(true)
+    expect(parseCheckinInput({ ...input, screen: 'auto' }).ok).toBe(true)
+    expect(parseCheckinInput({ ...input, screen: 'video' }).ok).toBe(false)
   })
 })
 
@@ -316,18 +407,18 @@ describe('recommend: constraints', () => {
 
   it('honors exclusions on a re-run', async () => {
     const { deps } = makeDeps()
-    const res = await recommend(deps, { ...input, excludeActivityIds: ['box-breathing', 'body-scan'] })
+    const res = await recommend(deps, { ...input, excludeActivityIds: ['desk-stretch', 'chair-yoga'] })
     expect(res.status).toBe('ok')
     if (res.status !== 'ok') return
     const ids = res.picks.map((p) => p.activityId)
-    expect(ids).not.toContain('box-breathing')
-    expect(ids).not.toContain('body-scan')
+    expect(ids).not.toContain('desk-stretch')
+    expect(ids).not.toContain('chair-yoga')
   })
 
   it('honors saved dislikes and avoid tags', async () => {
     const { deps } = makeDeps({
       loadContext: async () => ({
-        prefs: { dislikedTags: [], avoid: ['guided'], likedTags: [] },
+        prefs: { dislikedTags: [], avoid: ['follow-along'], likedTags: [] },
         liked: [],
         disliked: [],
         usageToday: 0,
@@ -336,7 +427,7 @@ describe('recommend: constraints', () => {
     const res = await recommend(deps, { ...input, goal: undefined })
     expect(res.status).toBe('ok')
     if (res.status !== 'ok') return
-    for (const p of res.picks) expect(['box-breathing', 'body-scan', 'grounding-54321']).not.toContain(p.activityId)
+    for (const p of res.picks) expect(getActivity(p.activityId)!.tags).not.toContain('follow-along')
   })
 
   it('stops at the daily cap without calling anything paid', async () => {

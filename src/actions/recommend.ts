@@ -33,7 +33,11 @@ async function queryOne(tools: ActionTools, collection: string, where: Row) {
   return r.success ? (r.data.records[0] ?? null) : null
 }
 
-export function createDeps(userId: string, tools: ActionTools, env?: { YOUTUBE_API_KEY?: string }): Deps {
+export function createDeps(
+  userId: string,
+  tools: ActionTools,
+  env?: { YOUTUBE_API_KEY?: string; OWNER_USER_ID?: string },
+): Deps {
   const key = env?.YOUTUBE_API_KEY || undefined
   return {
     now: () => new Date(),
@@ -101,6 +105,7 @@ export function createDeps(userId: string, tools: ActionTools, env?: { YOUTUBE_A
         liked: [...new Set(withHelpful('yes'))],
         disliked: [...new Set(withHelpful('no'))],
         usageToday: typeof count === 'number' ? count : 0,
+        exempt: !!env?.OWNER_USER_ID && userId === env.OWNER_USER_ID,
       }
     },
 

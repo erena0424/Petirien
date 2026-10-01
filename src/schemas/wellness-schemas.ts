@@ -119,6 +119,15 @@ export const savedVideosSchema: CollectionSchema = {
   permissions: ownerOnly,
 }
 
+/** Activities saved without a video (steps only). One per person per activity. */
+export const savedIdeasSchema: CollectionSchema = {
+  name: 'savedIdeas',
+  ownerField: 'userId',
+  uniqueOn: ['userId', 'activityId'],
+  columns: [userId, text('activityId', true), text('userNote')],
+  permissions: ownerOnly,
+}
+
 export const preferencesSchema: CollectionSchema = {
   name: 'preferences',
   ownerField: 'userId',
@@ -129,6 +138,8 @@ export const preferencesSchema: CollectionSchema = {
     json('dislikedTags'),
     json('avoid'),
     num('defaultMinutes'),
+    /** 1 = prefers screen-free ideas. */
+    num('screenFree'),
   ],
   permissions: ownerOnly,
 }

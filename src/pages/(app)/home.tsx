@@ -40,7 +40,7 @@ export default function HomePage() {
           Check in
         </Link>
         <Link to="/saved" className={secondary}>
-          Saved videos
+          Saved
         </Link>
         <Link to="/history" className={secondary}>
           Past check-ins

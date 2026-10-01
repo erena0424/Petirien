@@ -9,6 +9,7 @@ import { Button } from '@/components/ui'
 import { formatResetTime } from '@/lib/format'
 import { requestRecommendations } from '@/lib/recommend-client'
 import { usePreferences } from '@/lib/use-preferences'
+import { useSavedIdeas } from '@/lib/use-saved-ideas'
 import { useSavedVideos } from '@/lib/use-saved'
 import { CheckinForm, EMPTY_FORM, type FormValues } from '@/components/checkin/CheckinForm'
 import { NoneFitPanel, type ReasonChip } from '@/components/checkin/NoneFitPanel'
@@ -18,7 +19,9 @@ import { WatchPanel, type Helpful } from '@/components/checkin/WatchPanel'
 import { Bunny } from '@/components/Bunny'
 import { CompanionSays } from '@/components/CompanionSays'
 import { SupportCard } from '@/components/SupportCard'
-import type { CheckinInput, Pick, RecommendResponse } from '../../../contract'
+import type { CheckinInput, Pick, RecommendResponse, VideoRef } from '../../../contract'
+
+type VideoPick = Pick & { video: VideoRef }
 
 type Stage =
   | { kind: 'form' }
@@ -31,11 +34,12 @@ const MAX_RETRIES = 2
 export default function CheckinPage() {
   const { put, ready } = useMutations<Record<string, unknown>>('suggestions')
   const saved = useSavedVideos()
+  const savedIdeas = useSavedIdeas()
   const preferences = usePreferences()
 
   const [values, setValues] = useState<FormValues>(EMPTY_FORM)
   const [stage, setStage] = useState<Stage>({ kind: 'form' })
-  const [watching, setWatching] = useState<Pick | null>(null)
+  const [watching, setWatching] = useState<VideoPick | null>(null)
   const [hidden, setHidden] = useState<string[]>([]) // suggestion ids the person said no to
   const [excluded, setExcluded] = useState<string[]>([]) // activity ids to avoid next time
   const [retries, setRetries] = useState(0)
@@ -49,8 +53,13 @@ export default function CheckinPage() {
     if (appliedUsual.current || preferences.status !== 'ready') return
     appliedUsual.current = true
     const usual = preferences.prefs.defaultMinutes
-    if (usual) setValues((v) => (v.minutes === EMPTY_FORM.minutes ? { ...v, minutes: usual } : v))
-  }, [preferences.status, preferences.prefs.defaultMinutes])
+    const noScreen = preferences.prefs.screenFree
+    setValues((v) => ({
+      ...v,
+      minutes: usual && v.minutes === EMPTY_FORM.minutes ? usual : v.minutes,
+      screen: noScreen ? 'none' : v.screen,
+    }))
+  }, [preferences.status, preferences.prefs.defaultMinutes, preferences.prefs.screenFree])
 
   // Move focus to the new content so screen reader users hear what changed.
   useEffect(() => {
@@ -105,6 +114,15 @@ export default function CheckinPage() {
   }
 
   function toggleSave(p: Pick) {
+    if (!p.video) {
+      // A plain idea (no video): save the activity itself.
+      if (savedIdeas.isSaved(p.activityId)) void savedIdeas.unsave(p.activityId)
+      else {
+        void savedIdeas.save(p.activityId)
+        write(p.suggestionId, { status: 'saved' })
+      }
+      return
+    }
     if (saved.isSaved(p.video.videoId)) {
       void saved.unsave(p.video.videoId)
     } else {
@@ -114,8 +132,13 @@ export default function CheckinPage() {
   }
 
   function watch(p: Pick) {
+    if (!p.video) return
     write(p.suggestionId, { status: 'opened' })
-    setWatching(p)
+    setWatching(p as VideoPick)
+  }
+
+  function ideaFeedback(p: Pick, helpful: Helpful) {
+    write(p.suggestionId, { helpful, status: 'opened' })
   }
 
   function feedback(helpful: Helpful) {
@@ -167,10 +190,11 @@ export default function CheckinPage() {
           hidden={hidden}
           retries={retries}
           headingRef={heading}
-          isSaved={saved.isSaved}
+          isSaved={(p) => (p.video ? saved.isSaved(p.video.videoId) : savedIdeas.isSaved(p.activityId))}
           onWatch={watch}
           onReject={reject}
           onToggleSave={toggleSave}
+          onIdeaFeedback={ideaFeedback}
           onNoneFit={(r) => stage.res.status === 'ok' && noneFit(stage.res, r)}
           onRetrySame={() => lastInput.current && void run(lastInput.current, { exclude: excluded, checkinId })}
           onEdit={() => setStage({ kind: 'form' })}
@@ -186,10 +210,11 @@ interface ResultProps {
   hidden: string[]
   retries: number
   headingRef: React.RefObject<HTMLHeadingElement | null>
-  isSaved: (videoId: string) => boolean
+  isSaved: (p: Pick) => boolean
   onWatch: (p: Pick) => void
   onReject: (p: Pick) => void
   onToggleSave: (p: Pick) => void
+  onIdeaFeedback: (p: Pick, helpful: Helpful) => void
   onNoneFit: (r: ReasonChip) => void
   onRetrySame: () => void
   onEdit: () => void
@@ -309,10 +334,11 @@ function Result(p: ResultProps) {
             <PickCard
               key={pick.suggestionId}
               pick={pick}
-              saved={p.isSaved(pick.video.videoId)}
+              saved={p.isSaved(pick)}
               onWatch={() => p.onWatch(pick)}
               onReject={() => p.onReject(pick)}
               onToggleSave={() => p.onToggleSave(pick)}
+              onFeedback={(h) => p.onIdeaFeedback(pick, h)}
             />
           ))}
         </ul>

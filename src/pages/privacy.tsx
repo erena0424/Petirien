@@ -54,7 +54,7 @@ export default function Privacy() {
           <ul className="list-disc space-y-1.5 pl-5">
             <li>Your check-ins: how you feel, your energy, your time, what would help, and the optional note you write.</li>
             <li>The ideas it suggested, and whether you said they were useful.</li>
-            <li>Videos you save, with any note you add to them.</li>
+            <li>Videos and ideas you save, with any note you add to them.</li>
             <li>Your preferences: what to avoid, what you like, and your usual time.</li>
             <li>A simple count of how many times you asked for ideas today, to keep usage fair.</li>
           </ul>
@@ -106,11 +106,11 @@ export default function Privacy() {
               One check-in: open <strong>History</strong> and press Delete.
             </li>
             <li>
-              One saved video: open <strong>Saved</strong> and press Remove.
+              One saved video or idea: open <strong>Saved</strong> and press Remove.
             </li>
             <li>
               Everything: open <strong>Preferences</strong> and press <strong>Delete everything</strong>. This removes your
-              check-ins and notes, suggestions, saved videos, and preferences.
+              check-ins and notes, suggestions, saved videos and ideas, and preferences.
             </li>
           </ul>
           <p>

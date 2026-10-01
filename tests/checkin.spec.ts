@@ -259,6 +259,39 @@ test('each idea expands into hand-written instructions, also while watching and 
   await expect(a.page.getByText('Write what they did and how it helped')).toBeVisible()
 })
 
+test('"No screen" asks for ideas only; plain ideas have steps, feedback, and no Watch button', async ({ users }) => {
+  const [a] = await users(1)
+  const idea = (n: number, id: string, title: string) => ({
+    suggestionId: `sug_${n}`, activityId: id, activityTitle: title, video: null,
+    reason: 'A short written exercise.', rank: n,
+  })
+  const bodies = await mockRecommend(a.page, () => ({
+    status: 'ok', checkinId: 'c', reply: 'Two things, no screen needed.', degraded: [],
+    picks: [idea(1, 'grounding-54321', '5-4-3-2-1 grounding'), idea(2, 'journaling-prompts', 'Journaling prompts')],
+  }))
+  await a.page.goto('/checkin')
+  await expect(a.page.getByLabel('Videos where they help')).toBeChecked() // default
+  await a.page.getByText('No screen, just ideas', { exact: true }).click()
+  await fillAndSubmit(a.page)
+
+  expect(bodies[0]).toMatchObject({ screen: 'none' })
+  await expect(a.page.getByTestId('idea-card')).toHaveCount(2)
+  await expect(a.page.getByRole('button', { name: /^Watch/ })).toHaveCount(0)
+  await expect(a.page.getByText('Name five things you can see')).toBeVisible() // steps open by default
+  await a.page.getByRole('button', { name: /Yes, useful: 5-4-3-2-1 grounding/ }).click()
+  await expect(a.page.getByTestId('idea-thanks')).toBeVisible()
+})
+
+test('the default asks for videos where they help and does not send a screen value', async ({ users }) => {
+  const [a] = await users(1)
+  const bodies = await mockRecommend(a.page, () => okResponse())
+  await a.page.goto('/checkin')
+  await fillAndSubmit(a.page)
+  await expect(a.page.getByTestId('ok-result')).toBeVisible()
+  expect(bodies[0]).not.toHaveProperty('screen')
+})
+
+
 test('phone width: no horizontal scroll on form, results, and support', async ({ users }) => {
   const [a] = await users(1)
   await a.page.setViewportSize({ width: 375, height: 700 })

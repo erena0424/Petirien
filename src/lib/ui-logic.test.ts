@@ -63,9 +63,13 @@ describe('toInput', () => {
     expect(toInput({ ...EMPTY_FORM, mood: 3 })).toBeNull()
     expect(toInput({ ...EMPTY_FORM, mood: 3, energy: 2 })).toEqual({ mood: 3, energy: 2, minutes: 10 })
   })
+  it('sends screen only when the person chose no screen', () => {
+    expect(toInput({ mood: 3, energy: 2, minutes: 5, goal: '', note: '', screen: 'none' })).toEqual({ mood: 3, energy: 2, minutes: 5, screen: 'none' })
+    expect(toInput({ mood: 3, energy: 2, minutes: 5, goal: '', note: '', screen: 'auto' })).not.toHaveProperty('screen')
+  })
   it('omits an empty goal and a blank note, and trims the note', () => {
-    expect(toInput({ mood: 3, energy: 2, minutes: 5, goal: '', note: '   ' })).toEqual({ mood: 3, energy: 2, minutes: 5 })
-    expect(toInput({ mood: 3, energy: 2, minutes: 5, goal: 'calm', note: ' hi ' })).toEqual({
+    expect(toInput({ mood: 3, energy: 2, minutes: 5, goal: '', note: '   ', screen: 'auto' })).toEqual({ mood: 3, energy: 2, minutes: 5 })
+    expect(toInput({ mood: 3, energy: 2, minutes: 5, goal: 'calm', note: ' hi ', screen: 'auto' })).toEqual({
       mood: 3,
       energy: 2,
       minutes: 5,
