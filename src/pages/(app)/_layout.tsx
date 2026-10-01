@@ -22,6 +22,7 @@ import { RecordProvider, RecordScope } from 'deepspace'
 import Navigation from '../../components/Navigation'
 import { useToast } from '@/components/ui'
 import { AppFooter } from '../../components/AppFooter'
+import { BunnyChatProvider } from '../../lib/bunny-chat'
 import { DISPLAY_NAME, SCOPE_ID } from '../../constants'
 import { schemas } from '../../schemas'
 
@@ -75,7 +76,7 @@ function AuthBoot({ children }: { children: ReactNode }) {
       }
     >
       <RecordScope roomId={SCOPE_ID} schemas={schemas}>
-        {children}
+        <BunnyChatProvider>{children}</BunnyChatProvider>
       </RecordScope>
     </RecordProvider>
   )

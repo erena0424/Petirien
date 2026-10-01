@@ -7,8 +7,10 @@
 import type { ActionHandler, ActionTools } from 'deepspace/worker'
 import type { Env } from '../../worker'
 import { extractText } from '../recommend/parse'
+import { z } from 'zod'
+import { writeAutoNote, type AutoNoteDeps } from '../reflect/auto-notes'
 import type { ChatMessage } from '../reflect/contract'
-import { parseMessages, reflectReply, reflectSummary, type ReflectDeps } from '../reflect/pipeline'
+import { parseMessages, reflectReply, type ReflectDeps } from '../reflect/pipeline'
 
 const LLM_MODEL = 'claude-haiku-4-5'
 
@@ -36,6 +38,19 @@ export function createReflectDeps(userId: string, tools: ActionTools, env?: { OW
         messages: [{ role: 'user', content: user }],
       })
       return r.success ? extractText(r.data) : null
+    },
+
+    async recentNotes() {
+      // Server actions run with RBAC off: scope to the caller explicitly.
+      const r = await tools.query<Row>('journalEntries', { where: { userId }, orderBy: 'createdAt', orderDir: 'desc', limit: 5 })
+      if (!r.success) return []
+      return r.data.records.map((rec) => {
+        const d = rec.data as Row
+        return {
+          title: typeof d.title === 'string' ? d.title : '',
+          notes: Array.isArray(d.notes) ? (d.notes as unknown[]).filter((x): x is string => typeof x === 'string') : [],
+        }
+      })
     },
 
     async usageToday() {
@@ -70,4 +85,63 @@ function handler(run: (deps: ReflectDeps, messages: ChatMessage[]) => Promise<un
 }
 
 export const reflectReplyAction = handler((deps, messages) => reflectReply(deps, messages))
-export const reflectSummaryAction = handler((deps, messages) => reflectSummary(deps, messages))
+
+// ── automatic notes ──────────────────────────────────────────────────────
+
+const idSchema = z.object({ conversationId: z.string().min(1).max(120), force: z.boolean().optional() })
+
+function createNoteDeps(userId: string, tools: ActionTools, env?: { OWNER_USER_ID?: string }): AutoNoteDeps {
+  const base = createReflectDeps(userId, tools, env)
+  return {
+    ...base,
+
+    async loadConversation(id) {
+      const r = await tools.get<Row>('conversations', id)
+      // Ownership: the row must belong to the caller. Never trust an id from the browser.
+      if (!r.success || (r.data.record.data as Row).userId !== userId) return null
+      const d = r.data.record.data as Row
+      return {
+        lastMessageAt: typeof d.lastMessageAt === 'number' ? d.lastMessageAt : 0,
+        notedUpTo: typeof d.notedUpTo === 'number' ? d.notedUpTo : 0,
+      }
+    },
+
+    async loadMessages(id) {
+      const r = await tools.query<Row>('messages', { where: { userId, conversationId: id }, orderBy: 'seq', orderDir: 'asc', limit: 500 })
+      if (!r.success) return []
+      return r.data.records
+        .map((rec) => rec.data as Row)
+        .filter((d) => (d.role === 'user' || d.role === 'bunny') && typeof d.text === 'string')
+        .map((d) => ({ role: d.role as 'user' | 'bunny', text: d.text as string }))
+    },
+
+    async writeNote(id, draft, notedUpTo) {
+      const made = await tools.create('journalEntries', {
+        userId,
+        title: draft.title,
+        notes: draft.notes,
+        feelings: draft.feelings,
+        bunnyNote: draft.bunnyNote,
+        conversationId: id,
+        auto: 1,
+      })
+      if (!made.success) throw new Error('note_not_saved')
+      await tools.update('conversations', id, { notedUpTo })
+    },
+
+    async skipTo(id, notedUpTo) {
+      await tools.update('conversations', id, { notedUpTo })
+    },
+  }
+}
+
+export const summarizeConversationAction: ActionHandler<Env> = async ({ userId, params, tools, env }) => {
+  const parsed = idSchema.safeParse(params)
+  if (!parsed.success) return { success: true, data: { status: 'error' } }
+  try {
+    return { success: true, data: await writeAutoNote(createNoteDeps(userId, tools, env), parsed.data.conversationId, { force: parsed.data.force }) }
+  } catch (err) {
+    console.error('[autoNote] failed', err instanceof Error ? err.name : 'unknown')
+    return { success: true, data: { status: 'error' } }
+  }
+}

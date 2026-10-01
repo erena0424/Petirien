@@ -105,3 +105,36 @@ describe('real-shaped YouTube items go through normalizeVideo', () => {
     expect(normalizeVideo({ ...videoItem, status: { embeddable: false } })).toMatchObject({ embeddable: false })
   })
 })
+
+// A real response from DeepSpace's YouTube integration (youtube/get-video-details), captured 2026-10-01
+// after DeepSpace fixed the platform key, trimmed to the fields we read. The integration answers with
+// Google's own item shape plus a `links` block. It does NOT include `status`, so embeddability is
+// unknown from this path (the player's error handling covers it).
+describe('the real DeepSpace YouTube integration response', () => {
+  const real = {
+    id: 'inpok4MKVLM',
+    snippet: {
+      title: '5-Minute Meditation You Can Do Anywhere | Goodful',
+      channelTitle: 'Goodful',
+      thumbnails: { medium: { url: 'https://i.ytimg.com/vi/inpok4MKVLM/mqdefault.jpg', width: 320, height: 180 } },
+    },
+    contentDetails: { duration: 'PT5M17S' },
+    links: {
+      watch: 'https://www.youtube.com/watch?v=inpok4MKVLM',
+      embed: 'https://www.youtube.com/embed/inpok4MKVLM',
+      thumbnail: 'https://i.ytimg.com/vi/inpok4MKVLM/mqdefault.jpg',
+    },
+  }
+  it('normalizes to our video, with length and links, and no embeddable claim', () => {
+    const v = normalizeVideo(real)!
+    expect(v).toMatchObject({
+      videoId: 'inpok4MKVLM',
+      title: '5-Minute Meditation You Can Do Anywhere | Goodful',
+      channel: 'Goodful',
+      durationSec: 317,
+      watchUrl: 'https://www.youtube.com/watch?v=inpok4MKVLM',
+      thumbnail: 'https://i.ytimg.com/vi/inpok4MKVLM/mqdefault.jpg',
+    })
+    expect(v).not.toHaveProperty('embeddable')
+  })
+})

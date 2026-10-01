@@ -11,7 +11,9 @@ export function AppFooter() {
   return (
     <footer className="shrink-0 border-t border-border bg-[var(--color-footer,var(--color-background))] px-4 py-1.5">
       <div className="mx-auto flex max-w-2xl items-center justify-between gap-3 text-xs text-muted-foreground">
-        <p>{DISPLAY_NAME} is everyday emotional support, not therapy or medical advice.</p>
+        <p>
+          {DISPLAY_NAME} is everyday emotional support, not therapy or medical advice. The bunny is an AI.
+        </p>
         <div className="flex shrink-0 items-center gap-3">
           <Link to="/privacy" data-testid="footer-privacy" className={linkClass}>
             Privacy

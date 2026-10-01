@@ -30,13 +30,15 @@ test('it says what is saved, where words go, and how to delete', async ({ page }
   const body = page.getByTestId('privacy-page')
   for (const phrase of [
     'your optional note',
-    'does not save what you say to the bunny',
+    'Your conversations with the bunny',
+    "Don't save this chat",
+    'does not keep a hidden profile',
     "Anthropic's Claude",
     'fixed search phrases',
     'Delete everything',
     'Only you',
     'not therapy or medical advice',
-    'Journal entries',
+    'Journal notes',
     'not a person and not a therapist',
     '988',
     '741741',

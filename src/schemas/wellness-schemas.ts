@@ -119,11 +119,55 @@ export const savedVideosSchema: CollectionSchema = {
   permissions: ownerOnly,
 }
 
-/** Journal entries the bunny wrote and the person chose to save. Never the chat itself. */
+/** Notes the bunny wrote about a conversation (by request or automatically). Visible and deletable. */
 export const journalEntriesSchema: CollectionSchema = {
   name: 'journalEntries',
   ownerField: 'userId',
-  columns: [userId, text('title', true), json('notes'), json('feelings'), text('bunnyNote')],
+  columns: [
+    userId,
+    text('title', true),
+    json('notes'),
+    json('feelings'),
+    text('bunnyNote'),
+    /** The conversation these notes came from, when there is one. */
+    text('conversationId'),
+    /** 1 when the bunny wrote it on its own, 0 when the person asked. */
+    num('auto'),
+  ],
+  permissions: ownerOnly,
+}
+
+/**
+ * A saved conversation with the bunny. A chat the person marked "Don't save"
+ * never creates a row here or in `messages`.
+ */
+export const conversationsSchema: CollectionSchema = {
+  name: 'conversations',
+  ownerField: 'userId',
+  columns: [
+    userId,
+    text('title'),
+    /** ms since epoch of the last message. */
+    num('lastMessageAt', true),
+    /** How many messages the automatic notes already cover. */
+    num('notedUpTo'),
+    /** How many messages are stored, so the browser can tell when notes are due. */
+    num('messageCount'),
+  ],
+  permissions: ownerOnly,
+}
+
+export const messagesSchema: CollectionSchema = {
+  name: 'messages',
+  ownerField: 'userId',
+  columns: [
+    userId,
+    text('conversationId', true),
+    select('role', ['user', 'bunny'], true),
+    text('text', true),
+    /** Position in the conversation, starting at 0. */
+    num('seq', true),
+  ],
   permissions: ownerOnly,
 }
 

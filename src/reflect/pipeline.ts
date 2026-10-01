@@ -17,7 +17,16 @@ import {
   type ReplyResponse,
   type SummaryResponse,
 } from './contract'
-import { buildReplyPrompt, buildSummaryPrompt, cleanDraft, cleanReply, replySchema, summarySchema, TEMPLATE_ACK } from './llm'
+import {
+  buildReplyPrompt,
+  buildSummaryPrompt,
+  cleanDraft,
+  cleanReply,
+  replySchema,
+  summarySchema,
+  TEMPLATE_ACK,
+  type EarlierNote,
+} from './llm'
 
 /** Bunny replies and summaries per person per UTC day. The app owner is exempt. */
 export const REFLECT_DAILY_CAP = 80
@@ -28,6 +37,8 @@ export interface ReflectDeps {
   llm(req: { system: string; user: string; maxTokens: number }): Promise<string | null>
   usageToday(): Promise<number>
   bumpUsage(): Promise<void>
+  /** The person's most recent visible journal notes, newest first. Optional background. */
+  recentNotes?(): Promise<EarlierNote[]>
   /** The app owner is never capped. */
   exempt: boolean
 }
@@ -65,7 +76,8 @@ export async function reflectReply(deps: ReflectDeps, messages: ChatMessage[]): 
   if (await overCap(deps)) return { status: 'capped', resetsAt: nextUtcMidnight(deps.now()) }
   await deps.bumpUsage()
 
-  const text = await deps.llm({ ...buildReplyPrompt(messages), maxTokens: 300 })
+  const earlier = (await deps.recentNotes?.().catch(() => [] as EarlierNote[])) ?? []
+  const text = await deps.llm({ ...buildReplyPrompt(messages, earlier), maxTokens: 300 })
   const parsed = replySchema.safeParse(parseJsonObject(text))
   if (!parsed.success) {
     // Fail visibly rather than invent a reply: the person's message is still on screen and they can resend.

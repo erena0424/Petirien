@@ -7,8 +7,7 @@
 
 import { Link } from 'react-router-dom'
 import { useQuery } from 'deepspace'
-import { Bunny } from '@/components/Bunny'
-import { ChatBox } from '@/components/ChatBox'
+import { BunnyHero } from '@/components/BunnyHero'
 import { MonthCalendar } from '@/components/MonthCalendar'
 import { SaveButton } from '@/components/SaveButton'
 import { Instructions } from '@/components/checkin/Instructions'
@@ -16,6 +15,7 @@ import { checkinDays, currentStreak, daysInMonthWithCheckin, encouragement } fro
 import { GREETING, PART_LABEL, orderSavedForNow, partOfDay, pickForNow } from '@/lib/for-now'
 import { formatCheckinDate } from '@/lib/format'
 import { ENERGY, MOOD, label } from '@/lib/labels'
+import { useBunnyChat } from '@/lib/bunny-chat'
 import { useJournal } from '@/lib/use-journal'
 import { usePreferences } from '@/lib/use-preferences'
 import { useSavedIdeas } from '@/lib/use-saved-ideas'
@@ -41,9 +41,14 @@ export default function HomePage() {
   const ideas = useSavedIdeas()
   const prefs = usePreferences()
   const journal = useJournal()
+  const bunny = useBunnyChat()
 
-  // A day counts when you did something for yourself: a check-in or a saved journal entry.
-  const days = checkinDays([...checkins.records.map((r) => r.createdAt), ...journal.records.map((r) => r.createdAt)])
+  // A day counts when you did something for yourself: a check-in, a journal note, or a saved chat with the bunny.
+  const days = checkinDays([
+    ...checkins.records.map((r) => r.createdAt),
+    ...journal.records.map((r) => r.createdAt),
+    ...bunny.conversations.map((c) => c.createdAt),
+  ])
   const daySet = new Set(days.keys())
   const streak = currentStreak(daySet, now)
   const month = daysInMonthWithCheckin(daySet, now.getFullYear(), now.getMonth())
@@ -60,21 +65,15 @@ export default function HomePage() {
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-8">
-      <div className="flex items-center gap-4">
-        <Bunny className="w-28 shrink-0 sm:w-36" />
-        <div>
-          <h1 className="text-2xl font-bold leading-tight tracking-tight text-foreground sm:text-3xl">{GREETING[partOfDay(now)]}</h1>
-          <p className="mt-1 text-base text-muted-foreground">Say what&apos;s on your mind, or let&apos;s find something small to do.</p>
-        </div>
-      </div>
+      <h1 className="sr-only">Home</h1>
+      <BunnyHero />
 
-      <section className={`${card} mt-6`} aria-label="Talk to the bunny">
-        <ChatBox />
-      </section>
-
-      <div className="mt-6 flex flex-wrap gap-3">
+      <div className="mt-8 flex flex-wrap gap-3">
         <Link to="/checkin" className={primary} data-testid="do-something">
           Do something little for yourself
+        </Link>
+        <Link to="/messages" className={secondary}>
+          Messages
         </Link>
         <Link to="/journal" className={secondary}>
           Journal

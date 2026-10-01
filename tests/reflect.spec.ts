@@ -1,8 +1,11 @@
 /**
- * Talk to the bunny and the journal, in a real browser against the REAL local
- * server and database, with no paid calls:
- *  - the two AI actions are mocked with page.route() where a reply is needed
- *    (this proves the UI and the real journal storage, NOT the model's tone);
+ * The big bunny on Home, saved-by-default conversations, the Messages tab, and
+ * the private option, in a real browser against the REAL local server and
+ * database, with no paid calls:
+ *  - reflectReply and summarizeConversation are mocked with page.route() where a
+ *    model would answer (this proves the UI and the real storage of messages and
+ *    conversations, NOT the model's tone, and NOT the server's automatic-note
+ *    database writes, which are covered by unit tests with fakes);
  *  - the crisis path runs against the REAL action, which stops before any model call.
  *
  * Uses its own account (Eli) so parallel specs cannot clear its data.
@@ -15,208 +18,230 @@ test.describe.configure({ mode: 'serial' })
 test.setTimeout(120_000)
 
 const run = String(Date.now() % 1e7)
-const TITLE = `A long day ${run}`
-
-const draft = {
-  title: TITLE,
-  notes: ['You told me work felt heavy today.', 'You said a walk at lunch helped a little.'],
-  feelings: ['tired', 'hopeful'],
-  bunnyNote: 'Thanks for telling me about it.',
-}
+const FIRST = `work was heavy today ${run}`
 
 const json = (data: unknown) => ({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, data }) })
 
-async function mockBunny(page: Page, handlers: { reply?: (n: number, body: any) => unknown; summary?: (n: number, body: any) => unknown } = {}) {
-  const seen = { reply: [] as any[], summary: [] as any[] }
+type Seen = { reply: any[]; notes: any[] }
+async function mockBunny(page: Page, over: { reply?: (n: number, body: any) => unknown } = {}): Promise<Seen> {
+  const seen: Seen = { reply: [], notes: [] }
   await page.route('**/api/actions/reflectReply', async (route) => {
     const body = route.request().postDataJSON()
     seen.reply.push(body)
-    await route.fulfill(json(handlers.reply ? handlers.reply(seen.reply.length, body) : { status: 'ok', reply: 'That sounds like a lot. What part felt heaviest?' }))
+    await route.fulfill(json(over.reply ? over.reply(seen.reply.length, body) : { status: 'ok', reply: `That sounds like a lot. What part felt heaviest? (${seen.reply.length})` }))
   })
-  await page.route('**/api/actions/reflectSummary', async (route) => {
-    const body = route.request().postDataJSON()
-    seen.summary.push(body)
-    await route.fulfill(json(handlers.summary ? handlers.summary(seen.summary.length, body) : { status: 'ok', draft }))
+  await page.route('**/api/actions/summarizeConversation', async (route) => {
+    seen.notes.push(route.request().postDataJSON())
+    await route.fulfill(json({ status: 'ok' }))
   })
   return seen
 }
 
-async function clearJournal(page: Page) {
-  await page.goto('/journal')
-  await expect(page.getByRole('heading', { name: 'Journal', exact: true })).toBeVisible()
-  await page.waitForTimeout(1200)
+async function clearConversations(page: Page) {
+  await page.goto('/messages')
+  await expect(page.getByRole('heading', { name: 'Messages', exact: true })).toBeVisible()
+  await page.waitForTimeout(1500)
   for (let i = 0; i < 10; i++) {
-    const items = page.getByTestId('journal-entry')
+    const items = page.getByTestId('conversation-item')
     if ((await items.count()) === 0) return
-    await items.first().getByRole('button', { name: /Delete entry/ }).click()
+    await page.getByRole('button', { name: /Delete conversation/ }).first().click()
     await page.getByRole('dialog').getByRole('button', { name: 'Delete', exact: true }).click()
-    await page.waitForTimeout(500)
+    await page.waitForTimeout(700)
   }
 }
 
-async function say(page: Page, text: string) {
+async function sayOnHome(page: Page, text: string) {
   await page.getByLabel('Tell the bunny something').fill(text)
   await page.getByRole('button', { name: 'Send' }).click()
 }
 
-test('chat, get notes, review, save: the entry persists, is private, counts for the calendar, and can be deleted', async ({ users }) => {
-  const [eli, alice] = await users(['Eli', 'Alice'])
-  await clearJournal(eli.page)
+test('Home is a very big bunny with its words: a greeting first, then its latest reply, with no chat card', async ({ users }) => {
+  const [eli] = await users(['Eli'])
+  await clearConversations(eli.page)
   const seen = await mockBunny(eli.page)
-
   await eli.page.goto('/home')
-  const chat = eli.page.getByTestId('chat')
-  await expect(chat).toBeVisible()
-  await expect(eli.page.getByTestId('chat-note')).toContainText('AI, not a therapist')
-  await expect(eli.page.getByTestId('chat-note')).toContainText('Nothing is saved unless you save')
 
-  await say(eli.page, 'work was heavy today')
+  const words = eli.page.getByTestId('bunny-words')
+  await expect(words).toContainText(/Say something/)
+  await expect(eli.page.getByTestId('chat-log')).toHaveCount(0) // the log lives on Messages, not here
+  await expect(eli.page.getByTestId('chat')).not.toContainText('not a therapist') // the AI note is in the footer
+  await expect(eli.page.getByRole('contentinfo')).toContainText('The bunny is an AI')
+
+  await sayOnHome(eli.page, FIRST)
+  await expect(words).toContainText('What part felt heaviest? (1)')
+  expect(seen.reply[0]).toEqual({ messages: [{ role: 'user', text: FIRST }] })
+
+  await sayOnHome(eli.page, 'a walk at lunch helped a little')
+  await expect(words).toContainText('(2)') // the words always show the latest reply
+  expect(seen.reply[1].messages).toHaveLength(3)
+})
+
+test('conversations are saved by default, listed on Messages, readable after a reload, and private to the account', async ({ users }) => {
+  const [eli, alice] = await users(['Eli', 'Alice'])
+  await clearConversations(eli.page)
+  await mockBunny(eli.page)
+  await eli.page.goto('/home')
+  await sayOnHome(eli.page, FIRST)
+  await expect(eli.page.getByTestId('bunny-words')).toContainText('(1)')
+  await expect(eli.page.getByTestId('chat-private-note')).toContainText('Saved to Messages')
+
+  await eli.page.goto('/messages')
+  const item = eli.page.getByTestId('conversation-item').filter({ hasText: FIRST })
+  await expect(item).toHaveCount(1, { timeout: 15_000 })
+
+  // After a full reload the conversation is still there and opens with both messages (real database).
+  await eli.page.reload()
+  await eli.page.getByTestId('conversation-item').filter({ hasText: FIRST }).click()
+  await expect(eli.page.getByTestId('chat-user')).toContainText(FIRST)
   await expect(eli.page.getByTestId('chat-bunny')).toContainText('What part felt heaviest?')
-  expect(seen.reply[0]).toEqual({ messages: [{ role: 'user', text: 'work was heavy today' }] })
 
-  await say(eli.page, 'a walk at lunch helped a little')
+  // Private: Alice sees none of it.
+  await alice.page.goto('/messages')
+  await expect(alice.page.getByRole('heading', { name: 'Messages', exact: true })).toBeVisible()
+  await alice.page.waitForTimeout(1500)
+  await expect(alice.page.getByText(FIRST)).toHaveCount(0)
+})
+
+test('a conversation can be continued from Messages like texting', async ({ users }) => {
+  const [eli] = await users(['Eli'])
+  const seen = await mockBunny(eli.page)
+  await eli.page.goto('/messages')
+  await eli.page.getByTestId('conversation-item').filter({ hasText: FIRST }).click()
+  await eli.page.getByLabel('Tell the bunny something').fill('and then I felt a bit better')
+  await eli.page.getByRole('button', { name: 'Send' }).click()
   await expect(eli.page.getByTestId('chat-bunny')).toHaveCount(2)
-  expect(seen.reply[1].messages).toHaveLength(3) // person, bunny, person
+  // The model sees the earlier saved messages, not just the new one.
+  expect(seen.reply[0].messages.map((m: any) => m.role)).toEqual(['user', 'bunny', 'user'])
+  await eli.page.reload()
+  await eli.page.getByTestId('conversation-item').filter({ hasText: FIRST }).click()
+  await expect(eli.page.getByTestId('chat-user')).toHaveCount(2)
+  await expect(eli.page.getByTestId('chat-bunny')).toHaveCount(2)
+})
 
-  // Notes are written only when asked, then shown for review before anything is stored.
-  await eli.page.getByRole('button', { name: 'Save to my journal' }).click()
-  const review = eli.page.getByTestId('chat-review')
-  await expect(review).toContainText(TITLE)
-  await expect(review).toContainText('You told me work felt heavy today.')
-  await expect(review).toContainText('tired')
-  expect(seen.summary[0].messages).toHaveLength(4)
-  await eli.page.goto('/journal') // leaving without saving
-  await expect(eli.page.getByTestId('journal-empty')).toBeVisible({ timeout: 15_000 })
-
-  // Do it again and actually save.
-  await mockBunny(eli.page).catch(() => undefined)
+test('"Don\'t save this chat" stores nothing and says so', async ({ users }) => {
+  const [eli] = await users(['Eli'])
+  await clearConversations(eli.page)
+  await mockBunny(eli.page)
   await eli.page.goto('/home')
-  await say(eli.page, 'work was heavy today')
+  await eli.page.getByLabel("Don't save this chat").check()
+  await sayOnHome(eli.page, 'something I want to keep to myself')
+  await expect(eli.page.getByTestId('bunny-words')).toContainText('(1)')
+  await expect(eli.page.getByTestId('chat-private-note')).toContainText('not being saved')
+
+  await eli.page.goto('/messages')
+  await expect(eli.page.getByTestId('messages-empty')).toBeVisible({ timeout: 15_000 })
+  await eli.page.reload()
+  await expect(eli.page.getByTestId('messages-empty')).toBeVisible({ timeout: 15_000 })
+  await expect(eli.page.getByText('something I want to keep to myself')).toHaveCount(0)
+})
+
+test('starting a new conversation keeps the old one, and asks for notes about the one you left', async ({ users }) => {
+  const [eli] = await users(['Eli'])
+  await clearConversations(eli.page)
+  const seen = await mockBunny(eli.page)
+  await eli.page.goto('/messages')
+  await eli.page.getByLabel('Tell the bunny something').fill(FIRST)
+  await eli.page.getByRole('button', { name: 'Send' }).click()
   await expect(eli.page.getByTestId('chat-bunny')).toBeVisible()
-  await eli.page.getByRole('button', { name: 'Save to my journal' }).click()
-  await expect(eli.page.getByTestId('chat-review')).toBeVisible()
-  await eli.page.getByRole('button', { name: 'Save to my journal' }).click()
-  await expect(eli.page.getByTestId('chat-saved')).toBeVisible()
+  await expect(eli.page.getByTestId('conversation-item')).toHaveCount(1, { timeout: 15_000 })
 
-  // Persisted in the real database; the chat itself is not.
-  await eli.page.goto('/journal')
-  const entry = eli.page.getByTestId('journal-entry').filter({ hasText: TITLE })
-  await expect(entry).toHaveCount(1, { timeout: 15_000 })
-  await expect(entry).toContainText('You said a walk at lunch helped a little.')
-  await expect(entry).toContainText('Thanks for telling me about it.')
-  await expect(eli.page.getByText('work was heavy today', { exact: true })).toHaveCount(0) // the person's own words are not stored
+  // Asking for notes right now sends the open conversation's id with force (the person asked).
+  await eli.page.getByRole('button', { name: 'Write notes about this now' }).click()
+  await expect(eli.page.getByTestId('notes-written')).toBeVisible()
+  expect(seen.notes[0]).toMatchObject({ force: true })
+  expect(typeof seen.notes[0].conversationId).toBe('string')
+  const oldId = seen.notes[0].conversationId
 
-  // The calendar counts a saved entry as a day.
+  // New conversation: the chat clears, the old one stays listed, notes are requested for the one left.
+  await eli.page.getByRole('button', { name: 'New conversation' }).click()
+  await expect(eli.page.getByTestId('chat-log')).toHaveCount(0)
+  await expect(eli.page.getByTestId('conversation-item')).toHaveCount(1)
+  expect(seen.notes[1]).toEqual({ conversationId: oldId, force: true })
+
+  await eli.page.getByLabel('Tell the bunny something').fill('a second, different thing')
+  await eli.page.getByRole('button', { name: 'Send' }).click()
+  await expect(eli.page.getByTestId('conversation-item')).toHaveCount(2, { timeout: 15_000 })
+})
+
+test('deleting a conversation removes it and its messages for good', async ({ users }) => {
+  const [eli] = await users(['Eli'])
+  await mockBunny(eli.page)
+  await eli.page.goto('/messages')
+  await expect(eli.page.getByTestId('conversation-item').first()).toBeVisible({ timeout: 15_000 })
+  await clearConversations(eli.page)
+  await eli.page.reload()
+  await expect(eli.page.getByTestId('messages-empty')).toBeVisible({ timeout: 15_000 })
+  await eli.page.goto('/home') // a fresh chat there starts from the greeting, nothing carried over
+  await expect(eli.page.getByTestId('bunny-words')).toContainText(/Say something/)
+})
+
+test('a saved conversation counts as a day on the calendar', async ({ users }) => {
+  const [eli] = await users(['Eli'])
+  await clearConversations(eli.page)
+  await eli.page.goto('/home')
+  await expect(eli.page.getByTestId('calendar').locator('[data-done]')).toHaveCount(0, { timeout: 15_000 })
+  await mockBunny(eli.page)
+  await sayOnHome(eli.page, 'counting for the calendar')
+  await expect(eli.page.getByTestId('bunny-words')).toContainText('(1)')
   await eli.page.goto('/home')
   await expect(eli.page.getByTestId('calendar').locator('[data-done]')).toHaveCount(1, { timeout: 15_000 })
-
-  // Private.
-  await alice.page.goto('/journal')
-  await expect(alice.page.getByRole('heading', { name: 'Journal', exact: true })).toBeVisible()
-  await alice.page.waitForTimeout(1500)
-  await expect(alice.page.getByText(TITLE)).toHaveCount(0)
-
-  await clearJournal(eli.page)
-  await expect(eli.page.getByTestId('journal-empty')).toBeVisible({ timeout: 15_000 })
+  await clearConversations(eli.page)
 })
 
-test('discard and start over store nothing', async ({ users }) => {
+test('crisis words on the REAL server show the support card on Home, with no bunny reply', async ({ users }) => {
   const [eli] = await users(['Eli'])
-  await clearJournal(eli.page)
-  await mockBunny(eli.page)
-  await eli.page.goto('/home')
-  await say(eli.page, 'just a passing thought')
-  await expect(eli.page.getByTestId('chat-bunny')).toBeVisible()
-  await eli.page.getByRole('button', { name: 'Save to my journal' }).click()
-  await expect(eli.page.getByTestId('chat-review')).toBeVisible()
-  await eli.page.getByRole('button', { name: 'Discard' }).click()
-  await expect(eli.page.getByTestId('chat-log')).toHaveCount(0) // back to the start
-  await eli.page.goto('/journal')
-  await expect(eli.page.getByTestId('journal-empty')).toBeVisible({ timeout: 15_000 })
-})
-
-test('"Keep chatting" returns to the conversation with everything still there', async ({ users }) => {
-  const [eli] = await users(['Eli'])
-  await mockBunny(eli.page)
-  await eli.page.goto('/home')
-  await say(eli.page, 'one more thing')
-  await expect(eli.page.getByTestId('chat-bunny')).toBeVisible()
-  await eli.page.getByRole('button', { name: 'Save to my journal' }).click()
-  await expect(eli.page.getByTestId('chat-review')).toBeVisible()
-  await eli.page.getByRole('button', { name: 'Keep chatting' }).click()
-  await expect(eli.page.getByTestId('chat-user')).toContainText('one more thing')
-  await expect(eli.page.getByTestId('chat-bunny')).toBeVisible()
-})
-
-test('a starter chip sends a message', async ({ users }) => {
-  const [eli] = await users(['Eli'])
-  const seen = await mockBunny(eli.page)
-  await eli.page.goto('/home')
-  await eli.page.getByRole('button', { name: "Something's on my mind" }).click()
-  await expect(eli.page.getByTestId('chat-bunny')).toBeVisible()
-  expect(seen.reply[0].messages[0]).toEqual({ role: 'user', text: "Something's on my mind" })
-})
-
-test('crisis words on the REAL server show the support card, with no bunny reply and nothing saved', async ({ users }) => {
-  const [eli] = await users(['Eli'])
-  await clearJournal(eli.page)
+  await clearConversations(eli.page)
   await eli.page.goto('/home') // no mocks: the real action stops before any model call
-  await say(eli.page, 'I want to kill myself')
+  await eli.page.getByLabel("Don't save this chat").check()
+  await sayOnHome(eli.page, 'I want to kill myself')
   const card = eli.page.getByTestId('chat-support')
   await expect(card).toBeVisible({ timeout: 30_000 })
   await expect(card.getByRole('link', { name: 'Call 988' })).toHaveAttribute('href', 'tel:988')
   await expect(card.getByText('Text HOME to 741741')).toBeVisible()
-  await expect(eli.page.getByTestId('chat-bunny')).toHaveCount(0)
-  await eli.page.goto('/journal')
-  await expect(eli.page.getByTestId('journal-empty')).toBeVisible({ timeout: 15_000 })
+  await expect(eli.page.getByTestId('bunny-words')).toHaveCount(0)
 })
 
 test('the model flagging a crisis also shows the support card', async ({ users }) => {
   const [eli] = await users(['Eli'])
   await mockBunny(eli.page, { reply: () => ({ status: 'support' }) })
   await eli.page.goto('/home')
-  await say(eli.page, 'everything feels pointless lately')
+  await eli.page.getByLabel("Don't save this chat").check()
+  await sayOnHome(eli.page, 'everything feels pointless lately')
   await expect(eli.page.getByTestId('chat-support')).toBeVisible()
 })
 
-test('failures keep what you wrote and say what to do; retry works', async ({ users }) => {
+test('failures keep what you wrote and offer Try again; the daily limit is explained kindly', async ({ users }) => {
   const [eli] = await users(['Eli'])
   await mockBunny(eli.page, {
-    reply: (n) => (n === 1 ? { status: 'error', message: "I couldn't answer just now. Your message is still here, so you can send it again." } : { status: 'ok', reply: 'I am here now.' }),
-    summary: (n) => (n === 1 ? { status: 'error', message: "I couldn't write the notes just now. Your chat is still here, so you can try again." } : { status: 'ok', draft }),
+    reply: (n) =>
+      n === 1
+        ? { status: 'error', message: "I couldn't answer just now. Your message is still here, so you can send it again." }
+        : n === 2
+          ? { status: 'ok', reply: 'I am here now.' }
+          : { status: 'capped', resetsAt: '2026-10-02T00:00:00.000Z' },
   })
   await eli.page.goto('/home')
-  await say(eli.page, 'testing a failure')
+  await eli.page.getByLabel("Don't save this chat").check()
+  await sayOnHome(eli.page, 'testing a failure')
   await expect(eli.page.getByTestId('chat-error')).toContainText('still here')
-  await expect(eli.page.getByTestId('chat-user')).toContainText('testing a failure') // not lost
   await eli.page.getByRole('button', { name: 'Try again' }).click()
-  await expect(eli.page.getByTestId('chat-bunny')).toContainText('I am here now.')
+  await expect(eli.page.getByTestId('bunny-words')).toContainText('I am here now.')
   await expect(eli.page.getByTestId('chat-error')).toHaveCount(0)
-
-  await eli.page.getByRole('button', { name: 'Save to my journal' }).click()
-  await expect(eli.page.getByTestId('chat-error')).toContainText('Your chat is still here')
-  await eli.page.getByRole('button', { name: 'Save to my journal' }).click() // try again
-  await expect(eli.page.getByTestId('chat-review')).toBeVisible()
-})
-
-test('the daily limit is explained kindly', async ({ users }) => {
-  const [eli] = await users(['Eli'])
-  await mockBunny(eli.page, { reply: () => ({ status: 'capped', resetsAt: '2026-10-02T00:00:00.000Z' }) })
-  await eli.page.goto('/home')
-  await say(eli.page, 'hello')
+  await sayOnHome(eli.page, 'and once more')
   await expect(eli.page.getByTestId('chat-error')).toContainText("That's enough chatting for today")
 })
 
-test('phone width: chat and journal have no horizontal scroll', async ({ users }) => {
+test('phone width: Home, Messages, and the thread have no horizontal scroll', async ({ users }) => {
   const [eli] = await users(['Eli'])
   await eli.page.setViewportSize({ width: 375, height: 800 })
   await mockBunny(eli.page)
   const overflow = () => eli.page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
   await eli.page.goto('/home')
-  await say(eli.page, 'a fairly long message to see how it wraps on a small screen without breaking the layout at all')
-  await expect(eli.page.getByTestId('chat-bunny')).toBeVisible()
+  await eli.page.getByLabel("Don't save this chat").check()
+  await sayOnHome(eli.page, 'a fairly long message to see how it wraps on a small screen without breaking the layout at all')
+  await expect(eli.page.getByTestId('bunny-words')).toContainText('(1)')
   expect(await overflow()).toBeLessThanOrEqual(0)
-  await eli.page.goto('/journal')
-  await expect(eli.page.getByRole('heading', { name: 'Journal', exact: true })).toBeVisible()
+  await eli.page.goto('/messages')
+  await expect(eli.page.getByRole('heading', { name: 'Messages', exact: true })).toBeVisible()
   expect(await overflow()).toBeLessThanOrEqual(0)
 })

@@ -33,7 +33,8 @@ test('a new account sees a welcoming, non-empty Home with no streak talk', async
   const [dana] = await users(['Dana'])
   await clearDana(dana.page)
   await dana.page.goto('/home')
-  await expect(dana.page.getByRole('heading', { level: 1 })).toContainText(/Good (morning|afternoon|evening)|night owl/)
+  await expect(dana.page.getByRole('heading', { level: 1 })).toHaveText('Home') // for screen readers
+  await expect(dana.page.getByTestId('bunny-words')).toContainText(/Good (morning|afternoon|evening)|night owl/)
   await expect(dana.page.getByTestId('calendar')).toBeVisible()
   await expect(dana.page.getByTestId('for-now')).toBeVisible() // a suggestion even with no history
   await expect(dana.page.getByTestId('home-saved-empty')).toBeVisible()

@@ -151,11 +151,17 @@ function DeleteEverything() {
   const suggestions = useQuery<Record<string, unknown>>('suggestions')
   const saved = useQuery<Record<string, unknown>>('savedVideos')
   const ideas = useQuery<Record<string, unknown>>('savedIdeas')
+  const journal = useQuery<Record<string, unknown>>('journalEntries')
+  const conversations = useQuery<Record<string, unknown>>('conversations')
+  const messages = useQuery<Record<string, unknown>>('messages')
   const prefs = useQuery<Record<string, unknown>>('preferences')
   const mCheckins = useMutations<Record<string, unknown>>('checkins')
   const mSuggestions = useMutations<Record<string, unknown>>('suggestions')
   const mSaved = useMutations<Record<string, unknown>>('savedVideos')
   const mIdeas = useMutations<Record<string, unknown>>('savedIdeas')
+  const mJournal = useMutations<Record<string, unknown>>('journalEntries')
+  const mConversations = useMutations<Record<string, unknown>>('conversations')
+  const mMessages = useMutations<Record<string, unknown>>('messages')
   const mPrefs = useMutations<Record<string, unknown>>('preferences')
 
   const [open, setOpen] = useState(false)
@@ -163,7 +169,14 @@ function DeleteEverything() {
   const [result, setResult] = useState<'idle' | 'done' | 'failed'>('idle')
 
   const counts: Counts = { checkins: checkins.records.length, suggestions: suggestions.records.length, saved: saved.records.length + ideas.records.length }
-  const total = counts.checkins + counts.suggestions + counts.saved + prefs.records.length
+  const total =
+    counts.checkins +
+    counts.suggestions +
+    counts.saved +
+    prefs.records.length +
+    journal.records.length +
+    conversations.records.length +
+    messages.records.length
 
   async function run() {
     setOpen(false)
@@ -173,6 +186,9 @@ function DeleteEverything() {
       for (const r of checkins.records) await mCheckins.removeConfirmed(r.recordId)
       for (const r of saved.records) await mSaved.removeConfirmed(r.recordId)
       for (const r of ideas.records) await mIdeas.removeConfirmed(r.recordId)
+      for (const r of journal.records) await mJournal.removeConfirmed(r.recordId)
+      for (const r of messages.records) await mMessages.removeConfirmed(r.recordId)
+      for (const r of conversations.records) await mConversations.removeConfirmed(r.recordId)
       for (const r of prefs.records) await mPrefs.removeConfirmed(r.recordId)
       setResult('done')
     } catch {
@@ -188,7 +204,7 @@ function DeleteEverything() {
         Delete my data
       </h2>
       <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-        This removes all your check-ins and notes, the ideas I suggested, your saved videos and ideas, and these preferences.
+        This removes all your check-ins and notes, your conversations with the bunny, its journal notes, the ideas I suggested, your saved videos and ideas, and these preferences.
         It can&apos;t be undone. Your sign-in account itself is not deleted.
       </p>
       <Button
@@ -220,7 +236,7 @@ function DeleteEverything() {
         onClose={() => setOpen(false)}
         onConfirm={() => void run()}
         title="Delete everything?"
-        description={`This will permanently delete ${counts.checkins} check-in${counts.checkins === 1 ? '' : 's'}, ${counts.saved} saved item${counts.saved === 1 ? '' : 's'}, and your preferences.`}
+        description={`This will permanently delete ${counts.checkins} check-in${counts.checkins === 1 ? '' : 's'}, ${conversations.records.length} conversation${conversations.records.length === 1 ? '' : 's'}, ${journal.records.length} journal entr${journal.records.length === 1 ? 'y' : 'ies'}, ${counts.saved} saved item${counts.saved === 1 ? '' : 's'}, and your preferences.`}
         confirmText="Delete everything"
       />
     </section>
