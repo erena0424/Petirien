@@ -32,7 +32,10 @@ export default function Landing() {
           Get started
         </Link>
         <p className="mt-10 max-w-sm text-xs text-muted-foreground">
-          {DISPLAY_NAME} offers everyday emotional support and gentle ideas. It is not therapy or medical advice.
+          {DISPLAY_NAME} offers everyday emotional support and gentle ideas. It is not therapy or medical advice.{' '}
+          <Link to="/privacy" className="underline underline-offset-4">
+            Privacy
+          </Link>
         </p>
       </div>
     </>

@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { Button, Textarea } from '@/components/ui'
 import type { CheckinInput } from '../../contract'
 import { ENERGY, MOOD } from '@/lib/labels'
@@ -79,7 +80,10 @@ export function CheckinForm({ values, onChange, onSubmit, submitting }: Props) {
           placeholder="A few words about your day, if you like"
         />
         <p className="mt-2 text-xs text-muted-foreground" data-testid="note-privacy">
-          Your note is sent to an AI service to help choose ideas. Leave it blank if you would rather not share.
+          Your note is sent to an AI service to help choose ideas. Leave it blank if you would rather not share.{' '}
+          <Link to="/privacy" className="underline underline-offset-4">
+            How your data is used
+          </Link>
         </p>
       </div>
 
