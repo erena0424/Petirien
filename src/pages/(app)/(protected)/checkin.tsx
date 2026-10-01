@@ -10,6 +10,7 @@ import { formatResetTime } from '@/lib/format'
 import { requestRecommendations } from '@/lib/recommend-client'
 import { CheckinForm, EMPTY_FORM, type FormValues } from '@/components/checkin/CheckinForm'
 import { NoneFitPanel, type ReasonChip } from '@/components/checkin/NoneFitPanel'
+import { Instructions } from '@/components/checkin/Instructions'
 import { PickCard } from '@/components/checkin/PickCard'
 import { WatchPanel, type Helpful } from '@/components/checkin/WatchPanel'
 import { Bunny } from '@/components/Bunny'
@@ -251,6 +252,9 @@ function Result(p: ResultProps) {
             <li key={a.activityId} className="rounded-2xl border border-border bg-card p-4">
               <h2 className="text-base font-semibold text-foreground">{a.title}</h2>
               <p className="mt-1 text-sm text-muted-foreground">{a.blurb}</p>
+              <div className="mt-2">
+                <Instructions activityId={a.activityId} defaultOpen />
+              </div>
             </li>
           ))}
         </ul>

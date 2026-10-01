@@ -2,6 +2,7 @@ import { Play } from 'lucide-react'
 import { Button } from '@/components/ui'
 import { formatDuration } from '@/lib/format'
 import type { Pick } from '../../contract'
+import { Instructions } from './Instructions'
 
 interface Props {
   pick: Pick
@@ -32,6 +33,9 @@ export function PickCard({ pick, onWatch, onReject }: Props) {
           </p>
           <p className="mt-3 text-sm leading-relaxed text-foreground">{pick.reason}</p>
         </div>
+      </div>
+      <div className="px-4 pb-3">
+        <Instructions activityId={pick.activityId} />
       </div>
       <div className="flex flex-wrap gap-2 border-t border-border bg-background/60 px-4 py-3">
         <Button onClick={onWatch} aria-label={`Watch: ${video.title}`}>

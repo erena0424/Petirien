@@ -3,6 +3,7 @@ import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui'
 import type { Pick } from '../../contract'
 import { YouTubePlayer } from '../YouTubePlayer'
+import { Instructions } from './Instructions'
 
 export type Helpful = 'yes' | 'somewhat' | 'no'
 
@@ -70,6 +71,8 @@ export function WatchPanel({ pick, onBack, onStartOver, onFeedback }: Props) {
           <Button onClick={onBack}>Pick another idea</Button>
         </div>
       )}
+
+      {(phase === 'playing' || phase === 'unavailable') && <Instructions activityId={pick.activityId} />}
 
       {phase === 'feedback' && (
         <div data-testid="feedback-card" className="rounded-2xl border border-border bg-card p-5">

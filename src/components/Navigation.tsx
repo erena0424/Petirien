@@ -59,7 +59,9 @@ export default function Navigation() {
         aria-current={active ? 'page' : undefined}
         className={cn(
           'px-3 py-1.5 text-sm',
-          active ? 'text-foreground' : 'text-muted-foreground hover:text-foreground',
+          active
+            ? 'font-bold text-[color:var(--color-nav-foreground,var(--color-foreground))] underline decoration-2 underline-offset-8'
+            : 'font-medium text-[color:var(--color-nav-muted,var(--color-muted-foreground))] hover:text-[color:var(--color-nav-foreground,var(--color-foreground))]',
         )}
       >
         {item.label}
@@ -69,9 +71,12 @@ export default function Navigation() {
 
   return (
     <>
-      <nav data-testid="app-navigation" className="border-b border-border bg-background">
+      <nav
+        data-testid="app-navigation"
+        className="border-b border-[color:var(--color-nav-border,var(--color-border))] bg-[var(--color-nav,var(--color-background))]"
+      >
         <div className="mx-auto flex h-12 max-w-7xl items-center gap-4 px-4">
-          <Link to="/home" className="text-sm font-semibold text-foreground">
+          <Link to="/home" className="text-lg font-bold text-[color:var(--color-nav-foreground,var(--color-foreground))]">
             {DISPLAY_NAME}
           </Link>
 
@@ -82,7 +87,7 @@ export default function Navigation() {
           {!isLoaded ? null : isSignedIn && !profileReady ? (
             /* Signed in, profile still loading — skeleton pill, never the
                Sign in button (that would offer sign-in to a signed-in user). */
-            <div className="flex items-center gap-2 rounded-full border border-border bg-card/60 py-1 pl-1 pr-2.5">
+            <div className="flex items-center gap-2 rounded-full border border-[color:var(--color-nav-border,var(--color-border))] bg-card/80 py-1 pl-1 pr-2.5">
               <div className="h-6 w-6 animate-pulse rounded-full bg-muted" />
               <div className="hidden h-4 w-20 animate-pulse rounded-md bg-muted sm:block" />
             </div>
@@ -92,7 +97,7 @@ export default function Navigation() {
                 render={
                   <button
                     aria-label="Account menu"
-                    className="group flex items-center gap-2 rounded-full border border-border bg-card/60 py-1 pl-1 pr-2.5 text-sm transition-colors hover:bg-card"
+                    className="group flex items-center gap-2 rounded-full border border-[color:var(--color-nav-border,var(--color-border))] bg-card/80 py-1 pl-1 pr-2.5 text-sm transition-colors hover:bg-card"
                   >
                     <Avatar className="h-6 w-6 ring-1 ring-inset ring-border">
                       <AvatarImage src={user.imageUrl ?? undefined} referrerPolicy="no-referrer" />
@@ -143,7 +148,7 @@ export default function Navigation() {
           )}
 
           <button
-            className="inline-flex h-8 w-8 items-center justify-center text-muted-foreground hover:text-foreground md:hidden"
+            className="inline-flex h-11 w-11 items-center justify-center text-[color:var(--color-nav-foreground,var(--color-foreground))] md:hidden"
             onClick={() => setMobileMenuOpen((prev) => !prev)}
             aria-label="Toggle menu"
             aria-expanded={mobileMenuOpen}
@@ -153,7 +158,7 @@ export default function Navigation() {
         </div>
 
         {mobileMenuOpen && (
-          <div className="flex flex-col border-t border-border px-2 py-2 md:hidden">
+          <div className="flex flex-col border-t border-[color:var(--color-nav-border,var(--color-border))] px-2 py-2 md:hidden">
             {visibleNav.map(navLink)}
           </div>
         )}

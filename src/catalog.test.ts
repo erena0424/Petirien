@@ -41,3 +41,29 @@ describe('catalog integrity', () => {
     }
   })
 })
+
+describe('catalog instructions', () => {
+  it('has hand-written needs, 3 to 5 steps, and a tip for every activity', () => {
+    for (const a of CATALOG) {
+      expect(a.needs.trim().length, a.id).toBeGreaterThan(0)
+      expect(a.steps.length, a.id).toBeGreaterThanOrEqual(3)
+      expect(a.steps.length, a.id).toBeLessThanOrEqual(5)
+      for (const step of a.steps) expect(step.trim().length, a.id).toBeGreaterThan(0)
+      expect(a.tip.trim().length, a.id).toBeGreaterThan(0)
+    }
+  })
+
+  it('keeps instructions free of forbidden words and links', () => {
+    for (const a of CATALOG) {
+      const text = [a.needs, ...a.steps, a.tip].join(' ')
+      expect(text, a.id).not.toMatch(FORBIDDEN)
+      expect(text, a.id).not.toMatch(/https?:\/\/|www\./i)
+    }
+  })
+
+  it('gives a stop-if-it-hurts line to every activity that asks for physical movement', () => {
+    for (const a of CATALOG.filter((x) => x.category === 'movement' && x.id !== 'legs-up-rest')) {
+      expect(a.tip, a.id).toMatch(/stop if|skip/i)
+    }
+  })
+})

@@ -223,6 +223,42 @@ test('other statuses render calmly and recover locally', async ({ users }) => {
   expect(bodies.length).toBe(5)
 })
 
+test('each idea expands into hand-written instructions, also while watching and without videos', async ({ users }) => {
+  const [a] = await users(1)
+  await fakeYouTube(a.page)
+  await mockRecommend(a.page, (n) =>
+    n === 1
+      ? okResponse()
+      : { status: 'no_video', checkinId: 'c', reply: 'Here are a few options.', activities: [{ activityId: 'gratitude-note', title: 'Write a thank-you note', blurb: 'Write a few lines.' }] },
+  )
+  await a.page.goto('/checkin')
+  await fillAndSubmit(a.page)
+
+  // Collapsed by default, expands on click, collapses again.
+  const card = a.page.getByTestId('pick-card').first()
+  const toggle = card.getByRole('button', { name: 'How to do it' })
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false')
+  await expect(card.getByText('Breathe in slowly through your nose')).toBeHidden()
+  await toggle.click()
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true')
+  await expect(card.getByText("You'll need:")).toBeVisible()
+  await expect(card.getByText('Breathe in slowly through your nose')).toBeVisible()
+  await toggle.click()
+  await expect(card.getByText('Breathe in slowly through your nose')).toBeHidden()
+
+  // Also available while watching.
+  await a.page.getByRole('button', { name: /Watch: Gentle video 1/ }).click()
+  await expect(a.page.getByTestId('fake-player')).toBeVisible()
+  await a.page.getByRole('button', { name: 'How to do it' }).click()
+  await expect(a.page.getByText('Breathe in slowly through your nose')).toBeVisible()
+  await a.page.getByRole('button', { name: /Other ideas/ }).click()
+
+  // With no videos, the instructions are the content and start open.
+  await a.page.getByRole('button', { name: 'Too long' }).click()
+  await expect(a.page.getByTestId('no-video-result')).toBeVisible()
+  await expect(a.page.getByText('Write what they did and how it helped')).toBeVisible()
+})
+
 test('phone width: no horizontal scroll on form, results, and support', async ({ users }) => {
   const [a] = await users(1)
   await a.page.setViewportSize({ width: 375, height: 700 })

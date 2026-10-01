@@ -46,6 +46,13 @@
   --shadow-card-hover: 0 2px 8px 0 rgba(38, 48, 74, 0.1);
   --color-shell: #f8fafd;
   --color-shell-panel: #ffffff;
+  /* Header: the bunny's body blue. Navy text 9.2:1, link navy 6.7:1 on it. */
+  --color-nav: #bcdcfc;
+  --color-nav-foreground: #26304a;
+  --color-nav-muted: #38446a;
+  --color-nav-border: #9cc4ec;
+  /* Footer: the bunny's lavender. Muted text 4.75:1, link 5.2:1 on it. */
+  --color-footer: #eee9f6;
 }
 
 /* Paper — light example theme; shows the full token contract incl.

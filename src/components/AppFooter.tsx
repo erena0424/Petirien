@@ -5,7 +5,7 @@ import { DISPLAY_NAME } from '../constants'
 /** Shown on every screen: what this app is, and a way to reach support at any time. */
 export function AppFooter() {
   return (
-    <footer className="shrink-0 border-t border-border bg-background px-4 py-1.5">
+    <footer className="shrink-0 border-t border-border bg-[var(--color-footer,var(--color-background))] px-4 py-1.5">
       <div className="mx-auto flex max-w-2xl items-center justify-between gap-3 text-xs text-muted-foreground">
         <p>
           {DISPLAY_NAME} is everyday emotional support, not therapy or medical advice.
