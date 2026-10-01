@@ -78,3 +78,21 @@ describe('filterCatalog goal handling', () => {
     }
   })
 })
+
+describe('filterCatalog video-only', () => {
+  it('keeps only activities that come with a video, and combines with the other rules', () => {
+    const { activities } = filterCatalog({ minutes: 30, energy: 5, videoOnly: true })
+    expect(activities.length).toBeGreaterThan(0)
+    for (const a of activities) expect(a.video).toBe(true)
+    const avoided = filterCatalog({ minutes: 30, energy: 5, videoOnly: true, avoid: ['guided'] }).activities
+    for (const a of avoided) {
+      expect(a.video).toBe(true)
+      expect(a.tags).not.toContain('guided')
+    }
+  })
+  it('does not change anything when off', () => {
+    expect(filterCatalog({ minutes: 30, energy: 5 }).activities.length).toBeGreaterThan(
+      filterCatalog({ minutes: 30, energy: 5, videoOnly: true }).activities.length,
+    )
+  })
+})

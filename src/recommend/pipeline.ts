@@ -80,7 +80,7 @@ const inputSchema = z.object({
   note: z.string().max(1000).optional(),
   excludeActivityIds: z.array(z.string().max(80)).max(30).optional(),
   checkinId: z.string().max(120).optional(),
-  screen: z.enum(['auto', 'none']).optional(),
+  screen: z.enum(['auto', 'video', 'none']).optional(),
 })
 
 export function parseCheckinInput(
@@ -241,6 +241,7 @@ export async function recommend(deps: Deps, input: CheckinInput): Promise<Recomm
     dislikedTags: ctx.prefs.dislikedTags,
     avoid: ctx.prefs.avoid,
     excludeIds: input.excludeActivityIds,
+    videoOnly: input.screen === 'video',
   })
   if (fits.length === 0) {
     return {

@@ -138,8 +138,9 @@ export const preferencesSchema: CollectionSchema = {
     json('dislikedTags'),
     json('avoid'),
     num('defaultMinutes'),
-    /** 1 = prefers screen-free ideas. */
+    /** Older yes/no version of `screenMode`; still read so existing rows keep working. */
     num('screenFree'),
+    select('screenMode', ['auto', 'video', 'none']),
   ],
   permissions: ownerOnly,
 }

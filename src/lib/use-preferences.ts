@@ -1,8 +1,8 @@
 import { useMemo } from 'react'
 import { useMutations, useQuery } from 'deepspace'
-import { DEFAULT_PREFERENCES, normalizePreferences, type Preferences } from './preferences'
+import { DEFAULT_PREFERENCES, normalizePreferences, type Preferences, type ScreenMode } from './preferences'
 
-type Row = { likedTags?: string[]; avoid?: string[]; defaultMinutes?: number; screenFree?: number }
+type Row = { likedTags?: string[]; avoid?: string[]; defaultMinutes?: number; screenMode?: string; screenFree?: number }
 
 /** The signed-in person's preferences (one row per person; the database enforces it). */
 export function usePreferences() {
@@ -17,7 +17,8 @@ export function usePreferences() {
             likedTags: record.data.likedTags,
             avoid: record.data.avoid,
             defaultMinutes: record.data.defaultMinutes,
-            screenFree: record.data.screenFree === 1,
+            // `screenFree` is the older yes/no column; keep reading it for existing rows.
+            screen: (record.data.screenMode ?? (record.data.screenFree === 1 ? 'none' : 'auto')) as ScreenMode,
           })
         : DEFAULT_PREFERENCES,
     [record],
@@ -29,7 +30,7 @@ export function usePreferences() {
     const row: Row = {
       likedTags: clean.likedTags,
       avoid: clean.avoid,
-      screenFree: clean.screenFree ? 1 : 0,
+      screenMode: clean.screen,
       ...(clean.defaultMinutes ? { defaultMinutes: clean.defaultMinutes } : {}),
     }
     try {

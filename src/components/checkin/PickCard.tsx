@@ -16,6 +16,7 @@ interface Props {
   onReject: () => void
   onToggleSave: () => void
   onFeedback: (helpful: Helpful) => void
+  canSave?: boolean
 }
 
 const OPTIONS: { value: Helpful; label: string }[] = [
@@ -28,7 +29,7 @@ export function PickCard(props: Props) {
   return props.pick.video ? <VideoCard {...props} pick={props.pick as VideoPick} /> : <IdeaCard {...props} />
 }
 
-function VideoCard({ pick, saved, onWatch, onReject, onToggleSave }: Props & { pick: VideoPick }) {
+function VideoCard({ pick, saved, canSave = true, onWatch, onReject, onToggleSave }: Props & { pick: VideoPick }) {
   const { video } = pick
   const length = formatDuration(video.durationSec)
   return (
@@ -60,7 +61,7 @@ function VideoCard({ pick, saved, onWatch, onReject, onToggleSave }: Props & { p
           <Play aria-hidden className="h-4 w-4" />
           Watch
         </Button>
-        <SaveButton saved={saved} onToggle={onToggleSave} label={video.title} />
+        <SaveButton saved={saved} onToggle={onToggleSave} label={video.title} disabled={!canSave} />
         <Button variant="ghost" onClick={onReject} aria-label={`Not this one: ${video.title}`}>
           Not this one
         </Button>
@@ -70,7 +71,7 @@ function VideoCard({ pick, saved, onWatch, onReject, onToggleSave }: Props & { p
 }
 
 /** A screen-free idea: the activity and its steps, no video. */
-function IdeaCard({ pick, saved, onToggleSave, onReject, onFeedback }: Props) {
+function IdeaCard({ pick, saved, canSave = true, onToggleSave, onReject, onFeedback }: Props) {
   const [answered, setAnswered] = useState(false)
   return (
     <li
@@ -86,7 +87,7 @@ function IdeaCard({ pick, saved, onToggleSave, onReject, onFeedback }: Props) {
       </div>
       <div className="border-t border-border bg-background/60 px-4 py-3">
         <div className="mb-3">
-          <SaveButton saved={saved} onToggle={onToggleSave} label={pick.activityTitle} />
+          <SaveButton saved={saved} onToggle={onToggleSave} label={pick.activityTitle} disabled={!canSave} />
         </div>
         {answered ? (
           <p data-testid="idea-thanks" className="text-sm text-foreground">

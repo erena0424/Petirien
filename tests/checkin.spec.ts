@@ -96,6 +96,10 @@ test('form needs mood and energy, shows the privacy note, then returns ideas', a
 
   const submit = a.page.getByRole('button', { name: 'Show me a few ideas' })
   await expect(submit).toBeDisabled()
+  // Only mood and energy are asked up front; the rest sits behind More options.
+  await expect(a.page.getByLabel('Anything you want to add?')).toBeHidden()
+  await expect(a.page.getByText('How much time do you have?')).toBeHidden()
+  await a.page.getByRole('button', { name: /More options/ }).click()
   await expect(a.page.getByTestId('note-privacy')).toContainText('sent to an AI service')
 
   await a.page.getByLabel('Anything you want to add?').fill('long day at work')
@@ -270,8 +274,11 @@ test('"No screen" asks for ideas only; plain ideas have steps, feedback, and no 
     picks: [idea(1, 'grounding-54321', '5-4-3-2-1 grounding'), idea(2, 'journaling-prompts', 'Journaling prompts')],
   }))
   await a.page.goto('/checkin')
-  await expect(a.page.getByLabel('Videos where they help')).toBeChecked() // default
-  await a.page.getByText('No screen, just ideas', { exact: true }).click()
+  await expect(a.page.getByTestId('options-summary')).toContainText('a mix of videos and ideas') // default: not sure
+  await a.page.getByRole('button', { name: /More options/ }).click()
+  await expect(a.page.getByLabel('Not sure').last()).toBeChecked()
+  await a.page.getByText('No screen', { exact: true }).click()
+  await expect(a.page.getByTestId('options-summary')).toContainText('no screen')
   await fillAndSubmit(a.page)
 
   expect(bodies[0]).toMatchObject({ screen: 'none' })
@@ -280,6 +287,17 @@ test('"No screen" asks for ideas only; plain ideas have steps, feedback, and no 
   await expect(a.page.getByText('Name five things you can see')).toBeVisible() // steps open by default
   await a.page.getByRole('button', { name: /Yes, useful: 5-4-3-2-1 grounding/ }).click()
   await expect(a.page.getByTestId('idea-thanks')).toBeVisible()
+})
+
+test('"Videos are fine" is sent as video; the default sends nothing', async ({ users }) => {
+  const [a] = await users(1)
+  const bodies = await mockRecommend(a.page, () => okResponse())
+  await a.page.goto('/checkin')
+  await a.page.getByRole('button', { name: /More options/ }).click()
+  await a.page.getByText('Videos are fine', { exact: true }).click()
+  await fillAndSubmit(a.page)
+  await expect(a.page.getByTestId('ok-result')).toBeVisible()
+  expect(bodies[0]).toMatchObject({ screen: 'video' })
 })
 
 test('the default asks for videos where they help and does not send a screen value', async ({ users }) => {

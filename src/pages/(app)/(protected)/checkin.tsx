@@ -47,19 +47,21 @@ export default function CheckinPage() {
   const lastInput = useRef<CheckinInput | null>(null)
   const heading = useRef<HTMLHeadingElement>(null)
 
-  // Start from the person's usual time, once, unless they already changed it.
+  // Start from the person's usual time and screen choice, once, unless they already
+  // changed those themselves (they may tap before their saved preferences arrive).
+  const touched = useRef({ minutes: false, screen: false })
   const appliedUsual = useRef(false)
   useEffect(() => {
     if (appliedUsual.current || preferences.status !== 'ready') return
     appliedUsual.current = true
     const usual = preferences.prefs.defaultMinutes
-    const noScreen = preferences.prefs.screenFree
+    const screen = preferences.prefs.screen
     setValues((v) => ({
       ...v,
-      minutes: usual && v.minutes === EMPTY_FORM.minutes ? usual : v.minutes,
-      screen: noScreen ? 'none' : v.screen,
+      minutes: usual && !touched.current.minutes ? usual : v.minutes,
+      screen: touched.current.screen ? v.screen : screen,
     }))
-  }, [preferences.status, preferences.prefs.defaultMinutes, preferences.prefs.screenFree])
+  }, [preferences.status, preferences.prefs.defaultMinutes, preferences.prefs.screen])
 
   // Move focus to the new content so screen reader users hear what changed.
   useEffect(() => {
@@ -160,7 +162,16 @@ export default function CheckinPage() {
               </p>
             </div>
           </div>
-          <CheckinForm values={values} onChange={setValues} onSubmit={submit} submitting={false} />
+          <CheckinForm
+            values={values}
+            onChange={(next) => {
+              if (next.minutes !== values.minutes) touched.current.minutes = true
+              if (next.screen !== values.screen) touched.current.screen = true
+              setValues(next)
+            }}
+            onSubmit={submit}
+            submitting={false}
+          />
         </>
       )}
 
@@ -177,6 +188,7 @@ export default function CheckinPage() {
           key={watching.suggestionId}
           pick={watching}
           saved={saved.isSaved(watching.video.videoId)}
+          canSave={saved.ready}
           onToggleSave={() => toggleSave(watching)}
           onBack={() => setWatching(null)}
           onStartOver={startOver}
@@ -190,6 +202,7 @@ export default function CheckinPage() {
           hidden={hidden}
           retries={retries}
           headingRef={heading}
+          canSave={saved.ready && savedIdeas.ready}
           isSaved={(p) => (p.video ? saved.isSaved(p.video.videoId) : savedIdeas.isSaved(p.activityId))}
           onWatch={watch}
           onReject={reject}
@@ -211,6 +224,7 @@ interface ResultProps {
   retries: number
   headingRef: React.RefObject<HTMLHeadingElement | null>
   isSaved: (p: Pick) => boolean
+  canSave: boolean
   onWatch: (p: Pick) => void
   onReject: (p: Pick) => void
   onToggleSave: (p: Pick) => void
@@ -335,6 +349,7 @@ function Result(p: ResultProps) {
               key={pick.suggestionId}
               pick={pick}
               saved={p.isSaved(pick)}
+              canSave={p.canSave}
               onWatch={() => p.onWatch(pick)}
               onReject={() => p.onReject(pick)}
               onToggleSave={() => p.onToggleSave(pick)}

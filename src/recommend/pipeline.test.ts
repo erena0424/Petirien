@@ -386,10 +386,18 @@ describe('recommend: videos only where they help', () => {
     expect((await recommend(other.deps, input)).status).toBe('capped')
   })
 
-  it('rejects an unknown screen value', () => {
-    expect(parseCheckinInput({ ...input, screen: 'none' }).ok).toBe(true)
-    expect(parseCheckinInput({ ...input, screen: 'auto' }).ok).toBe(true)
-    expect(parseCheckinInput({ ...input, screen: 'video' }).ok).toBe(false)
+  it('"videos are fine" only offers activities that come with a video', async () => {
+    const { deps } = makeDeps({ llm: llmScript(mixed, () => null) })
+    const res = await recommend(deps, { ...mixedInput, screen: 'video' })
+    expect(res.status).toBe('ok')
+    if (res.status !== 'ok') return
+    expect(res.picks.length).toBeGreaterThan(0)
+    for (const p of res.picks) expect(getActivity(p.activityId)!.video, p.activityId).toBe(true)
+  })
+
+  it('accepts only the three screen values', () => {
+    for (const v of ['auto', 'video', 'none']) expect(parseCheckinInput({ ...input, screen: v }).ok, v).toBe(true)
+    expect(parseCheckinInput({ ...input, screen: 'some' }).ok).toBe(false)
   })
 })
 

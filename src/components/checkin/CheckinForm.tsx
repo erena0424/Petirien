@@ -1,7 +1,11 @@
+import { useState } from 'react'
+import { ChevronDown } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Button, Textarea } from '@/components/ui'
 import type { CheckinInput } from '../../contract'
-import { ENERGY, MOOD } from '@/lib/labels'
+import { ENERGY, GOAL_LABELS, MOOD } from '@/lib/labels'
+import type { ScreenMode } from '@/lib/preferences'
+import { cn } from '@/lib/utils'
 import { ChoiceGroup } from '../ChoiceGroup'
 
 export interface FormValues {
@@ -10,7 +14,7 @@ export interface FormValues {
   minutes: number | null
   goal: NonNullable<CheckinInput['goal']> | ''
   note: string
-  screen: 'auto' | 'none'
+  screen: ScreenMode
 }
 
 export const EMPTY_FORM: FormValues = { mood: null, energy: null, minutes: 10, goal: '', note: '', screen: 'auto' }
@@ -34,7 +38,7 @@ export function toInput(v: FormValues): CheckinInput | null {
     minutes: v.minutes,
     ...(v.goal ? { goal: v.goal } : {}),
     ...(note ? { note } : {}),
-    ...(v.screen === 'none' ? { screen: 'none' as const } : {}),
+    ...(v.screen !== 'auto' ? { screen: v.screen } : {}),
   }
 }
 
@@ -45,8 +49,33 @@ interface Props {
   submitting: boolean
 }
 
+export const SCREEN_CHOICES: { value: ScreenMode; label: string }[] = [
+  { value: 'auto', label: 'Not sure' },
+  { value: 'video', label: 'Videos are fine' },
+  { value: 'none', label: 'No screen' },
+]
+
+/** One line describing what will be used if the person leaves "More options" alone. */
+export function optionsSummary(v: FormValues): string {
+  const screen = { auto: 'a mix of videos and ideas', video: 'videos', none: 'no screen' }[v.screen]
+  return [`${v.minutes ?? 10} min`, v.goal ? GOAL_LABELS[v.goal]?.toLowerCase() : 'any kind of help', screen].join(' · ')
+}
+
+interface Props {
+  values: FormValues
+  onChange: (v: FormValues) => void
+  onSubmit: (input: CheckinInput) => void
+  submitting: boolean
+}
+
+/**
+ * Two questions up front (mood, energy). Everything else has a sensible default
+ * and sits behind "More options", so a worn-out person is never asked to decide
+ * more than they want to.
+ */
 export function CheckinForm({ values, onChange, onSubmit, submitting }: Props) {
   const input = toInput(values)
+  const [more, setMore] = useState(false)
   const set = <K extends keyof FormValues>(k: K, v: FormValues[K]) => onChange({ ...values, [k]: v })
 
   return (
@@ -59,45 +88,61 @@ export function CheckinForm({ values, onChange, onSubmit, submitting }: Props) {
     >
       <ChoiceGroup legend="How are you feeling?" variant="scale" value={values.mood} onChange={(v) => set('mood', v)} options={MOOD} />
       <ChoiceGroup legend="How much energy do you have?" variant="scale" value={values.energy} onChange={(v) => set('energy', v)} options={ENERGY} />
-      <ChoiceGroup legend="How much time do you have?" value={values.minutes} onChange={(v) => set('minutes', v)} options={MINUTES} />
-      <ChoiceGroup
-        legend="What would help most right now?"
-        hint="Pick one, or skip it."
-        value={values.goal}
-        onChange={(v) => set('goal', v)}
-        options={[...GOALS]}
-      />
-
-      <ChoiceGroup<'auto' | 'none'>
-        legend="Screen or no screen?"
-        hint="Videos only show up where they help, like guided meditation or stretching."
-        value={values.screen}
-        onChange={(v) => set('screen', v)}
-        options={[
-          { value: 'auto', label: 'Videos where they help' },
-          { value: 'none', label: 'No screen, just ideas' },
-        ]}
-      />
 
       <div>
-        <label htmlFor="checkin-note" className="text-sm font-medium text-foreground">
-          Anything you want to add? <span className="font-normal text-muted-foreground">(optional)</span>
-        </label>
-        <Textarea
-          id="checkin-note"
-          value={values.note}
-          maxLength={1000}
-          rows={3}
-          onChange={(e) => set('note', e.target.value)}
-          className="mt-2 border-input bg-card"
-          placeholder="A few words about your day, if you like"
-        />
-        <p className="mt-2 text-xs text-muted-foreground" data-testid="note-privacy">
-          Your note is sent to an AI service to help choose ideas. Leave it blank if you would rather not share.{' '}
-          <Link to="/privacy" className="underline underline-offset-4">
-            How your data is used
-          </Link>
-        </p>
+        <button
+          type="button"
+          aria-expanded={more}
+          aria-controls="more-options"
+          onClick={() => setMore((m) => !m)}
+          className="flex min-h-11 w-full items-center justify-between gap-3 rounded-xl border border-border bg-card px-4 py-2 text-left hover:bg-secondary focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+        >
+          <span>
+            <span className="block text-sm font-semibold text-foreground">More options</span>
+            <span data-testid="options-summary" className="block text-sm text-muted-foreground">
+              {optionsSummary(values)}
+            </span>
+          </span>
+          <ChevronDown aria-hidden className={cn('h-4 w-4 shrink-0 text-muted-foreground transition-transform', more && 'rotate-180')} />
+        </button>
+
+        <div id="more-options" hidden={!more} className="mt-6 space-y-7">
+          <ChoiceGroup legend="How much time do you have?" value={values.minutes} onChange={(v) => set('minutes', v)} options={MINUTES} />
+          <ChoiceGroup
+            legend="What would help most right now?"
+            hint="Pick one, or leave it as Not sure."
+            value={values.goal}
+            onChange={(v) => set('goal', v)}
+            options={[...GOALS]}
+          />
+          <ChoiceGroup
+            legend="Screen or no screen?"
+            hint="Not sure shows a mix: a video where it helps, and plain ideas."
+            value={values.screen}
+            onChange={(v) => set('screen', v)}
+            options={SCREEN_CHOICES}
+          />
+          <div>
+            <label htmlFor="checkin-note" className="text-sm font-medium text-foreground">
+              Anything you want to add? <span className="font-normal text-muted-foreground">(optional)</span>
+            </label>
+            <Textarea
+              id="checkin-note"
+              value={values.note}
+              maxLength={1000}
+              rows={3}
+              onChange={(e) => set('note', e.target.value)}
+              className="mt-2 border-input bg-card"
+              placeholder="A few words about your day, if you like"
+            />
+            <p className="mt-2 text-xs text-muted-foreground" data-testid="note-privacy">
+              Your note is sent to an AI service to help choose ideas. Leave it blank if you would rather not share.{' '}
+              <Link to="/privacy" className="underline underline-offset-4">
+                How your data is used
+              </Link>
+            </p>
+          </div>
+        </div>
       </div>
 
       <Button type="submit" size="lg" className="w-full" disabled={!input} loading={submitting}>

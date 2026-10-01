@@ -35,6 +35,7 @@ test('a check-in is saved, shown on Home and History, hidden from others, and de
   await cara.page.goto('/checkin')
   await cara.page.getByText('Low', { exact: true }).first().click()
   await cara.page.getByText('Medium', { exact: true }).click()
+  await cara.page.getByRole('button', { name: /More options/ }).click()
   await cara.page.getByText('Calm down', { exact: true }).click()
   await cara.page.getByLabel('Anything you want to add?').fill(note)
   await cara.page.getByRole('button', { name: 'Show me a few ideas' }).click()

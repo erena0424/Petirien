@@ -19,10 +19,11 @@ export interface CheckinInput {
   /** Existing check-in to extend when re-running after "none fit". */
   checkinId?: string
   /**
-   * `auto` (default): videos only for activities where a video helps.
+   * `auto` (default, "not sure"): a mix. A video where one helps, plain ideas otherwise.
+   * `video`: only ideas that come with a video.
    * `none`: no screen at all; ideas only, no video search.
    */
-  screen?: 'auto' | 'none'
+  screen?: 'auto' | 'video' | 'none'
 }
 
 /** A real video, only ever built from retrieval results. */

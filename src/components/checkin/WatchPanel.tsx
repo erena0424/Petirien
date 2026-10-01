@@ -11,6 +11,7 @@ export type Helpful = 'yes' | 'somewhat' | 'no'
 interface Props {
   pick: Pick & { video: VideoRef }
   saved: boolean
+  canSave?: boolean
   onToggleSave: () => void
   onBack: () => void
   onStartOver: () => void
@@ -29,7 +30,7 @@ const OPTIONS: { value: Helpful; label: string }[] = [
  * Player, then a feedback card. Feedback asks whether the idea was useful,
  * never whether the person feels better.
  */
-export function WatchPanel({ pick, saved, onToggleSave, onBack, onStartOver, onFeedback }: Props) {
+export function WatchPanel({ pick, saved, canSave = true, onToggleSave, onBack, onStartOver, onFeedback }: Props) {
   const [phase, setPhase] = useState<Phase>('playing')
 
   return (
@@ -47,7 +48,7 @@ export function WatchPanel({ pick, saved, onToggleSave, onBack, onStartOver, onF
         <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{pick.activityTitle}</p>
         <h2 className="mt-1 text-lg font-semibold leading-snug text-foreground">{pick.video.title}</h2>
         <div className="mt-3">
-          <SaveButton saved={saved} onToggle={onToggleSave} label={pick.video.title} />
+          <SaveButton saved={saved} onToggle={onToggleSave} label={pick.video.title} disabled={!canSave} />
         </div>
       </div>
 

@@ -45,6 +45,7 @@ export function useSavedIdeas() {
 
   return {
     status: query.status,
+    ready,
     records: query.records,
     isSaved: (activityId: string) => !removing.includes(activityId) && (byActivity.has(activityId) || saving.includes(activityId)),
     save,

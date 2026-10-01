@@ -15,7 +15,9 @@ import {
   avoidsTooMuch,
   normalizePreferences,
   type Preferences,
+  type ScreenMode,
 } from '@/lib/preferences'
+import { SCREEN_CHOICES } from '@/components/checkin/CheckinForm'
 import { usePreferences } from '@/lib/use-preferences'
 
 type Minutes = number | 0
@@ -106,15 +108,12 @@ export default function PreferencesPage() {
             options={[{ value: 0, label: 'No usual' }, ...MINUTE_CHOICES.map((m) => ({ value: m, label: `${m} min` }))]}
           />
 
-          <ChoiceGroup<'auto' | 'none'>
-            legend="How do you usually want ideas?"
-            hint="Videos only show up where they help, like guided meditation or stretching."
-            value={draft.screenFree ? 'none' : 'auto'}
-            onChange={(v) => change({ screenFree: v === 'none' })}
-            options={[
-              { value: 'auto', label: 'Videos where they help' },
-              { value: 'none', label: 'No screen, just ideas' },
-            ]}
+          <ChoiceGroup<ScreenMode>
+            legend="Screen or no screen?"
+            hint="Not sure shows a mix: a video where it helps, and plain ideas. I'll start the check-in with this."
+            value={draft.screen}
+            onChange={(screen) => change({ screen })}
+            options={SCREEN_CHOICES}
           />
 
           <div className="flex flex-wrap items-center gap-3">

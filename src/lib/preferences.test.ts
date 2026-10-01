@@ -19,11 +19,12 @@ describe('normalizePreferences', () => {
   it('drops unknown tags and duplicates, and accepts only known default minutes', () => {
     expect(
       normalizePreferences({ avoid: ['guided', 'guided', 'made-up', 3 as unknown as string], likedTags: ['music', 'nope'], defaultMinutes: 15 }),
-    ).toEqual({ avoid: ['guided'], likedTags: ['music'], defaultMinutes: 15, screenFree: false })
+    ).toEqual({ avoid: ['guided'], likedTags: ['music'], defaultMinutes: 15, screen: 'auto' })
     expect(normalizePreferences({ defaultMinutes: 7 }).defaultMinutes).toBeNull()
-    expect(normalizePreferences(null)).toEqual({ avoid: [], likedTags: [], defaultMinutes: null, screenFree: false })
-    expect(normalizePreferences({ screenFree: true }).screenFree).toBe(true)
-    expect(normalizePreferences({ screenFree: 'yes' as unknown as boolean }).screenFree).toBe(false)
+    expect(normalizePreferences(null)).toEqual({ avoid: [], likedTags: [], defaultMinutes: null, screen: 'auto' })
+    expect(normalizePreferences({ screen: 'none' }).screen).toBe('none')
+    expect(normalizePreferences({ screen: 'video' }).screen).toBe('video')
+    expect(normalizePreferences({ screen: 'sometimes' as unknown as 'auto' }).screen).toBe('auto')
     expect(normalizePreferences({ avoid: 'guided' as unknown as string[] }).avoid).toEqual([])
   })
   it('lets avoiding win when a tag is in both lists', () => {

@@ -31,15 +31,18 @@ export const LIKE_OPTIONS: TagOption[] = [
 
 export const MINUTE_CHOICES = [5, 10, 15, 20, 30]
 
+export type ScreenMode = 'auto' | 'video' | 'none'
+export const SCREEN_MODES: ScreenMode[] = ['auto', 'video', 'none']
+
 export interface Preferences {
   likedTags: string[]
   avoid: string[]
   defaultMinutes: number | null
-  /** Prefers ideas with no video and no screen. */
-  screenFree: boolean
+  /** `auto` = not sure (a mix), `video` = videos are fine, `none` = no screen. */
+  screen: ScreenMode
 }
 
-export const DEFAULT_PREFERENCES: Preferences = { likedTags: [], avoid: [], defaultMinutes: null, screenFree: false }
+export const DEFAULT_PREFERENCES: Preferences = { likedTags: [], avoid: [], defaultMinutes: null, screen: 'auto' }
 
 const KNOWN_TAGS = new Set(CATALOG.flatMap((a) => a.tags))
 
@@ -57,7 +60,7 @@ export function normalizePreferences(input: Partial<Preferences> | null | undefi
     likedTags,
     avoid,
     defaultMinutes: typeof m === 'number' && MINUTE_CHOICES.includes(m) ? m : null,
-    screenFree: input?.screenFree === true,
+    screen: SCREEN_MODES.includes(input?.screen as ScreenMode) ? (input?.screen as ScreenMode) : 'auto',
   }
 }
 

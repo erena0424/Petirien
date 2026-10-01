@@ -22,6 +22,8 @@ export interface FilterInput {
   avoid?: string[]
   /** Activity ids already rejected this session. */
   excludeIds?: string[]
+  /** Only activities that come with a video (the person wants videos). */
+  videoOnly?: boolean
 }
 
 export interface FilterResult {
@@ -43,7 +45,8 @@ function passesConstraints(a: Activity, input: FilterInput): boolean {
     a.minMinutes <= input.minutes &&
     a.effort <= effortCap(input.energy) &&
     !a.tags.some((t) => blocked.has(t)) &&
-    !(input.excludeIds ?? []).includes(a.id)
+    !(input.excludeIds ?? []).includes(a.id) &&
+    (!input.videoOnly || a.video)
   )
 }
 
