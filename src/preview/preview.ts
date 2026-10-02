@@ -10,8 +10,8 @@ import { dayOfYear } from '../lib/for-now'
 import { filterCatalog } from '../recommend/filter'
 
 /**
- * Videos picked by hand for the preview, one per video activity. Checked on 2 Oct 2026: each plays embedded (YouTube's
- * oEmbed answers 200) and is about the length of its activity (12:11, 5:29, 10:00, 12:10). Only the video id is kept here,
+ * Videos picked by hand for the preview, one per video activity. Checked on 2 and 3 Oct 2026: each plays embedded (YouTube's
+ * oEmbed answers 200) and is about the length of its activity (12:11, 5:29, 10:00, 12:10, 11:18, 13:05). Only the video id is kept here,
  * which is allowed to stay; the title shown is our own activity title and the picture is YouTube's standard thumbnail
  * for the id, so no YouTube metadata is stored. If one ever stops playing, the player says so and links to YouTube.
  */
@@ -20,6 +20,9 @@ export const SAMPLE_VIDEOS: { activityId: string; videoId: string }[] = [
   { activityId: 'body-scan', videoId: 'aH72AScs0qk' },
   { activityId: 'rain-sounds', videoId: 'RmmmY8KpVEs' },
   { activityId: 'chair-yoga', videoId: 'bMZ1mI1g1rM' },
+  // The more active end, so that more energy really gets more active suggestions.
+  { activityId: 'gentle-yoga', videoId: 'C2RAjUEAoLI' },
+  { activityId: 'indoor-walk', videoId: 'bO6NNfX_1ns' },
 ]
 
 export const thumbnailFor = (videoId: string) => `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`
@@ -56,13 +59,13 @@ const targetEffort = (energy: number) => (energy <= 2 ? 1 : energy === 3 ? 2 : 3
  * minutes gets the quick things and thirty gets the longer ones.
  */
 export function matchScore(a: Activity, input: PreviewInput): number {
-  const effort = -Math.abs(a.effort - targetEffort(input.energy)) * 2
+  const effort = -Math.abs(a.effort - targetEffort(input.energy)) * 3 // a whole step of effort outweighs any difference in time
   const time = -Math.abs(input.minutes - (a.minMinutes + a.maxMinutes) / 2) / 8
   return effort + time
 }
 
 /** Matches this close to the best are all good ones, and they take turns by day so the page does not feel stuck. */
-// Within one step of effort of the best match still counts as a good match, so they can take turns.
+// Matches this close to the best (the same effort, a little different in time) take turns; a different effort never does.
 const NEAR_BEST = 2.5
 
 /** Best match first; among the near-best, a different one leads each day. */
@@ -91,14 +94,17 @@ export function previewPicks(input: PreviewInput, now: Date): PreviewPicks {
     safe,
     day,
   )[0]
-  const plain = ranked(
-    fits.filter((a) => !a.video).map((a) => ({ a })),
+  const chosen = sample?.a
+  // Ideas come from everything that fits (not only the written-only ones), so more energy gets more active ideas too; the
+  // activity of the video is left out so the two are not the same thing, and an idea is shown with its steps, no video.
+  const pool = ranked(
+    fits.filter((a) => a.id !== chosen?.id).map((a) => ({ a })),
     safe,
     day,
   ).map((x) => x.a)
   // The best match, then the best match of a different kind, so the two are not twins.
-  const first = plain[0]
-  const second = plain.find((a) => first && a.id !== first.id && a.category !== first.category) ?? plain.find((a) => a.id !== first?.id)
+  const first = pool[0]
+  const second = pool.find((a) => first && a.id !== first.id && a.category !== first.category) ?? pool.find((a) => a.id !== first?.id)
   const ideas = [first, second].filter((a): a is Activity => !!a)
   return { ideas, video: sample ? { activity: sample.a, videoId: sample.s.videoId } : null }
 }
