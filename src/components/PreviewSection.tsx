@@ -42,8 +42,8 @@ export function PreviewSection({ asking, onClose }: { asking: boolean; onClose: 
   }
 
   return (
-    <section aria-labelledby="sample-heading" data-testid="preview" className="mt-14">
-      <h2 id="sample-heading" className="text-2xl font-semibold text-foreground">
+    <section aria-labelledby="sample-heading" data-testid="preview" >
+      <h2 id="sample-heading" className="text-3xl font-bold text-foreground">
         A few ideas to try
       </h2>
       <p data-testid="sample-note" className="mt-2 max-w-3xl text-base text-muted-foreground">
@@ -89,15 +89,6 @@ export function PreviewSection({ asking, onClose }: { asking: boolean; onClose: 
         ))}
       </ul>
 
-      <div data-testid="preview-signin" className="mt-8 rounded-3xl bg-secondary p-7 sm:flex sm:items-center sm:justify-between sm:gap-6">
-        <div>
-        <p className="text-2xl font-semibold text-foreground">Save this and keep your reflections in one place.</p>
-        <p className="mt-1 text-base text-foreground">Sign in to save what you like, talk with the bunny, and have ideas picked with you in mind.</p>
-        </div>
-        <Button className="mt-4 min-h-12 shrink-0 rounded-full px-8 text-base sm:mt-0" onClick={() => setSignIn(true)}>
-          Sign in
-        </Button>
-      </div>
       {signIn && <AuthOverlay onClose={() => setSignIn(false)} />}
     </section>
   )

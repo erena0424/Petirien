@@ -30,3 +30,17 @@ export function Cloud({ className }: { className?: string }) {
 export function Blob({ className }: { className?: string }) {
   return <div aria-hidden className={`rounded-[46%_54%_52%_48%/52%_46%_54%_48%] bg-gradient-to-br from-[var(--color-backdrop-soft)] to-[var(--color-backdrop)] ${className ?? ''}`} />
 }
+
+/** A little hand-drawn map with a pin: decorative, for the places card (the real places come from Google Maps). */
+export function MapSketch({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 160 110" className={className} {...base}>
+      <rect width="160" height="110" rx="16" fill="var(--color-backdrop-soft)" />
+      <path d="M-5 78 C40 60 70 90 165 55" stroke="white" strokeWidth="9" fill="none" />
+      <path d="M52 -5 C62 35 40 70 70 115" stroke="white" strokeWidth="7" fill="none" />
+      <circle cx="122" cy="26" r="15" fill="var(--color-backdrop)" />
+      <path d="M92 70c0-9 7-16 16-16s16 7 16 16c0 11-16 26-16 26S92 81 92 70z" fill="var(--color-primary)" />
+      <circle cx="108" cy="70" r="6" fill="white" />
+    </svg>
+  )
+}

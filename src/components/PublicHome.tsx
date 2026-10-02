@@ -8,6 +8,7 @@ import { Bunny } from './Bunny'
 import { Blob, Cloud, Sparkle, Star } from './Sparkle'
 import { PlaceSuggestions } from './PlaceSuggestions'
 import { PreviewSection } from './PreviewSection'
+import { SignInInvite } from './SignInInvite'
 
 /**
  * Home for someone who has not signed in (the landing page explains the benefit; this invites one easy action).
@@ -31,44 +32,51 @@ export function PublicHome() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-5 py-10 sm:px-8">
-      <section aria-label="Welcome" data-testid="home-hero" className="flex flex-col items-center gap-8 text-center md:flex-row md:items-center md:gap-14 md:text-left">
-        <div className="relative flex shrink-0 items-center justify-center">
-          <Blob className="absolute h-56 w-56 sm:h-80 sm:w-80" />
-          <Bunny className="relative w-44 sm:w-64" />
-          <Cloud className="absolute -top-1 right-0 w-20 sm:right-2 sm:w-28" />
-          <Star className="absolute bottom-6 left-0 w-9 sm:left-4 sm:w-12" />
-          <Sparkle className="absolute left-6 top-4 w-6 sm:left-10 sm:top-8 sm:w-8" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p data-testid="home-greeting" className="text-lg font-medium text-muted-foreground">
-            {greeting}
-          </p>
-          <h1 data-testid="home-pitch" className="mt-2 text-4xl font-semibold leading-[1.1] tracking-tight text-[color:var(--color-ink)] sm:text-5xl lg:text-6xl">
-            What feels{' '}
-            manageable today?
-          </h1>
-          <p data-testid="home-explain" className="mt-4 max-w-xl text-xl leading-relaxed text-muted-foreground">
-            Start with your mood, energy and time. I&apos;ll help you find something that fits.
-          </p>
-          <div className="mt-7 flex flex-wrap justify-center gap-3 md:justify-start">
-            <Button className="min-h-14 rounded-full px-9 text-lg font-semibold" onClick={start} data-testid="home-find">
-              Find something to do
-            </Button>
-            <Button variant="outline" className="min-h-14 rounded-full border-2 px-9 text-lg font-semibold" onClick={() => setSignIn(true)} data-testid="home-signin">
-              Sign in
-            </Button>
+    <div className="w-full">
+      <div className="mx-auto w-full max-w-6xl px-5 pb-14 pt-14 sm:px-8">
+        <section aria-label="Welcome" data-testid="home-hero" className="flex flex-col items-center gap-8 text-center md:flex-row md:items-center md:gap-14 md:text-left">
+          <div className="relative flex shrink-0 items-center justify-center">
+            <Blob className="absolute h-60 w-60 sm:h-80 sm:w-80" />
+            <Bunny className="relative w-48 sm:w-64" />
+            <Cloud className="absolute -top-2 right-0 w-20 sm:-right-4 sm:w-28" />
+            <Star className="absolute bottom-6 left-0 w-9 sm:-left-2 sm:w-12" />
+            <Sparkle className="absolute left-6 top-4 w-6 sm:left-8 sm:top-6 sm:w-8" />
           </div>
-        </div>
-      </section>
-      <div ref={previewRef}>
-        <PreviewSection asking={asking} onClose={() => setAsking(false)} />
+          <div className="min-w-0 flex-1">
+            <p data-testid="home-greeting" className="text-lg font-medium text-muted-foreground">
+              {greeting}
+            </p>
+            <h1 data-testid="home-pitch" className="mt-2 text-4xl font-bold leading-[1.1] tracking-tight text-[color:var(--color-ink)] sm:text-5xl lg:text-6xl">
+              What feels manageable today?
+            </h1>
+            <p data-testid="home-explain" className="mt-4 max-w-xl text-xl leading-relaxed text-muted-foreground">
+              Start with your mood, energy and time. I&apos;ll help you find something that fits.
+            </p>
+            <div className="mt-7 flex flex-wrap justify-center gap-3 md:justify-start">
+              <Button className="min-h-14 rounded-full px-9 text-lg font-semibold" onClick={start} data-testid="home-find">
+                Find something to do
+              </Button>
+              <Button variant="outline" className="min-h-14 rounded-full border-2 px-9 text-lg font-semibold" onClick={() => setSignIn(true)} data-testid="home-signin">
+                Sign in
+              </Button>
+            </div>
+          </div>
+        </section>
       </div>
-      <section aria-labelledby="place-heading" data-testid="home-place" className="mt-14">
-        <h2 id="place-heading" className="text-2xl font-semibold text-foreground">
+
+      <div className="bg-secondary/70 py-14">
+        <div ref={previewRef} className="mx-auto w-full max-w-6xl px-5 sm:px-8">
+          <PreviewSection asking={asking} onClose={() => setAsking(false)} />
+        </div>
+      </div>
+
+      <SignInInvite />
+
+      <section aria-labelledby="place-heading" data-testid="home-place" className="mx-auto w-full max-w-6xl px-5 py-14 sm:px-8">
+        <h2 id="place-heading" className="text-3xl font-bold text-foreground">
           A change of scenery
         </h2>
-        <div className="mt-3 rounded-3xl border border-border bg-card p-6 shadow-[var(--shadow-card)]">
+        <div className="mt-4 rounded-3xl border border-border bg-card p-6 shadow-[var(--shadow-card)]">
           <PlaceSuggestions kinds={[homeKind(dayOfYear(new Date()))]} autoEveryMs={30 * 60_000} showOthers={false} fallback="Even a few minutes outside can help. Pick any direction you like." />
         </div>
       </section>

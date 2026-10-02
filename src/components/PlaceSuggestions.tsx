@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { MapPin, ThumbsDown, ThumbsUp } from 'lucide-react'
 import { useAuthStatus } from 'deepspace'
 import { Button } from '@/components/ui'
+import { MapSketch } from './Sparkle'
 import { usePlaceFeedback } from '@/lib/use-place-feedback'
 import { usePlaces } from '@/lib/use-places'
 import { cn } from '@/lib/utils'
@@ -138,7 +139,8 @@ export function PlaceSuggestions({ kinds: kindsProp, autoEveryMs, showOthers = t
       {state.kind === 'idle' && (
         <div data-testid="places-ask">
           <div className="flex items-start gap-3">
-            <span aria-hidden className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-secondary text-primary">
+            <MapSketch className="hidden h-24 w-36 shrink-0 sm:block" />
+            <span aria-hidden className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-secondary text-primary sm:hidden">
               <MapPin className="h-5 w-5" />
             </span>
             <div>
