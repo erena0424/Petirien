@@ -246,12 +246,7 @@ test('check-ins show on the Journal: a mood and energy chart, the day\'s check-i
   await expect(cell).toHaveAttribute('data-checkins', '2')
   await expect(cell).toHaveAttribute('aria-label', /2 check-ins/)
   await expect(cell.getByTestId('checkin-dot')).toHaveCount(1)
-  const list = page.getByTestId('journal-day-checkins')
-  await expect(list.getByTestId('day-checkin')).toHaveCount(2)
-  await expect(list).toContainText('Feeling low, medium energy')
-  await expect(list).toContainText('Feeling good, low energy')
-  await expect(list).toContainText(`quiet start ${run}`)
-  await expect(list).toContainText('Wanted: calm down')
+  await expect(page.getByTestId('journal-day-checkins')).toHaveCount(0) // check-ins are on the chart and the calendar, not in a list
 
   // The Day view plots every check-in, and marks each at its time in the hour grid.
   await page.getByTestId('journal-view-day').click()

@@ -6,7 +6,8 @@ import { ENERGY, GOAL_LABELS, MOOD, label } from '@/lib/labels'
 import type { CheckinRow } from '@/lib/use-checkins'
 import { cn } from '@/lib/utils'
 import type { Plan } from '../../plans/plan'
-import { addDays, dayKey, fullDate, monthGrid, sameDay, weekDays } from '../../journal/calendar'
+import { addDays, dayKey, fullDate, monthGrid, sameDay, weekDays, type View } from '../../journal/calendar'
+import { chartRange } from '../../journal/mood'
 import { HOUR_PX, MINUTES_PER_DAY, allDayOn, blockBox, eventsOn, layoutDay, timeRange } from '../../journal/layout'
 import { JournalEntryCard, type JournalRecord } from './JournalEntryCard'
 import type { ReflectOn } from '../ReflectionDialog'
@@ -62,54 +63,47 @@ function EventRow({ plan, reflected, onOpen }: { plan: Plan; reflected: boolean;
   )
 }
 
-/** The day in words: what was on the calendar, then what you wrote. */
-export function DayAgenda({ byDay, checkins, events, reflected, anchor, onOpenEvent, onEdit, onDelete }: Omit<Common, 'onSelect'>) {
-  const written = byDay.get(dayKey(anchor)) ?? []
-  const checked = checkins.get(dayKey(anchor)) ?? []
+/** What is on the calendar for the day chosen, then the journal for the whole stretch on screen (month, week or day). */
+export function DayAgenda({ byDay, events, reflected, anchor, view, onOpenEvent, onEdit, onDelete }: Omit<Common, 'onSelect'> & { view: View }) {
   const planned = eventsOn(events, anchor)
+  const { from, to } = chartRange(view, anchor, new Date())
+  // Every entry whose day falls in the range, newest day first and newest first within a day: like the List tab, for these days.
+  const written = [...byDay.entries()]
+    .filter(([key]) => key >= dayKey(from) && key < dayKey(to))
+    .sort(([x], [y]) => (x < y ? 1 : -1))
+    .flatMap(([, list]) => list)
+  const noun = view === 'month' ? 'month' : view === 'week' ? 'week' : 'day'
   return (
-    <section aria-labelledby="day-heading" data-testid="journal-day-entries" className="mt-6">
-      <h2 id="day-heading" className="text-lg font-bold text-foreground">
-        {fullDate(anchor)}
-      </h2>
+    <div>
       {planned.length > 0 && (
-        <ul className="mt-3 space-y-2" aria-label="On the calendar" data-testid="journal-day-events">
-          {planned.map((p) => (
-            <EventRow key={p.id} plan={p} reflected={reflected.has(p.id)} onOpen={onOpenEvent} />
-          ))}
-        </ul>
-      )}
-      {checked.length > 0 && (
-        <section aria-label="Check-ins" data-testid="journal-day-checkins" className="mt-4">
-          <h3 className="text-sm font-semibold text-foreground">Check-ins</h3>
-          <ul className="mt-2 space-y-2">
-            {checked.map((c) => (
-              <li key={c.recordId} data-testid="day-checkin" className="rounded-xl border border-border bg-card px-4 py-3">
-                <p className="text-sm font-semibold text-foreground">
-                  {clock(c.createdAt)} · {feelingLine(c.data)}
-                </p>
-                {c.data.goal && <p className="text-sm text-muted-foreground">Wanted: {(GOAL_LABELS[c.data.goal] ?? '').toLowerCase()}</p>}
-                {c.data.note && <p className="font-hand mt-1 whitespace-pre-wrap text-base text-foreground">{c.data.note}</p>}
-              </li>
+        <section aria-labelledby="day-heading" className="mt-6">
+          <h2 id="day-heading" className="text-lg font-bold text-foreground">
+            {fullDate(anchor)}
+          </h2>
+          <ul className="mt-3 space-y-2" aria-label="On the calendar" data-testid="journal-day-events">
+            {planned.map((p) => (
+              <EventRow key={p.id} plan={p} reflected={reflected.has(p.id)} onOpen={onOpenEvent} />
             ))}
           </ul>
-          <Link to="/history" className="mt-1 inline-flex min-h-10 items-center text-sm font-medium text-primary underline-offset-4 hover:underline">
-            See all check-ins
-          </Link>
         </section>
       )}
-      {written.length === 0 ? (
-        <p data-testid="journal-day-empty" className="mt-3 text-sm text-muted-foreground">
-          Nothing written on this day.
-        </p>
-      ) : (
-        <ul className="mt-4 space-y-4">
-          {written.map((r) => (
-            <JournalEntryCard key={r.recordId} record={r} onEdit={onEdit} onDelete={onDelete} />
-          ))}
-        </ul>
-      )}
-    </section>
+      <section aria-labelledby="entries-heading" data-testid="journal-day-entries" className="mt-6">
+        <h2 id="entries-heading" className="text-lg font-bold text-foreground">
+          Journal entries
+        </h2>
+        {written.length === 0 ? (
+          <p data-testid="journal-day-empty" className="mt-2 text-sm text-muted-foreground">
+            Nothing written this {noun}.
+          </p>
+        ) : (
+          <ul className="mt-3 space-y-4" data-testid="journal-range-entries">
+            {written.map((r) => (
+              <JournalEntryCard key={r.recordId} record={r} onEdit={onEdit} onDelete={onDelete} />
+            ))}
+          </ul>
+        )}
+      </section>
+    </div>
   )
 }
 
@@ -191,7 +185,7 @@ export function MonthView(c: Common) {
           ))}
         </tbody>
       </table>
-      <DayAgenda {...c} />
+      <DayAgenda {...c} view="month" />
     </div>
   )
 }
@@ -342,7 +336,7 @@ export function WeekView(c: Common) {
   return (
     <div data-testid="journal-week">
       <TimeGrid days={weekDays(c.anchor)} c={c} minWidth={720} />
-      <DayAgenda {...c} />
+      <DayAgenda {...c} view="week" />
     </div>
   )
 }
@@ -362,7 +356,7 @@ export function DayView(c: Common) {
         </Button>
       </div>
       <TimeGrid days={[c.anchor]} c={c} minWidth={0} />
-      <DayAgenda {...c} />
+      <DayAgenda {...c} view="day" />
     </div>
   )
 }
