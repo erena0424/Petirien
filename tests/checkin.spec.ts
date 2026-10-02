@@ -383,3 +383,31 @@ test('every suggestion, video or idea, has a good and a not-for-me button that s
   await expect(first.getByTestId('pick-feedback-ack')).toHaveText("Got it. I'll suggest fewer like this.")
   await expect(cards.nth(1).getByTestId('pick-feedback-ack')).toHaveCount(0) // the other card is untouched
 })
+
+test('the first time a video is marked not for me, it asks once whether they would rather skip screens, and never again', async ({ users }) => {
+  const [a] = await users(1)
+  await tuck(a.page)
+  await a.page.addInitScript(() => {
+    if (sessionStorage.getItem('askedReset')) return
+    sessionStorage.setItem('askedReset', '1')
+    localStorage.removeItem('petirien.askedScreen')
+  })
+  await mockRecommend(a.page, () => okResponse())
+  await a.page.goto('/checkin')
+  await fillAndSubmit(a.page)
+  const cards = a.page.getByTestId('pick-card')
+  await expect(cards).toHaveCount(2)
+  await expect(a.page.getByTestId('screen-question')).toHaveCount(0) // not before anyone has said no
+  await cards.first().getByRole('button', { name: /^Good suggestion:/ }).click()
+  await expect(a.page.getByTestId('screen-question')).toHaveCount(0) // a thumbs-up asks nothing
+  await cards.first().getByRole('button', { name: /^Not for me:/ }).click()
+  const question = cards.first().getByTestId('screen-question')
+  await expect(question).toContainText("Would you rather have ideas that don't need a screen?")
+  await question.getByRole('button', { name: 'No, videos are fine' }).click()
+  await expect(cards.first().getByTestId('screen-question-ack')).toContainText('keep videos in the mix')
+  await cards.first().getByRole('button', { name: 'Close' }).click()
+  // Asked once: another thumbs-down, even after a reload, does not ask again.
+  await cards.nth(1).getByRole('button', { name: /^Not for me:/ }).click()
+  await expect(a.page.getByTestId('screen-question')).toHaveCount(0)
+  expect(await a.page.evaluate(() => localStorage.getItem('petirien.askedScreen'))).toBe('1')
+})

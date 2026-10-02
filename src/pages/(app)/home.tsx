@@ -8,6 +8,9 @@
 import { Link } from 'react-router-dom'
 import { useQuery } from 'deepspace'
 import { HomeHero } from '@/components/HomeHero'
+import { PublicHome } from '@/components/PublicHome'
+import { ResumePreview } from '@/components/ResumePreview'
+import { useAuthStatus } from 'deepspace'
 import { HomeIdeas } from '@/components/HomeIdeas'
 import { HomePlace } from '@/components/HomePlace'
 import { MonthCalendar } from '@/components/MonthCalendar'
@@ -49,6 +52,7 @@ export default function HomePage() {
   const journal = useJournal()
   const bunny = useBunnyChat()
   const plans = usePlans()
+  const { isSignedIn, isLoaded } = useAuthStatus()
 
   // A day counts when you did something for yourself: a check-in, a journal note, or a saved chat with the bunny.
   const days = checkinDays([
@@ -70,9 +74,13 @@ export default function HomePage() {
 
   const forNow = pickForNow({ now, avoid: prefs.prefs.avoid })
 
+  // Someone who has not signed in sees the welcome and a sample, not empty sections that need an account.
+  if (isLoaded && !isSignedIn) return <PublicHome />
+
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-8">
       <h1 className="sr-only">Home</h1>
+      <ResumePreview />
       <HomeHero suggestions={suggestionsFor([...plans.calendarPlans, ...plans.typed], now)} />
 
       <div className="mt-10">

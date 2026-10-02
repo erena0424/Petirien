@@ -84,28 +84,3 @@ test('ideas without a video (YouTube did not answer) still show their steps', as
   await page.getByTestId('home-idea').first().getByRole('button', { name: /How to do it/ }).click()
   await expect(page.getByTestId('home-idea').first()).toContainText("You'll need:")
 })
-
-test('signed out: Home shows what the site offers and invites sign-in instead of waiting forever or doing nothing', async ({ page }) => {
-  await tuck(page)
-  await page.goto('/home')
-  await expect(page.getByTestId('home-hero')).toBeVisible()
-  await expect(page.getByTestId('for-now')).toBeVisible() // the written suggestion is there for everyone
-  await page.waitForTimeout(1500)
-  await expect(page.getByText('Finding a couple of things for you')).toHaveCount(0) // no endless loading
-  // Generic ideas for right now: two, with their steps and no video, so nothing is spent before anyone signs in.
-  const ideas = page.getByTestId('home-idea')
-  await expect(ideas).toHaveCount(2)
-  await expect(page.getByTestId('home-idea-thumb')).toHaveCount(0)
-  await expect(page.getByRole('button', { name: /^Watch:/ })).toHaveCount(0)
-  await expect(page.getByTestId('home-ideas-signin')).toContainText('Sign in and')
-  await ideas.first().getByRole('button', { name: /How to do it/ }).click()
-  await expect(ideas.first()).toContainText("You'll need:")
-  // Plans and places ask for sign-in, and the buttons do something.
-  const plans = page.getByTestId('plans')
-  await expect(plans).toContainText('Sign in to see')
-  await expect(plans.getByRole('button', { name: 'Show my plans' })).toHaveCount(0)
-  await expect(plans.getByRole('button', { name: 'Share a plan' })).toHaveCount(0)
-  await expect(page.getByTestId('home-place').getByRole('button', { name: 'Share my location' })).toHaveCount(0)
-  await page.getByTestId('home-place').getByRole('button', { name: 'Sign in to see places' }).click()
-  await expect(page.getByRole('dialog').or(page.getByTestId('auth-overlay')).first()).toBeVisible()
-})

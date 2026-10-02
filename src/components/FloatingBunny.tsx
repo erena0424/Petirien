@@ -152,7 +152,11 @@ function Floating() {
     void chat.send(t)
   }
 
-  const greeting = `${GREETING[partOfDay(new Date())]} Say something, or let's find something small to do.`
+  // Before sign-in the bunny introduces itself and points to the preview, since it cannot chat yet.
+  const greeting = isSignedIn
+    ? `${GREETING[partOfDay(new Date())]} Say something, or let's find something small to do.`
+    : "Hi, I'm the bunny. Try the quick preview on Home to see what I can offer, or sign in and we can talk."
+
   const words = chat.sending ? 'Hmm…' : (chat.latest ?? greeting)
   const lastBunnyIndex = (() => {
     for (let i = chat.thread.length - 1; i >= 0; i--) if (chat.thread[i]!.role === 'bunny') return i

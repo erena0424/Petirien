@@ -31,6 +31,12 @@ function minutesFromUrl(): number | null {
   return (TIME_CHOICES as readonly number[]).includes(n) ? n : null
 }
 
+/** `/checkin?energy=2` (from the preview a visitor did before signing in) starts the form on that energy; mood is still theirs to choose. */
+function energyFromUrl(): number | null {
+  const n = Number(new URLSearchParams(window.location.search).get('energy'))
+  return Number.isInteger(n) && n >= 1 && n <= 5 ? n : null
+}
+
 type Stage =
   | { kind: 'form' }
   | { kind: 'loading' }
@@ -47,7 +53,7 @@ export default function CheckinPage() {
   const savedIdeas = useSavedIdeas()
   const preferences = usePreferences()
 
-  const [values, setValues] = useState<FormValues>(() => ({ ...EMPTY_FORM, minutes: minutesFromUrl() ?? EMPTY_FORM.minutes }))
+  const [values, setValues] = useState<FormValues>(() => ({ ...EMPTY_FORM, minutes: minutesFromUrl() ?? EMPTY_FORM.minutes, energy: energyFromUrl() }))
   const [stage, setStage] = useState<Stage>({ kind: 'form' })
   const [watching, setWatching] = useState<VideoPick | null>(null)
   const [hidden, setHidden] = useState<string[]>([]) // suggestion ids the person said no to

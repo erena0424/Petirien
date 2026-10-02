@@ -76,7 +76,7 @@ export function PlansCard({ plans }: Props) {
       {plans.state.kind === 'idle' && (
         <div className="mt-3">
           <p className="text-sm text-muted-foreground">
-            Connect your Google Calendar and I can show what&apos;s coming up, so we can talk about it before and look back after.
+            Want to talk about what&apos;s coming up? Connect your Google Calendar and I can show it, or share a plan yourself.
           </p>
           <Button variant="outline" className="mt-2" onClick={() => void plans.load()}>
             <CalendarDays aria-hidden className="h-4 w-4" />

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Play } from 'lucide-react'
 import { Button } from '@/components/ui'
 import { formatDuration } from '@/lib/format'
@@ -5,7 +6,9 @@ import type { Pick, VideoRef } from '../../contract'
 import { SaveButton } from '../SaveButton'
 import { getActivity } from '../../catalog'
 import { Instructions } from './Instructions'
+import { usePreferences } from '@/lib/use-preferences'
 import { PlaceSuggestions } from '../PlaceSuggestions'
+import { ScreenQuestion, shouldAskScreen } from './ScreenQuestion'
 import { SuggestionFeedback } from './SuggestionFeedback'
 
 type VideoPick = Pick & { video: VideoRef }
@@ -27,6 +30,8 @@ export function PickCard(props: Props) {
 
 function VideoCard({ pick, saved, canSave = true, onWatch, onReject, onToggleSave, onFeedback }: Props & { pick: VideoPick }) {
   const { video } = pick
+  const prefs = usePreferences()
+  const [asking, setAsking] = useState(false)
   const length = formatDuration(video.durationSec)
   return (
     <li
@@ -62,9 +67,21 @@ function VideoCard({ pick, saved, canSave = true, onWatch, onReject, onToggleSav
           Not this one
         </Button>
         <div className="ml-auto">
-          <SuggestionFeedback title={video.title} onRate={onFeedback} />
+          <SuggestionFeedback
+            title={video.title}
+            onRate={(h) => {
+              onFeedback(h)
+              // The first time a video is marked not for me, ask once whether they would rather skip screens.
+              if (h === 'no' && prefs.status === 'ready' && shouldAskScreen(prefs.prefs.screen)) setAsking(true)
+            }}
+          />
         </div>
       </div>
+      {asking && (
+        <div className="px-4 pb-4">
+          <ScreenQuestion onDone={() => setAsking(false)} />
+        </div>
+      )}
     </li>
   )
 }
