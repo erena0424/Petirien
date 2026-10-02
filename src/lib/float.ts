@@ -135,9 +135,9 @@ export function visibleMessages<T>(items: T[]): { item: T; age: number }[] {
 }
 
 /**
- * Whether the chat beside the bunny is folded away. Until the person chooses, it starts folded on Home (which has its
- * own big bunny and a list of plans the floating chat would sit over) and open everywhere else. Their choice wins.
+ * Whether the chat beside the bunny is folded away. It starts folded everywhere (just the bunny, so it never sits over the
+ * page) until the person opens it. Their choice wins.
  */
-export function isCollapsed(state: FloatState, pathname: string): boolean {
-  return state.collapsed ?? pathname === '/home'
+export function isCollapsed(state: FloatState, _pathname: string): boolean {
+  return state.collapsed ?? true
 }

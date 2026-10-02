@@ -44,15 +44,15 @@ export function PublicHome() {
           <p data-testid="home-greeting" className="text-lg font-medium text-muted-foreground">
             {greeting}
           </p>
-          <h1 data-testid="home-pitch" className="mt-2 font-display text-5xl font-semibold leading-[1.05] tracking-tight text-[color:var(--color-ink)] sm:text-6xl lg:text-7xl">
+          <h1 data-testid="home-pitch" className="mt-2 text-4xl font-semibold leading-[1.1] tracking-tight text-[color:var(--color-ink)] sm:text-5xl lg:text-6xl">
             What feels{' '}
-            <span className="bg-[linear-gradient(transparent_58%,var(--color-blush)_58%)] px-1 [box-decoration-break:clone]">manageable</span> today?
+            manageable today?
           </h1>
           <p data-testid="home-explain" className="mt-4 max-w-xl text-xl leading-relaxed text-muted-foreground">
             Start with your mood, energy and time. I&apos;ll help you find something that fits.
           </p>
           <div className="mt-7 flex flex-wrap justify-center gap-3 md:justify-start">
-            <Button className="min-h-14 rounded-full px-9 text-lg font-semibold shadow-[0_4px_0_0_rgba(48,36,80,0.35)] active:translate-y-px active:shadow-none" onClick={start} data-testid="home-find">
+            <Button className="min-h-14 rounded-full px-9 text-lg font-semibold" onClick={start} data-testid="home-find">
               Find something to do
             </Button>
             <Button variant="outline" className="min-h-14 rounded-full border-2 px-9 text-lg font-semibold" onClick={() => setSignIn(true)} data-testid="home-signin">
@@ -65,10 +65,10 @@ export function PublicHome() {
         <PreviewSection asking={asking} onClose={() => setAsking(false)} />
       </div>
       <section aria-labelledby="place-heading" data-testid="home-place" className="mt-14">
-        <h2 id="place-heading" className="font-display text-3xl font-semibold text-foreground sm:text-4xl">
+        <h2 id="place-heading" className="text-2xl font-semibold text-foreground">
           A change of scenery
         </h2>
-        <div className="mt-3 rounded-3xl border border-border border-t-4 border-t-[var(--color-apricot)] bg-card p-6 shadow-[var(--shadow-card)]">
+        <div className="mt-3 rounded-3xl border border-border bg-card p-6 shadow-[var(--shadow-card)]">
           <PlaceSuggestions kinds={[homeKind(dayOfYear(new Date()))]} autoEveryMs={30 * 60_000} showOthers={false} fallback="Even a few minutes outside can help. Pick any direction you like." />
         </div>
       </section>

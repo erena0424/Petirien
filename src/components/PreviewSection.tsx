@@ -43,7 +43,7 @@ export function PreviewSection({ asking, onClose }: { asking: boolean; onClose: 
 
   return (
     <section aria-labelledby="sample-heading" data-testid="preview" className="mt-14">
-      <h2 id="sample-heading" className="font-display text-3xl font-semibold text-foreground sm:text-4xl">
+      <h2 id="sample-heading" className="text-2xl font-semibold text-foreground">
         A few ideas to try
       </h2>
       <p data-testid="sample-note" className="mt-2 max-w-3xl text-base text-muted-foreground">
@@ -71,10 +71,10 @@ export function PreviewSection({ asking, onClose }: { asking: boolean; onClose: 
       <ul className="mt-5 grid gap-5 md:grid-cols-2">
         {picks.video && <SampleVideo activityId={picks.video.activity.id} title={picks.video.activity.title} blurb={picks.video.activity.blurb} videoId={picks.video.videoId} onSave={save} />}
         {picks.ideas.map((a) => (
-          <li key={a.id} data-testid="sample-idea" className="overflow-hidden rounded-3xl border border-border border-t-4 border-t-[var(--color-apricot)] bg-card shadow-[var(--shadow-card)]">
+          <li key={a.id} data-testid="sample-idea" className="overflow-hidden rounded-3xl border border-border bg-card shadow-[var(--shadow-card)]">
             <div className="p-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Idea</p>
-              <h3 className="mt-1 font-display text-2xl font-semibold leading-snug text-foreground">{a.title}</h3>
+              <h3 className="mt-1 text-2xl font-semibold leading-snug text-foreground">{a.title}</h3>
               <p className="mt-2 text-base leading-relaxed text-foreground">{a.blurb}</p>
             </div>
             <div className="px-4 pb-2">
@@ -91,7 +91,7 @@ export function PreviewSection({ asking, onClose }: { asking: boolean; onClose: 
 
       <div data-testid="preview-signin" className="mt-8 rounded-3xl bg-secondary p-7 sm:flex sm:items-center sm:justify-between sm:gap-6">
         <div>
-        <p className="font-display text-2xl font-semibold text-foreground">Save this and keep your reflections in one place.</p>
+        <p className="text-2xl font-semibold text-foreground">Save this and keep your reflections in one place.</p>
         <p className="mt-1 text-base text-foreground">Sign in to save what you like, talk with the bunny, and have ideas picked with you in mind.</p>
         </div>
         <Button className="mt-4 min-h-12 shrink-0 rounded-full px-8 text-base sm:mt-0" onClick={() => setSignIn(true)}>
@@ -107,7 +107,7 @@ function SampleVideo({ activityId, title, blurb, videoId, onSave }: { activityId
   const [playing, setPlaying] = useState(false)
   const [blocked, setBlocked] = useState<PlayerErrorKind | null>(null)
   return (
-    <li data-testid="sample-video" className="overflow-hidden rounded-3xl border border-border border-t-4 border-t-[var(--color-apricot)] bg-card shadow-[var(--shadow-card)] md:col-span-2">
+    <li data-testid="sample-video" className="overflow-hidden rounded-3xl border border-border bg-card shadow-[var(--shadow-card)] md:col-span-2">
       <div className="sm:flex">
       <div className="relative sm:w-[46%] sm:shrink-0">
         <img src={thumbnailFor(videoId)} alt="" loading="lazy" data-testid="sample-video-thumb" className="aspect-video w-full bg-muted object-cover sm:h-full" />
@@ -121,7 +121,7 @@ function SampleVideo({ activityId, title, blurb, videoId, onSave }: { activityId
       </div>
       <div className="p-4 sm:flex-1 sm:self-center">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Guided video</p>
-        <h3 className="mt-1 font-display text-3xl font-semibold leading-snug text-foreground">{title}</h3>
+        <h3 className="mt-1 text-2xl font-semibold leading-snug text-foreground">{title}</h3>
         <p className="mt-2 text-lg leading-relaxed text-foreground">{blurb}</p>
       </div>
       </div>

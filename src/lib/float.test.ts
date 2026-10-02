@@ -139,9 +139,9 @@ describe('fading messages', () => {
 })
 
 describe('isCollapsed', () => {
-  it('starts folded on Home and open elsewhere until the person chooses', () => {
+  it('starts folded everywhere until the person chooses', () => {
     expect(isCollapsed({ right: 1, bottom: 1, size: 'l' }, '/home')).toBe(true)
-    expect(isCollapsed({ right: 1, bottom: 1, size: 'l' }, '/saved')).toBe(false)
+    expect(isCollapsed({ right: 1, bottom: 1, size: 'l' }, '/saved')).toBe(true)
   })
   it('lets the person decide, anywhere', () => {
     expect(isCollapsed({ right: 1, bottom: 1, size: 'l', collapsed: false }, '/home')).toBe(false)

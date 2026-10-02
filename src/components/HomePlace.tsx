@@ -9,7 +9,7 @@ import { PlaceSuggestions } from './PlaceSuggestions'
 export function HomePlace() {
   return (
     <section aria-labelledby="place-heading" data-testid="home-place" className="mt-10">
-      <h2 id="place-heading" className="font-display text-2xl font-semibold text-foreground">
+      <h2 id="place-heading" className="text-2xl font-semibold text-foreground">
         A change of scenery
       </h2>
       <div className="mt-3 rounded-3xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">

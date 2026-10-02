@@ -25,9 +25,9 @@ export default function Landing() {
 
         <div className="relative mt-6 flex w-full max-w-6xl flex-col items-center gap-8 md:mt-10 md:flex-row md:justify-between md:text-left">
           <div className="max-w-2xl">
-            <h1 className="font-display text-6xl font-semibold leading-[1.02] tracking-tight text-[color:var(--color-ink)] sm:text-7xl">
+            <h1 className="text-5xl font-semibold leading-[1.08] tracking-tight text-[color:var(--color-ink)] sm:text-6xl">
               A little support for whatever{' '}
-              <span className="bg-[linear-gradient(transparent_58%,var(--color-blush)_58%)] px-1 [box-decoration-break:clone]">today</span> feels like.
+              today feels like.
             </h1>
             <p className="mt-6 text-xl leading-relaxed text-muted-foreground">
               Tell me how you&apos;re feeling and how much energy you have. I&apos;ll find an activity, a guided video, or somewhere nearby to go, without you searching through endless options.
@@ -36,7 +36,7 @@ export default function Landing() {
               <Link
                 to="/home?try=1"
                 data-testid="landing-try"
-                className="inline-flex min-h-14 items-center rounded-full bg-primary px-9 text-lg font-semibold text-primary-foreground shadow-[0_4px_0_0_rgba(48,36,80,0.35)] transition hover:-translate-y-px hover:bg-primary/90 active:translate-y-px active:shadow-none"
+                className="inline-flex min-h-14 items-center rounded-full bg-primary px-9 text-lg font-semibold text-primary-foreground hover:bg-primary/90"
               >
                 Try a preview
               </Link>
@@ -61,9 +61,9 @@ export default function Landing() {
 
         <ol className="mt-16 grid w-full max-w-6xl gap-4 text-left sm:grid-cols-3" aria-label="How it works">
           {STEPS.map((s) => (
-            <li key={s.n} className="rounded-3xl border border-border border-t-4 border-t-[var(--color-apricot)] bg-card p-7 shadow-[var(--shadow-card)]">
-              <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[var(--color-apricot)] font-display text-xl font-semibold text-[color:var(--color-ink)]">{s.n}</span>
-              <h2 className="mt-4 font-display text-2xl font-semibold text-foreground">{s.title}</h2>
+            <li key={s.n} className="rounded-3xl border border-border bg-card p-7 shadow-[var(--shadow-card)]">
+              <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[var(--color-apricot)] text-xl font-semibold text-[color:var(--color-ink)]">{s.n}</span>
+              <h2 className="mt-4 text-2xl font-semibold text-foreground">{s.title}</h2>
               <p className="mt-2 text-lg leading-relaxed text-muted-foreground">{s.text}</p>
             </li>
           ))}
