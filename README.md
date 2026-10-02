@@ -15,7 +15,7 @@ Built on [DeepSpace](https://deep.space) for the AI-native GTM engineer build ex
 - **Check-in:** mood and energy, then optional time, what would help, screen or no screen, inside or outside, and a note.
   The default mix is one video, one place to visit, and one other idea. Every suggestion has a good / not for me button,
   and what you say shapes the next ones. Variety is built in, so the same few ideas do not come up every time.
-- **The bunny:** a floating companion on every page, and a full Messages page. Conversations are saved by default, with a
+- **The bunny:** a floating companion on every page, and a full Chat page. Conversations are saved by default, with a
   "Don't save this chat" option. The bunny remembers only a fixed vocabulary of how you like it to talk (tone, length,
   questions), which you can see and edit in Preferences.
 - **Plans and reflection:** connect your own Google Calendar and see today and tomorrow on Home. "Reflect on this" starts a

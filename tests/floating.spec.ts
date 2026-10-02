@@ -34,7 +34,7 @@ test('the bunny floats on every page except Messages, and never covers the suppo
   await page.goto('/home')
   await expect(page.getByTestId('floating-toggle')).toBeVisible()
   await page.goto('/messages')
-  await expect(page.getByRole('heading', { name: 'Messages', exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Chat', exact: true })).toBeVisible()
   await expect(page.getByTestId('floating-bunny')).toHaveCount(0)
   // Every bunny picture on Messages really loaded (a broken image shows a small empty box).
   await page.getByRole('button', { name: 'New conversation' }).click()

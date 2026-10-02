@@ -9,10 +9,10 @@ import { PlaceSuggestions } from './PlaceSuggestions'
 export function HomePlace() {
   return (
     <section aria-labelledby="place-heading" data-testid="home-place" className="mt-10">
-      <h2 id="place-heading" className="text-lg font-bold text-foreground">
-        Somewhere to go
+      <h2 id="place-heading" className="font-display text-2xl font-semibold text-foreground">
+        A change of scenery
       </h2>
-      <div className="mt-3 rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-card)]">
+      <div className="mt-3 rounded-3xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
         <PlaceSuggestions kinds={[homeKind(dayOfYear(new Date()))]} autoEveryMs={30 * 60_000} showOthers={false} fallback="Even a few minutes outside can help. Pick any direction you like." />
       </div>
     </section>

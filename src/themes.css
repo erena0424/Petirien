@@ -41,6 +41,11 @@
   --color-accent: #f0ecf7;
   --color-accent-foreground: #302d3d;
   --color-sky: #eaf3fc;
+  /* Accents for the first screen: blush is the highlight behind one headline word and the selected chip, butter is
+   * only for small stars. Both are decorative: text on them is the deep ink (#241f36, 15:1 on blush, 14:1 on butter). */
+  --color-blush: #ffe1d6;
+  --color-butter: #ffe9a8;
+  --color-ink: #241f36;
   /* The energy line on the mood chart: a deeper blue (5.2:1 on white), dashed with square markers so it never relies on color alone. */
   --color-energy: #2b6a9e;
   --color-destructive: #b42318;

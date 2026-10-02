@@ -56,7 +56,7 @@ export default function Privacy() {
             <li>The ideas it suggested, and whether you said they were useful.</li>
             <li>Videos and ideas you save, with any note you add to them.</li>
             <li>
-              Your conversations with the bunny, saved as they happen, so you can read them again under Messages. You can
+              Your conversations with the bunny, saved as they happen, so you can read them again under Chat. You can
               switch saving off for a chat by choosing &ldquo;Don&apos;t save this chat&rdquo; before you start it. A chat
               you don&apos;t save is never stored.
             </li>
@@ -153,7 +153,7 @@ export default function Privacy() {
               One check-in: open <strong>History</strong> and press Delete.
             </li>
             <li>
-              One conversation: open <strong>Messages</strong> and press Delete. The journal notes about it stay until you
+              One conversation: open <strong>Chat</strong> and press Delete. The journal notes about it stay until you
               delete them.
             </li>
             <li>

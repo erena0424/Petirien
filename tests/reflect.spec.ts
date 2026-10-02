@@ -40,7 +40,7 @@ async function mockBunny(page: Page, over: { reply?: (n: number, body: any) => u
 
 async function clearConversations(page: Page) {
   await page.goto('/messages')
-  await expect(page.getByRole('heading', { name: 'Messages', exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Chat', exact: true })).toBeVisible()
   await page.waitForTimeout(1500)
   for (let i = 0; i < 10; i++) {
     const items = page.getByTestId('conversation-item')
@@ -112,7 +112,7 @@ test('conversations are saved by default, listed on Messages, readable after a r
   await openHome(eli.page)
   await sayOnHome(eli.page, FIRST)
   await expect(eli.page.getByTestId('bunny-words')).toContainText('(1)')
-  await expect(eli.page.getByTestId('chat-private-note')).toContainText('Saved to Messages')
+  await expect(eli.page.getByTestId('chat-private-note')).toContainText('Saved to Chat')
 
   await eli.page.goto('/messages')
   const item = eli.page.getByTestId('conversation-item').filter({ hasText: FIRST })
@@ -126,7 +126,7 @@ test('conversations are saved by default, listed on Messages, readable after a r
 
   // Private: Alice sees none of it.
   await alice.page.goto('/messages')
-  await expect(alice.page.getByRole('heading', { name: 'Messages', exact: true })).toBeVisible()
+  await expect(alice.page.getByRole('heading', { name: 'Chat', exact: true })).toBeVisible()
   await alice.page.waitForTimeout(1500)
   await expect(alice.page.getByText(FIRST)).toHaveCount(0)
 })
@@ -495,6 +495,6 @@ test('phone width: Home, Messages, and the thread have no horizontal scroll', as
   await expect(eli.page.getByTestId('bunny-words')).toContainText('(1)')
   expect(await overflow()).toBeLessThanOrEqual(0)
   await eli.page.goto('/messages')
-  await expect(eli.page.getByRole('heading', { name: 'Messages', exact: true })).toBeVisible()
+  await expect(eli.page.getByRole('heading', { name: 'Chat', exact: true })).toBeVisible()
   expect(await overflow()).toBeLessThanOrEqual(0)
 })

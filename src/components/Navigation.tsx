@@ -73,10 +73,11 @@ export default function Navigation() {
     <>
       <nav
         data-testid="app-navigation"
-        className="border-b border-[color:var(--color-nav-border,var(--color-border))] bg-[var(--color-nav,var(--color-background))]"
+        className="px-3 pt-2 sm:px-4"
       >
-        <div className="mx-auto flex h-12 max-w-7xl items-center gap-4 px-4">
-          <Link to="/home" className="text-lg font-bold text-[color:var(--color-nav-foreground,var(--color-foreground))]">
+        <div className="mx-auto max-w-5xl rounded-3xl border border-[color:var(--color-nav-border,var(--color-border))] bg-[var(--color-nav,var(--color-background))] shadow-[0_2px_10px_rgba(48,45,61,0.07)] md:rounded-full">
+        <div className="flex h-12 items-center gap-4 px-4">
+          <Link to="/home" className="font-display text-xl font-semibold text-[color:var(--color-nav-foreground,var(--color-foreground))]">
             {DISPLAY_NAME}
           </Link>
 
@@ -141,7 +142,7 @@ export default function Navigation() {
             <button
               data-testid="nav-sign-in-button"
               onClick={() => setShowAuthModal(true)}
-              className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90"
+              className="rounded-full bg-primary px-4 py-1.5 text-sm font-semibold text-primary-foreground hover:opacity-90"
             >
               Sign in
             </button>
@@ -162,6 +163,7 @@ export default function Navigation() {
             {visibleNav.map(navLink)}
           </div>
         )}
+        </div>
       </nav>
 
       {showAuthModal && <AuthOverlay onClose={() => setShowAuthModal(false)} />}

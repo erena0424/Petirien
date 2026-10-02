@@ -137,14 +137,19 @@ export function PlaceSuggestions({ kinds: kindsProp, autoEveryMs, showOthers = t
     <div data-testid="place-suggestions">
       {state.kind === 'idle' && (
         <div data-testid="places-ask">
-          <p className="flex items-center gap-2 text-sm font-semibold text-foreground">
-            <MapPin aria-hidden className="h-4 w-4" />A place to go near you
-          </p>
-          <p className="mt-1 text-sm text-foreground">Share your location and I&apos;ll suggest real places close by.</p>
+          <div className="flex items-start gap-3">
+            <span aria-hidden className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-secondary text-primary">
+              <MapPin className="h-5 w-5" />
+            </span>
+            <div>
+              <p className="text-base font-semibold text-foreground">Find a nearby park, café, or other place for a little time away.</p>
+              <p className="mt-1 text-sm text-foreground">Share your location and I&apos;ll suggest real places close by.</p>
+            </div>
+          </div>
           <p className="mt-1 text-xs text-muted-foreground">
             Your browser will ask first. Your location is rounded to about a kilometre, used once to look for places, and not saved.
           </p>
-          <Button type="button" className="mt-3 min-h-11" onClick={() => void findSuggested(kinds)}>
+          <Button type="button" className="mt-3 min-h-11 rounded-full px-6" onClick={() => void findSuggested(kinds)}>
             {permission === 'granted' ? 'Show places near me' : 'Share my location'}
           </Button>
         </div>

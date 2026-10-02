@@ -31,7 +31,7 @@ export function PlansCard({ plans }: Props) {
     return (
       <section data-testid="plans" aria-labelledby="plans-heading">
         <h2 id="plans-heading" className="text-lg font-bold text-foreground">
-          Your plans
+          Coming up in your day
         </h2>
         <p className="mt-2 text-sm text-muted-foreground">Sign in to see what&apos;s coming up on your calendar and to reflect on it with the bunny.</p>
         <Button variant="outline" className="mt-2 min-h-11" onClick={() => setSignIn(true)}>
@@ -58,7 +58,7 @@ export function PlansCard({ plans }: Props) {
     <section data-testid="plans" aria-labelledby="plans-heading">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 id="plans-heading" className="text-lg font-bold text-foreground">
-          Your plans
+          Coming up in your day
         </h2>
         <div className="flex gap-2">
           {plans.state.kind === 'ready' && (
@@ -164,8 +164,8 @@ export function PlansCard({ plans }: Props) {
                   </span>
                 </span>
                 <span className="flex gap-2">
-                  <Button variant={done ? 'default' : 'outline'} className={smallBtn} onClick={() => void chat.startAbout(p)} aria-label={`Reflect on this: ${p.title}`}>
-                    Reflect on this
+                  <Button variant={done ? 'default' : 'outline'} className={smallBtn} onClick={() => void chat.startAbout(p)} aria-label={`${done ? 'How was it for you?' : 'Want to talk about this?'} ${p.title}`}>
+                    {done ? 'How was it for you?' : 'Want to talk about this?'}
                   </Button>
                   {p.manual && (
                     <Button variant="ghost" className={smallBtn} onClick={() => plans.removeTyped(p.id)} aria-label={`Remove: ${p.title}`}>

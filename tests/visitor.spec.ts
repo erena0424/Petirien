@@ -31,11 +31,12 @@ test.describe('someone who has not signed in', () => {
     const hero = page.getByTestId('home-hero')
     await expect(hero).toBeVisible()
     expect((await hero.locator('img').first().boundingBox())!.width).toBeGreaterThanOrEqual(200)
-    await expect(page.getByTestId('home-pitch')).toHaveText('Petirien is a quiet place to tell a friendly bunny how you feel and find a few small things to do.')
-    await expect(page.getByTestId('home-find')).toHaveText('Find something that fits how you feel')
+    await expect(page.getByTestId('home-pitch')).toHaveText('What feels manageable today?')
+    await expect(page.getByTestId('home-find')).toHaveText('Find something to do')
     await expect(page.getByTestId('home-signin')).toBeVisible() // returning people can sign in from the start
     await expect(page.getByTestId('nav-sign-in-button')).toBeVisible()
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Home') // for screen readers
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('What feels manageable today?')
+    await expect(page.getByTestId('home-explain')).toHaveText("Start with your mood, energy and time. I'll help you find something that fits.")
     // Nothing that needs an account, and nothing empty.
     for (const id of ['plans', 'home-saved-empty', 'calendar', 'for-now', 'home-ideas']) await expect(page.getByTestId(id)).toHaveCount(0)
     await expect(page.getByText('From your saved')).toHaveCount(0)
@@ -63,7 +64,7 @@ test.describe('someone who has not signed in', () => {
     })
     await page.goto('/home')
     const section = page.getByTestId('home-place')
-    await expect(section.getByText('Somewhere to go')).toBeVisible()
+    await expect(section.getByText('A change of scenery')).toBeVisible()
     expect(sent).toHaveLength(0) // nothing is asked or searched before the person presses
     await section.getByRole('button', { name: 'Share my location' }).click()
     await expect(section.getByTestId('place-line')).toContainText('Corner Park')
@@ -106,7 +107,7 @@ test.describe('someone who has not signed in', () => {
     await fakeYouTube(page)
     await page.goto('/home')
     const preview = page.getByTestId('preview')
-    await expect(preview.getByRole('heading', { name: 'Sample suggestions' })).toBeVisible()
+    await expect(preview.getByRole('heading', { name: 'A few ideas to try' })).toBeVisible()
     await expect(page.getByTestId('sample-note')).toContainText('These are samples, not tailored to you yet')
     await expect(page.getByTestId('sample-video')).toHaveCount(1)
     await expect(page.getByTestId('sample-idea')).toHaveCount(2)
@@ -124,7 +125,7 @@ test.describe('someone who has not signed in', () => {
     await expect(page.getByTestId('preview-signin')).toContainText('Save this and keep your reflections in one place.')
   })
 
-  test('"Find something that fits how you feel" asks only energy and time, tailors the samples, and can be skipped', async ({ page }) => {
+  test('"Find something to do" asks only energy and time, tailors the samples, and can be skipped', async ({ page }) => {
     await tuck(page)
     await page.goto('/home')
     await expect(page.getByTestId('preview-form')).toHaveCount(0) // not forced on anyone

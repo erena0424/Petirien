@@ -38,6 +38,12 @@
   --color-input: rgba(60, 64, 67, 0.6);
   --color-ring: #818cf8;
   --radius: 0.5rem;
+  /* Headlines only: a rounded display face. Body text stays Nunito. */
+  --font-display: 'Fredoka Variable', 'Nunito Variable', ui-rounded, sans-serif;
+  /* Decorative accents (calm theme sets the real values): never behind small text. */
+  --color-blush: #ffe1d6;
+  --color-butter: #ffe9a8;
+  --color-ink: #241f36;
 
   /*
    * Map the rounded-* utilities onto --radius so a theme (or you) can change

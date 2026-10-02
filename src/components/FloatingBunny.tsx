@@ -37,7 +37,7 @@ function footerHeight(): number {
 }
 
 /**
- * The bunny on every page except Messages (which shows the whole conversation).
+ * The bunny on every page except Chat (which shows the whole conversation).
  * On a computer: the bunny with its conversation to its right, the latest messages full size and older ones shrinking and fading away, text box right under the latest words.
  * On a phone: a small bunny with its latest words; tap to open a bottom sheet.
  *
@@ -335,7 +335,7 @@ function Floating() {
                     ? 'This chat is not being saved.'
                     : chat.saveFailed
                       ? "I couldn't save this chat, so it will disappear when you leave."
-                      : 'Saved to Messages.'}
+                      : 'Saved to Chat.'}
                 </span>
               )}
               <Link to="/messages" className="inline-flex min-h-11 items-center font-medium text-primary underline-offset-4 hover:underline">
@@ -518,7 +518,7 @@ function Floating() {
                         ? 'This chat is not being saved.'
                         : chat.saveFailed
                           ? "I couldn't save this chat, so it will disappear when you leave."
-                          : 'Saved to Messages.'}
+                          : 'Saved to Chat.'}
                     </span>
                   )}
                   <Link to="/messages" className="inline-flex min-h-11 items-center font-medium text-primary underline-offset-4 hover:underline">

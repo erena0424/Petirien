@@ -83,7 +83,7 @@ test('plans: a short list from the calendar with times only for what is coming, 
   await expect(cara.page.getByTestId('plans')).not.toContainText('SECRET') // only titles and times
 
   // Reflect on this: the bunny opens with a neutral question, no model call yet.
-  await cara.page.getByRole('button', { name: `Reflect on this: ${COMING}` }).click()
+  await cara.page.getByRole('button', { name: `Want to talk about this? ${COMING}` }).click()
   const words = cara.page.getByTestId('bunny-words')
   await expect(words).toContainText(`You have "${COMING}"`)
   await expect(words).toContainText('How are you feeling about it?')
@@ -112,7 +112,7 @@ test('the bunny may offer a small idea, only as an optional link that fits the t
   await cara.page.goto('/home')
   await collapseChat(cara.page)
   await cara.page.getByRole('button', { name: 'Show my plans' }).click()
-  await cara.page.getByRole('button', { name: `Reflect on this: ${COMING}` }).click()
+  await cara.page.getByRole('button', { name: `Want to talk about this? ${COMING}` }).click()
   await expect(cara.page.getByTestId('bunny-offer')).toHaveCount(0) // no offer just because a plan was opened
   await cara.page.getByLabel('Tell the bunny something').fill('I could use a minute to settle')
   await cara.page.getByRole('button', { name: 'Send', exact: true }).click()
@@ -139,7 +139,7 @@ test('share a plan by hand: it appears, can be talked about, and can be removed'
   await cara.page.getByRole('button', { name: 'Add', exact: true }).click()
   const plan = cara.page.getByTestId('plan').filter({ hasText: `Call mom ${run}` })
   await expect(plan).toHaveCount(1)
-  await cara.page.getByRole('button', { name: `Reflect on this: Call mom ${run}` }).click()
+  await cara.page.getByRole('button', { name: `Want to talk about this? Call mom ${run}` }).click()
   await expect(cara.page.getByTestId('bunny-words')).toContainText(`You have "Call mom ${run}"`)
   await cara.page.getByRole('button', { name: `Remove: Call mom ${run}` }).click()
   await expect(cara.page.getByTestId('plan')).toHaveCount(0)
@@ -217,8 +217,8 @@ test('there is no separate Reflect button any more: every plan has one action, a
   await collapseChat(cara.page)
   await cara.page.getByRole('button', { name: 'Show my plans' }).click()
   await expect(cara.page.getByTestId('plan')).toHaveCount(2)
-  await expect(cara.page.getByRole('button', { name: /^Reflect on this: / })).toHaveCount(2) // one per plan, finished or not
-  await expect(cara.page.getByRole('button', { name: /^Reflect on this: / }).first()).toHaveText('Reflect on this')
+  await expect(cara.page.getByRole('button', { name: /^(Want to talk about this|How was it for you)\? / })).toHaveCount(2) // one per plan, finished or not
+  await expect(cara.page.getByRole('button', { name: /^(Want to talk about this|How was it for you)\? / }).first()).toHaveText(/Want to talk about this\?|How was it for you\?/)
   await expect(cara.page.getByRole('button', { name: /^Reflect$|View reflection|^Talk about this/ })).toHaveCount(0)
   await expect(cara.page.getByTestId('reflection-dialog')).toHaveCount(0)
 })
@@ -246,7 +246,7 @@ test('past plans can be talked about too, and Home suggests asking about what ju
   expect(replies).toHaveLength(0)
 
   // The same works from the list: a finished plan has the same single action.
-  await expect(cara.page.getByRole('button', { name: `Reflect on this: ${DONE}` })).toBeVisible()
+  await expect(cara.page.getByRole('button', { name: `How was it for you? ${DONE}` })).toBeVisible()
 })
 
 test('editing a written reflection to mention crisis shows where to get help, and nothing reaches a model', async ({ users }) => {

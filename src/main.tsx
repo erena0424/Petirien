@@ -7,6 +7,7 @@ import { installStaleChunkRecovery } from './stale-chunk-recovery'
 // Fonts are imported here (not with @import in the stylesheet): Vite then copies the font files into the build and
 // points the CSS at them. Imported inside the stylesheet, the files were left out of the production build and 404'd.
 import '@fontsource-variable/nunito'
+import '@fontsource-variable/fredoka'
 import '@fontsource/patrick-hand/latin-400.css'
 import './styles.css'
 
