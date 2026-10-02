@@ -31,31 +31,31 @@ export function PublicHome() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-8">
-      <section aria-label="Welcome" data-testid="home-hero" className="flex flex-col items-center gap-6 text-center sm:flex-row sm:items-center sm:text-left">
+    <div className="mx-auto w-full max-w-6xl px-5 py-10 sm:px-8">
+      <section aria-label="Welcome" data-testid="home-hero" className="flex flex-col items-center gap-8 text-center md:flex-row md:items-center md:gap-14 md:text-left">
         <div className="relative flex shrink-0 items-center justify-center">
-          <Blob className="absolute h-60 w-60 sm:h-72 sm:w-72" />
-          <Bunny className="relative w-48 sm:w-60" />
-          <Cloud className="absolute -top-1 right-0 w-16 sm:w-20" />
-          <Star className="absolute bottom-4 left-0 w-8 sm:w-9" />
-          <Sparkle className="absolute left-5 top-3 w-5" />
+          <Blob className="absolute h-64 w-64 sm:h-96 sm:w-96" />
+          <Bunny className="relative w-52 sm:w-80" />
+          <Cloud className="absolute -top-1 right-0 w-20 sm:right-2 sm:w-28" />
+          <Star className="absolute bottom-6 left-0 w-9 sm:left-4 sm:w-12" />
+          <Sparkle className="absolute left-6 top-4 w-6 sm:left-10 sm:top-8 sm:w-8" />
         </div>
         <div className="min-w-0 flex-1">
-          <p data-testid="home-greeting" className="text-base text-muted-foreground">
+          <p data-testid="home-greeting" className="text-lg font-medium text-muted-foreground">
             {greeting}
           </p>
-          <h1 data-testid="home-pitch" className="mt-1 font-display text-4xl font-semibold leading-tight tracking-tight text-[color:var(--color-ink)] sm:text-5xl">
+          <h1 data-testid="home-pitch" className="mt-2 font-display text-5xl font-semibold leading-[1.05] tracking-tight text-[color:var(--color-ink)] sm:text-6xl lg:text-7xl">
             What feels{' '}
             <span className="bg-[linear-gradient(transparent_58%,var(--color-blush)_58%)] px-1 [box-decoration-break:clone]">manageable</span> today?
           </h1>
-          <p data-testid="home-explain" className="mt-3 text-lg leading-relaxed text-muted-foreground">
+          <p data-testid="home-explain" className="mt-4 max-w-xl text-xl leading-relaxed text-muted-foreground">
             Start with your mood, energy and time. I&apos;ll help you find something that fits.
           </p>
-          <div className="mt-5 flex flex-wrap justify-center gap-3 sm:justify-start">
-            <Button className="min-h-12 rounded-full px-7 text-base font-semibold shadow-[0_4px_0_0_rgba(48,36,80,0.35)] active:translate-y-px active:shadow-none" onClick={start} data-testid="home-find">
+          <div className="mt-7 flex flex-wrap justify-center gap-3 md:justify-start">
+            <Button className="min-h-14 rounded-full px-9 text-lg font-semibold shadow-[0_4px_0_0_rgba(48,36,80,0.35)] active:translate-y-px active:shadow-none" onClick={start} data-testid="home-find">
               Find something to do
             </Button>
-            <Button variant="outline" className="min-h-12 rounded-full border-2 px-7 text-base font-semibold" onClick={() => setSignIn(true)} data-testid="home-signin">
+            <Button variant="outline" className="min-h-14 rounded-full border-2 px-9 text-lg font-semibold" onClick={() => setSignIn(true)} data-testid="home-signin">
               Sign in
             </Button>
           </div>
@@ -64,11 +64,11 @@ export function PublicHome() {
       <div ref={previewRef}>
         <PreviewSection asking={asking} onClose={() => setAsking(false)} />
       </div>
-      <section aria-labelledby="place-heading" data-testid="home-place" className="mt-10">
-        <h2 id="place-heading" className="font-display text-2xl font-semibold text-foreground">
+      <section aria-labelledby="place-heading" data-testid="home-place" className="mt-14">
+        <h2 id="place-heading" className="font-display text-3xl font-semibold text-foreground sm:text-4xl">
           A change of scenery
         </h2>
-        <div className="mt-3 rounded-3xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
+        <div className="mt-3 rounded-3xl border border-border border-t-4 border-t-[var(--color-apricot)] bg-card p-6 shadow-[var(--shadow-card)]">
           <PlaceSuggestions kinds={[homeKind(dayOfYear(new Date()))]} autoEveryMs={30 * 60_000} showOthers={false} fallback="Even a few minutes outside can help. Pick any direction you like." />
         </div>
       </section>

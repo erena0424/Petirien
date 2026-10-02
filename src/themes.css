@@ -26,44 +26,47 @@
   /* White is the foundation. Lavender (companion, reflection) and violet (things you can press) are the
    * accents; sky blue is rare. Contrast checked: text 12.8:1 on the page, muted 5.5:1, white on violet 6.4:1,
    * violet on lavender 5.5:1, muted on lavender 4.9:1, input border 3.6:1 on white. */
-  --color-background: #fafafc;
-  --color-foreground: #302d3d;
+  --color-background: #fffcf8;
+  --color-foreground: #30243d;
   --color-card: #ffffff;
-  --color-card-foreground: #302d3d;
+  --color-card-foreground: #30243d;
   --color-popover: #ffffff;
-  --color-popover-foreground: #302d3d;
-  --color-primary: #66558f;
+  --color-popover-foreground: #30243d;
+  --color-primary: #705099;
   --color-primary-foreground: #ffffff;
-  --color-secondary: #f0ecf7;
-  --color-secondary-foreground: #302d3d;
-  --color-muted: #f3f1f7;
-  --color-muted-foreground: #686477;
-  --color-accent: #f0ecf7;
-  --color-accent-foreground: #302d3d;
+  --color-secondary: #f0eaf7;
+  --color-secondary-foreground: #30243d;
+  --color-muted: #f5f0f8;
+  --color-muted-foreground: #655d70;
+  --color-accent: #f0eaf7;
+  --color-accent-foreground: #30243d;
   --color-sky: #eaf3fc;
   /* Accents for the first screen: blush is the highlight behind one headline word and the selected chip, butter is
    * only for small stars. Both are decorative: text on them is the deep ink (#241f36, 15:1 on blush, 14:1 on butter). */
-  --color-blush: #ffe1d6;
+  --color-blush: #fde3d2;
   --color-butter: #ffe9a8;
-  --color-ink: #241f36;
+  --color-ink: #30243d;
+  /* The signature accent: apricot, with a pale tint for big areas. Dark plum text goes on it (8.4:1 on apricot). */
+  --color-apricot: #f5b895;
+  --color-apricot-soft: #ffebdd;
   /* The energy line on the mood chart: a deeper blue (5.2:1 on white), dashed with square markers so it never relies on color alone. */
   --color-energy: #2b6a9e;
   --color-destructive: #b42318;
   --color-destructive-foreground: #ffffff;
-  --color-border: #e5e1ec;
+  --color-border: #e5ddeb;
   --color-input: #8a859a;
-  --color-ring: #66558f;
-  --shadow-card: 0 1px 2px 0 rgba(48, 45, 61, 0.05);
-  --shadow-card-hover: 0 2px 8px 0 rgba(48, 45, 61, 0.09);
-  --color-shell: #fafafc;
+  --color-ring: #705099;
+  --shadow-card: 0 1px 2px 0 rgba(48, 36, 61, 0.05);
+  --shadow-card-hover: 0 2px 8px 0 rgba(48, 36, 61, 0.09);
+  --color-shell: #fffcf8;
   --color-shell-panel: #ffffff;
   /* Header: quiet white with a hairline, so the bunny is the colour on the page. */
   --color-nav: #ffffff;
-  --color-nav-foreground: #302d3d;
-  --color-nav-muted: #686477;
-  --color-nav-border: #e5e1ec;
+  --color-nav-foreground: #30243d;
+  --color-nav-muted: #655d70;
+  --color-nav-border: #e5ddeb;
   /* Footer: pale lavender. */
-  --color-footer: #f0ecf7;
+  --color-footer: #f0eaf7;
 }
 
 /* Paper — light example theme; shows the full token contract incl.

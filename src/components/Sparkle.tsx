@@ -28,5 +28,5 @@ export function Cloud({ className }: { className?: string }) {
 
 /** The big soft shape the bunny sits on. */
 export function Blob({ className }: { className?: string }) {
-  return <div aria-hidden className={`rounded-[46%_54%_52%_48%/52%_46%_54%_48%] bg-gradient-to-br from-[color-mix(in_srgb,var(--color-primary)_12%,white)] to-[color-mix(in_srgb,var(--color-sky)_90%,var(--color-primary)_10%)] ${className ?? ''}`} />
+  return <div aria-hidden className={`rounded-[46%_54%_52%_48%/52%_46%_54%_48%] bg-gradient-to-br from-[var(--color-apricot-soft)] to-[color-mix(in_srgb,var(--color-apricot)_55%,white)] ${className ?? ''}`} />
 }

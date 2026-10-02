@@ -58,7 +58,7 @@ export default function Navigation() {
         to={item.path}
         aria-current={active ? 'page' : undefined}
         className={cn(
-          'px-3 py-1.5 text-sm',
+          'px-3 py-1.5 text-base',
           active
             ? 'font-bold text-primary underline decoration-2 underline-offset-8'
             : 'font-medium text-[color:var(--color-nav-muted,var(--color-muted-foreground))] hover:text-[color:var(--color-nav-foreground,var(--color-foreground))]',
@@ -75,7 +75,7 @@ export default function Navigation() {
         data-testid="app-navigation"
         className="px-3 pt-2 sm:px-4"
       >
-        <div className="mx-auto max-w-5xl rounded-3xl border border-[color:var(--color-nav-border,var(--color-border))] bg-[var(--color-nav,var(--color-background))] shadow-[0_2px_10px_rgba(48,45,61,0.07)] md:rounded-full">
+        <div className="mx-auto max-w-6xl rounded-3xl border border-[color:var(--color-nav-border,var(--color-border))] bg-[var(--color-nav,var(--color-background))] shadow-[0_2px_10px_rgba(48,36,61,0.08)] md:rounded-full">
         <div className="flex h-12 items-center gap-4 px-4">
           <Link to="/home" className="font-display text-xl font-semibold text-[color:var(--color-nav-foreground,var(--color-foreground))]">
             {DISPLAY_NAME}

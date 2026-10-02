@@ -33,7 +33,7 @@ export function ChoiceGroup<T extends string | number>({
   const name = useId()
   return (
     <fieldset className="min-w-0">
-      <legend className="text-sm font-medium text-foreground">{legend}</legend>
+      <legend className="text-base font-semibold text-foreground">{legend}</legend>
       {hint && <p className="mt-1 text-sm text-muted-foreground">{hint}</p>}
       <div
         className={cn(
@@ -55,10 +55,10 @@ export function ChoiceGroup<T extends string | number>({
               />
               <span
                 className={cn(
-                  'flex min-h-11 cursor-pointer items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-center text-sm transition-colors',
+                  'flex min-h-11 cursor-pointer items-center justify-center gap-1.5 rounded-xl border px-4 py-2 text-center text-base transition-colors',
                   'border-input bg-card text-foreground hover:bg-secondary',
                   'peer-focus-visible:ring-[3px] peer-focus-visible:ring-ring/50',
-                  selected && 'border-primary bg-secondary font-medium',
+                  selected && 'border-primary bg-[var(--color-apricot-soft)] font-semibold',
                 )}
               >
                 {selected && <Check aria-hidden className="h-4 w-4 shrink-0 text-primary" />}
