@@ -6,6 +6,7 @@
  * (unit-tested on the filter and ranking; the live path needs paid calls).
  */
 import { test, expect, loadAllTestAccounts } from 'deepspace/testing'
+import { tuck } from './tuck'
 import type { Page } from '@playwright/test'
 import { CATALOG } from '../src/catalog'
 
@@ -27,6 +28,8 @@ async function deleteEverything(page: Page) {
 
 test('preferences save, persist, shape the check-in, and stay private', async ({ users }) => {
   const [bob, alice] = await users(['Bob', 'Alice'])
+  await tuck(bob.page)
+  await tuck(alice.page)
   await deleteEverything(bob.page)
 
   await bob.page.goto('/preferences')
@@ -67,6 +70,7 @@ test('preferences save, persist, shape the check-in, and stay private', async ({
 
 test('a tag cannot be both avoided and liked, and avoiding too much warns', async ({ users }) => {
   const [bob] = await users(['Bob'])
+  await tuck(bob.page)
   await deleteEverything(bob.page)
   await bob.page.goto('/preferences')
   await expect(bob.page.getByRole('heading', { name: 'Preferences' })).toBeVisible()
@@ -86,6 +90,7 @@ test('a tag cannot be both avoided and liked, and avoiding too much warns', asyn
 
 test('delete everything removes check-ins, saved videos, and preferences', async ({ users }) => {
   const [bob] = await users(['Bob'])
+  await tuck(bob.page)
   await deleteEverything(bob.page)
 
   // One real check-in (free: stops at "nothing fits") and one preference.
@@ -120,6 +125,8 @@ test('delete everything removes check-ins, saved videos, and preferences', async
 
 test('how the bunny talks: choices save at once, persist, can be cleared, and stay private', async ({ users }) => {
   const [bob, alice] = await users(['Bob', 'Alice'])
+  await tuck(bob.page)
+  await tuck(alice.page)
   await deleteEverything(bob.page)
   await bob.page.goto('/preferences')
   await expect(bob.page.getByTestId('bunny-style')).toBeVisible()

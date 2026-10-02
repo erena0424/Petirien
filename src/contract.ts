@@ -24,6 +24,11 @@ export interface CheckinInput {
    * `none`: no screen at all; ideas only, no video search.
    */
   screen?: 'auto' | 'video' | 'none'
+  /**
+   * `in`: nothing outdoors. `out`: the idea is a walk to a place nearby (when time and energy allow it).
+   * `auto` or omitted: a walk can be the idea in the mix when it fits.
+   */
+  place?: 'auto' | 'in' | 'out'
 }
 
 /** A real video, only ever built from retrieval results. */
@@ -79,4 +84,16 @@ export type RecommendResponse =
   | { status: 'nothing_fits'; checkinId: string; reply: string }
   /** Per-user daily limit reached. */
   | { status: 'capped'; resetsAt: string }
+  | { status: 'error'; message: string }
+
+/** One of the ideas on Home for right now: a video where one helps and was found, otherwise the idea alone. */
+export interface HomeIdea {
+  activityId: string
+  activityTitle: string
+  video: VideoRef | null
+  reason: string
+}
+
+export type HomeIdeasResponse =
+  | { status: 'ok'; ideas: HomeIdea[] }
   | { status: 'error'; message: string }

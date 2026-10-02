@@ -9,6 +9,7 @@
  * (unit-tested with fakes), or the withheld-details display in a browser (unit-tested).
  */
 import { test, expect, loadAllTestAccounts } from 'deepspace/testing'
+import { tuck } from './tuck'
 import type { Page } from '@playwright/test'
 
 test.skip(loadAllTestAccounts().length < 2, 'Needs 2 usable test accounts.')
@@ -99,6 +100,8 @@ async function removeIfPresent(page: Page, n: number) {
 
 test('save from an idea, it persists, is private, and Save is a toggle', async ({ users }) => {
   const [alice, bob] = await users(2)
+  await tuck(alice.page)
+  await tuck(bob.page)
   await clearAllSaved(alice.page)
   await showIdeas(alice.page)
 
@@ -129,6 +132,7 @@ test('save from an idea, it persists, is private, and Save is a toggle', async (
 
 test('saving twice quickly keeps one row; notes persist; filter and remove work', async ({ users }) => {
   const [alice] = await users(1)
+  await tuck(alice.page)
   await clearAllSaved(alice.page)
   await showIdeas(alice.page)
 
@@ -168,6 +172,7 @@ test('saving twice quickly keeps one row; notes persist; filter and remove work'
 
 test('a video that cannot play is marked, and the mark persists', async ({ users }) => {
   const [alice] = await users(1)
+  await tuck(alice.page)
   await clearAllSaved(alice.page)
   await fakeYouTube(alice.page)
   await showIdeas(alice.page)
@@ -204,9 +209,10 @@ test('a video that cannot play is marked, and the mark persists', async ({ users
 
 test('the library is reachable directly and shows a friendly empty state', async ({ users }) => {
   const [alice] = await users(1)
+  await tuck(alice.page)
   await clearAllSaved(alice.page)
   await alice.page.goto('/home')
-  await alice.page.getByRole('main').getByRole('link', { name: 'Saved', exact: true }).click()
+  await alice.page.getByTestId('app-navigation').getByRole('link', { name: 'Saved', exact: true }).click()
   await expect(alice.page).toHaveURL(/\/saved/)
   await expect(alice.page.getByRole('heading', { name: 'Saved', exact: true })).toBeVisible()
   await expect(alice.page.getByRole('alert')).toHaveCount(0)
@@ -226,6 +232,8 @@ const ideaResponse = {
 
 test('a plain idea (no video) can be saved, persists with its note, is private, and can be removed', async ({ users }) => {
   const [alice, bob] = await users(['Alice', 'Bob'])
+  await tuck(alice.page)
+  await tuck(bob.page)
   await clearAllSaved(alice.page)
   await alice.page.route('**/api/actions/recommend', (r) =>
     r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, data: ideaResponse }) }),

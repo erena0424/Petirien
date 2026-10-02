@@ -25,7 +25,7 @@ export default function MessagesPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-4 py-8">
+    <div className="mx-auto w-full max-w-7xl px-4 py-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Messages</h1>
@@ -43,7 +43,7 @@ export default function MessagesPage() {
         </Button>
       </div>
 
-      <div className="mt-6 grid items-start gap-6 md:grid-cols-[17rem_1fr]">
+      <div className="mt-6 grid items-start gap-6 md:grid-cols-[15rem_1fr]">
         <nav aria-label="Conversations" className="md:max-h-[70vh] md:overflow-y-auto">
           {!chat.conversationsReady && <p className="text-sm text-muted-foreground">Loading…</p>}
           {chat.conversationsReady && chat.conversations.length === 0 && (
@@ -81,7 +81,7 @@ export default function MessagesPage() {
           </ul>
         </nav>
 
-        <div className="flex flex-col rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-card)]">
+        <div className="flex min-h-[calc(100vh-16rem)] flex-col justify-end rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-card)] sm:p-6">
           <BunnyThread />
           {canWriteNotes && (
             <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-border pt-3 text-sm">

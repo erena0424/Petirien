@@ -23,36 +23,40 @@
  * sky 5.4. Input borders are 3.0:1 on bg so unselected choices stay visible. */
 [data-theme="calm"] {
   color-scheme: light;
-  --color-background: #f8fafd;
-  --color-foreground: #26304a;
+  /* White is the foundation. Lavender (companion, reflection) and violet (things you can press) are the
+   * accents; sky blue is rare. Contrast checked: text 12.8:1 on the page, muted 5.5:1, white on violet 6.4:1,
+   * violet on lavender 5.5:1, muted on lavender 4.9:1, input border 3.6:1 on white. */
+  --color-background: #fafafc;
+  --color-foreground: #302d3d;
   --color-card: #ffffff;
-  --color-card-foreground: #26304a;
+  --color-card-foreground: #302d3d;
   --color-popover: #ffffff;
-  --color-popover-foreground: #26304a;
-  --color-primary: #4a5da6;
+  --color-popover-foreground: #302d3d;
+  --color-primary: #66558f;
   --color-primary-foreground: #ffffff;
-  --color-secondary: #e6f0fb;
-  --color-secondary-foreground: #26304a;
-  --color-muted: #eef2f8;
-  --color-muted-foreground: #5b6783;
-  --color-accent: #eee9f6;
-  --color-accent-foreground: #26304a;
+  --color-secondary: #f0ecf7;
+  --color-secondary-foreground: #302d3d;
+  --color-muted: #f3f1f7;
+  --color-muted-foreground: #686477;
+  --color-accent: #f0ecf7;
+  --color-accent-foreground: #302d3d;
+  --color-sky: #eaf3fc;
   --color-destructive: #b42318;
   --color-destructive-foreground: #ffffff;
-  --color-border: #dce3ee;
-  --color-input: #8591ab;
-  --color-ring: #4a5da6;
-  --shadow-card: 0 1px 2px 0 rgba(38, 48, 74, 0.06);
-  --shadow-card-hover: 0 2px 8px 0 rgba(38, 48, 74, 0.1);
-  --color-shell: #f8fafd;
+  --color-border: #e5e1ec;
+  --color-input: #8a859a;
+  --color-ring: #66558f;
+  --shadow-card: 0 1px 2px 0 rgba(48, 45, 61, 0.05);
+  --shadow-card-hover: 0 2px 8px 0 rgba(48, 45, 61, 0.09);
+  --color-shell: #fafafc;
   --color-shell-panel: #ffffff;
-  /* Header: the bunny's body blue. Navy text 9.2:1, link navy 6.7:1 on it. */
-  --color-nav: #bcdcfc;
-  --color-nav-foreground: #26304a;
-  --color-nav-muted: #38446a;
-  --color-nav-border: #9cc4ec;
-  /* Footer: the bunny's lavender. Muted text 4.75:1, link 5.2:1 on it. */
-  --color-footer: #eee9f6;
+  /* Header: quiet white with a hairline, so the bunny is the colour on the page. */
+  --color-nav: #ffffff;
+  --color-nav-foreground: #302d3d;
+  --color-nav-muted: #686477;
+  --color-nav-border: #e5e1ec;
+  /* Footer: pale lavender. */
+  --color-footer: #f0ecf7;
 }
 
 /* Paper — light example theme; shows the full token contract incl.

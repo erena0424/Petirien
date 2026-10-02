@@ -12,6 +12,7 @@ import { requestRecommendations } from '@/lib/recommend-client'
 import { usePreferences } from '@/lib/use-preferences'
 import { useSavedIdeas } from '@/lib/use-saved-ideas'
 import { useSavedVideos } from '@/lib/use-saved'
+import { TIME_CHOICES } from '@/lib/free-time'
 import { CheckinForm, EMPTY_FORM, type FormValues } from '@/components/checkin/CheckinForm'
 import { NoneFitPanel, type ReasonChip } from '@/components/checkin/NoneFitPanel'
 import { Instructions } from '@/components/checkin/Instructions'
@@ -23,6 +24,12 @@ import { SupportCard } from '@/components/SupportCard'
 import type { CheckinInput, Pick, RecommendResponse, VideoRef } from '../../../contract'
 
 type VideoPick = Pick & { video: VideoRef }
+
+/** `/checkin?minutes=15` (from the bunny's offer) starts the form on that time, if it is one of the choices. */
+function minutesFromUrl(): number | null {
+  const n = Number(new URLSearchParams(window.location.search).get('minutes'))
+  return (TIME_CHOICES as readonly number[]).includes(n) ? n : null
+}
 
 type Stage =
   | { kind: 'form' }
@@ -40,7 +47,7 @@ export default function CheckinPage() {
   const savedIdeas = useSavedIdeas()
   const preferences = usePreferences()
 
-  const [values, setValues] = useState<FormValues>(EMPTY_FORM)
+  const [values, setValues] = useState<FormValues>(() => ({ ...EMPTY_FORM, minutes: minutesFromUrl() ?? EMPTY_FORM.minutes }))
   const [stage, setStage] = useState<Stage>({ kind: 'form' })
   const [watching, setWatching] = useState<VideoPick | null>(null)
   const [hidden, setHidden] = useState<string[]>([]) // suggestion ids the person said no to
@@ -142,8 +149,9 @@ export default function CheckinPage() {
     setWatching(p as VideoPick)
   }
 
-  function ideaFeedback(p: Pick, helpful: Helpful) {
-    write(p.suggestionId, { helpful, status: 'opened' })
+  // Good or not for me on any suggestion. It shapes the next ones (liked ones lean in, the others lean away).
+  function ideaFeedback(p: Pick, helpful: 'yes' | 'no') {
+    write(p.suggestionId, { helpful })
   }
 
   function feedback(helpful: Helpful) {
@@ -233,7 +241,7 @@ interface ResultProps {
   onWatch: (p: Pick) => void
   onReject: (p: Pick) => void
   onToggleSave: (p: Pick) => void
-  onIdeaFeedback: (p: Pick, helpful: Helpful) => void
+  onIdeaFeedback: (p: Pick, helpful: 'yes' | 'no') => void
   onNoneFit: (r: ReasonChip) => void
   onRetrySame: () => void
   onEdit: () => void

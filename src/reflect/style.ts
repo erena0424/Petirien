@@ -11,12 +11,14 @@ export const TONES = ['gentle', 'upbeat', 'direct', 'playful'] as const
 export const LENGTHS = ['short', 'longer'] as const
 export const QUESTIONS = ['fewer', 'more'] as const
 export const SUGGESTIONS = ['fewer', 'more'] as const
+export const FORMALITY = ['casual', 'formal'] as const
 
 export interface BunnyStyle {
   tone?: (typeof TONES)[number]
   length?: (typeof LENGTHS)[number]
   questions?: (typeof QUESTIONS)[number]
   suggestions?: (typeof SUGGESTIONS)[number]
+  formality?: (typeof FORMALITY)[number]
 }
 
 export type StyleKey = keyof BunnyStyle
@@ -26,6 +28,7 @@ const ALLOWED: { [K in StyleKey]-?: readonly string[] } = {
   length: LENGTHS,
   questions: QUESTIONS,
   suggestions: SUGGESTIONS,
+  formality: FORMALITY,
 }
 
 export const STYLE_KEYS = Object.keys(ALLOWED) as StyleKey[]
@@ -58,6 +61,7 @@ export const STYLE_LABELS: { [K in StyleKey]: { question: string; options: Recor
   length: { question: 'How long should replies be?', options: { short: 'Short', longer: 'A bit longer' } },
   questions: { question: 'How many questions?', options: { fewer: 'Fewer questions', more: 'More questions' } },
   suggestions: { question: 'Ideas and suggestions?', options: { fewer: 'Fewer suggestions', more: 'More suggestions' } },
+  formality: { question: 'How casual or formal?', options: { casual: 'Casual, like a friend', formal: 'More formal' } },
 }
 
 /** The learned choices as plain phrases, for the Preferences page. */
@@ -73,6 +77,7 @@ export function styleLine(style: BunnyStyle): string | null {
   if (s.tone) parts.push({ gentle: 'a gentle, calm tone', upbeat: 'an upbeat, cheerful tone', direct: 'a plain, direct tone', playful: 'a playful tone' }[s.tone])
   if (s.length) parts.push(s.length === 'short' ? 'very short replies (one or two sentences)' : 'somewhat longer replies (three or four sentences)')
   if (s.questions) parts.push(s.questions === 'fewer' ? 'few or no questions' : 'a gentle question most of the time')
+  if (s.formality) parts.push(s.formality === 'casual' ? 'a casual, friendly way of talking (everyday words, contractions)' : 'a more formal, polite way of talking (no slang)')
   if (s.suggestions) parts.push(s.suggestions === 'fewer' ? 'no suggestions unless asked' : 'a small suggestion or perspective when it fits')
   return parts.length ? `This person has said they like: ${parts.join('; ')}. Follow this style unless it would be unkind or unsafe.` : null
 }

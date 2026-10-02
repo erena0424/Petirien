@@ -10,6 +10,7 @@
  *    does NOT prove a real video plays or what YouTube shows after it ends.
  */
 import { test, expect, loadAllTestAccounts } from 'deepspace/testing'
+import { tuck } from './tuck'
 import type { Page } from '@playwright/test'
 
 test.skip(loadAllTestAccounts().length < 1, 'Needs 1 usable test account (npx deepspace test accounts create ...).')
@@ -91,6 +92,7 @@ test.beforeEach(async ({ users }, testInfo) => {
 
 test('form needs mood and energy, shows the privacy note, then returns ideas', async ({ users }) => {
   const [a] = await users(1)
+  await tuck(a.page)
   const bodies = await mockRecommend(a.page, () => okResponse())
   await a.page.goto('/checkin')
 
@@ -114,6 +116,7 @@ test('form needs mood and energy, shows the privacy note, then returns ideas', a
 
 test('watch, finish, give feedback', async ({ users }) => {
   const [a] = await users(1)
+  await tuck(a.page)
   await fakeYouTube(a.page)
   await mockRecommend(a.page, () => okResponse())
   await a.page.goto('/checkin')
@@ -137,6 +140,7 @@ test('watch, finish, give feedback', async ({ users }) => {
 
 test('embedding blocked and removed videos fall back inline', async ({ users }) => {
   const [a] = await users(1)
+  await tuck(a.page)
   await fakeYouTube(a.page)
   await mockRecommend(a.page, () => okResponse())
   await a.page.goto('/checkin')
@@ -158,6 +162,7 @@ test('embedding blocked and removed videos fall back inline', async ({ users }) 
 
 test('"none fit" retries with exclusions and the same check-in, then stops after two', async ({ users }) => {
   const [a] = await users(1)
+  await tuck(a.page)
   const bodies = await mockRecommend(a.page, () => okResponse('chk_7'))
   await a.page.goto('/checkin')
   await fillAndSubmit(a.page)
@@ -175,6 +180,7 @@ test('"none fit" retries with exclusions and the same check-in, then stops after
 
 test('crisis response shows support resources and no ideas', async ({ users }) => {
   const [a] = await users(1)
+  await tuck(a.page)
   await mockRecommend(a.page, () => ({ status: 'support', checkinId: 'chk_1' }))
   await a.page.goto('/checkin')
   await fillAndSubmit(a.page)
@@ -190,6 +196,7 @@ test('crisis response shows support resources and no ideas', async ({ users }) =
 
 test('support is reachable from the footer on any screen', async ({ users }) => {
   const [a] = await users(1)
+  await tuck(a.page)
   await a.page.goto('/home')
   await a.page.getByTestId('footer-support').click()
   await expect(a.page.getByTestId('support-card')).toBeVisible()
@@ -201,6 +208,7 @@ test('support is reachable from the footer on any screen', async ({ users }) => 
 
 test('other statuses render calmly and recover locally', async ({ users }) => {
   const [a] = await users(1)
+  await tuck(a.page)
   const statuses = [
     { status: 'no_video', checkinId: 'c', reply: 'Here are a few options.', activities: [{ activityId: 'box-breathing', title: 'Box breathing', blurb: 'A steady rhythm.' }] },
     { status: 'error', message: 'Something went wrong on our side.' },
@@ -229,6 +237,7 @@ test('other statuses render calmly and recover locally', async ({ users }) => {
 
 test('each idea expands into hand-written instructions, also while watching and without videos', async ({ users }) => {
   const [a] = await users(1)
+  await tuck(a.page)
   await fakeYouTube(a.page)
   await mockRecommend(a.page, (n) =>
     n === 1
@@ -265,6 +274,7 @@ test('each idea expands into hand-written instructions, also while watching and 
 
 test('"No screen" asks for ideas only; plain ideas have steps, feedback, and no Watch button', async ({ users }) => {
   const [a] = await users(1)
+  await tuck(a.page)
   const idea = (n: number, id: string, title: string) => ({
     suggestionId: `sug_${n}`, activityId: id, activityTitle: title, video: null,
     reason: 'A short written exercise.', rank: n,
@@ -281,16 +291,18 @@ test('"No screen" asks for ideas only; plain ideas have steps, feedback, and no 
   await expect(a.page.getByTestId('options-summary')).toContainText('no screen')
   await fillAndSubmit(a.page)
 
+  await expect.poll(() => bodies.length).toBeGreaterThan(0) // the request may not have left yet
   expect(bodies[0]).toMatchObject({ screen: 'none' })
   await expect(a.page.getByTestId('idea-card')).toHaveCount(2)
   await expect(a.page.getByRole('button', { name: /^Watch/ })).toHaveCount(0)
   await expect(a.page.getByText('Name five things you can see')).toBeVisible() // steps open by default
-  await a.page.getByRole('button', { name: /Yes, useful: 5-4-3-2-1 grounding/ }).click()
-  await expect(a.page.getByTestId('idea-thanks')).toBeVisible()
+  await a.page.getByRole('button', { name: 'Good suggestion: 5-4-3-2-1 grounding' }).click()
+  await expect(a.page.getByTestId('pick-feedback-ack')).toContainText('more like this')
 })
 
 test('"Videos are fine" is sent as video; the default sends nothing', async ({ users }) => {
   const [a] = await users(1)
+  await tuck(a.page)
   const bodies = await mockRecommend(a.page, () => okResponse())
   await a.page.goto('/checkin')
   await a.page.getByRole('button', { name: /More options/ }).click()
@@ -302,16 +314,39 @@ test('"Videos are fine" is sent as video; the default sends nothing', async ({ u
 
 test('the default asks for videos where they help and does not send a screen value', async ({ users }) => {
   const [a] = await users(1)
+  await tuck(a.page)
   const bodies = await mockRecommend(a.page, () => okResponse())
   await a.page.goto('/checkin')
   await fillAndSubmit(a.page)
   await expect(a.page.getByTestId('ok-result')).toBeVisible()
   expect(bodies[0]).not.toHaveProperty('screen')
+  expect(bodies[0]).not.toHaveProperty('place') // "Not sure" sends nothing about inside or outside either
+})
+
+test('"Inside or outside?" is under More options, starts on Not sure, and is sent only when chosen', async ({ users }) => {
+  const [a] = await users(1)
+  await tuck(a.page)
+  const bodies = await mockRecommend(a.page, () => okResponse())
+  await a.page.goto('/checkin')
+  await expect(a.page.getByTestId('options-summary')).toContainText('inside or outside')
+  await a.page.getByRole('button', { name: /More options/ }).click()
+  const group = a.page.getByRole('group', { name: 'Inside or outside?' })
+  await expect(group).toBeVisible()
+  await expect(group).toContainText('Outside can suggest a walk to a place nearby')
+  await expect(group).toContainText("isn't saved")
+  await expect(group.getByLabel('Not sure')).toBeChecked()
+  await group.getByText('Go outside', { exact: true }).click()
+  await expect(a.page.getByTestId('options-summary')).toContainText('going outside')
+  await fillAndSubmit(a.page)
+  await expect.poll(() => bodies.length).toBeGreaterThan(0)
+  expect(bodies[0]).toMatchObject({ place: 'out' })
+  expect(bodies[0]).not.toHaveProperty('screen') // the other question is untouched
 })
 
 
 test('phone width: no horizontal scroll on form, results, and support', async ({ users }) => {
   const [a] = await users(1)
+  await tuck(a.page)
   await a.page.setViewportSize({ width: 375, height: 700 })
   await mockRecommend(a.page, () => okResponse())
   const overflow = () => a.page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
@@ -324,4 +359,27 @@ test('phone width: no horizontal scroll on form, results, and support', async ({
   await a.page.getByTestId('footer-support').click()
   await expect(a.page.getByTestId('support-card')).toBeVisible()
   expect(await overflow()).toBeLessThanOrEqual(0)
+})
+
+test('every suggestion, video or idea, has a good and a not-for-me button that says what it will do', async ({ users }) => {
+  const [a] = await users(1)
+  await tuck(a.page)
+  await mockRecommend(a.page, () => okResponse())
+  await a.page.goto('/checkin')
+  await fillAndSubmit(a.page)
+  const cards = a.page.getByTestId('pick-card')
+  await expect(cards).toHaveCount(2)
+  for (const card of await cards.all()) await expect(card.getByTestId('pick-feedback')).toBeVisible()
+  const first = cards.first()
+  const good = first.getByRole('button', { name: /^Good suggestion:/ })
+  const bad = first.getByRole('button', { name: /^Not for me:/ })
+  await expect(good).toHaveAttribute('aria-pressed', 'false')
+  await good.click()
+  await expect(good).toHaveAttribute('aria-pressed', 'true')
+  await expect(first.getByTestId('pick-feedback-ack')).toHaveText("Thanks. I'll suggest more like this.")
+  await bad.click() // changing your mind is fine
+  await expect(bad).toHaveAttribute('aria-pressed', 'true')
+  await expect(good).toHaveAttribute('aria-pressed', 'false')
+  await expect(first.getByTestId('pick-feedback-ack')).toHaveText("Got it. I'll suggest fewer like this.")
+  await expect(cards.nth(1).getByTestId('pick-feedback-ack')).toHaveCount(0) // the other card is untouched
 })

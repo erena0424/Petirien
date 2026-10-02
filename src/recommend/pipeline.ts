@@ -16,6 +16,7 @@ import { interpretSchema, rankSchema, type InterpretOut, type RankOut } from './
 import { extractText, parseJsonObject } from './parse'
 import { buildInterpretPrompt, buildRankPrompt, type RankGroup } from './prompts'
 import { detectCrisis } from './safety'
+import { dayOfYear } from '../lib/for-now'
 import { fitsTime, mergeVideos, normalizeVideo } from './video'
 
 /** Runs per person per UTC day that go on to paid model or video work. The app owner is exempt. */
@@ -30,6 +31,8 @@ export interface UserContext {
   liked: string[]
   /** Activity ids with feedback "no". */
   disliked: string[]
+  /** Activity ids shown in the last few check-ins, newest first. */
+  recent?: string[]
   usageToday: number
   /** The app owner is never capped (they pay for their own testing). */
   exempt?: boolean
@@ -83,6 +86,7 @@ const inputSchema = z.object({
   excludeActivityIds: z.array(z.string().max(80)).max(30).optional(),
   checkinId: z.string().max(120).optional(),
   screen: z.enum(['auto', 'video', 'none']).optional(),
+  place: z.enum(['auto', 'in', 'out']).optional(),
 })
 
 export function parseCheckinInput(
@@ -100,19 +104,65 @@ export function parseCheckinInput(
  * asked for a mix, so when both kinds are available the list always has at least
  * one with a video and at least one plain idea, however the model ordered them.
  */
-export function pickShortlist(candidates: Activity[], screen: CheckinInput['screen'], count = MAX_PICKS): Activity[] {
-  if (screen === 'video' || screen === 'none') return candidates.slice(0, count)
-  const video = candidates.find((a) => a.video)
-  const plain = candidates.find((a) => !a.video)
-  const chosen = new Set<Activity>()
-  if (video) chosen.add(video)
-  if (plain) chosen.add(plain)
-  for (const a of candidates) {
-    if (chosen.size >= count) break
-    chosen.add(a)
+export const WALK_ID = 'walk-nearby'
+
+/** The list started `by` places along, wrapping round. */
+export function rotate<T>(list: T[], by: number): T[] {
+  if (list.length === 0) return []
+  const n = ((by % list.length) + list.length) % list.length
+  return [...list.slice(n), ...list.slice(0, n)]
+}
+
+/**
+ * Shape the candidates with what the person has told us, without ever leaving them with nothing: what they marked
+ * "not for me" is dropped (while at least three other choices remain), and what the last few check-ins already
+ * showed moves to the back unless they liked it, so the same few do not come up every time.
+ */
+export function tailor(candidates: Activity[], ctx: { liked: string[]; disliked: string[]; recent?: string[] }): Activity[] {
+  const kept = candidates.filter((a) => !ctx.disliked.includes(a.id))
+  const base = kept.length >= 3 ? kept : candidates
+  const recent = new Set(ctx.recent ?? [])
+  const fresh = base.filter((a) => !recent.has(a.id) || ctx.liked.includes(a.id))
+  const seen = base.filter((a) => recent.has(a.id) && !ctx.liked.includes(a.id))
+  return [...fresh, ...seen]
+}
+
+/**
+ * Which activities make the short list. The default ("Not sure") is one place to visit, one video, and one other
+ * idea. It is a preference, not a rule: when a piece is not available (no time for a walk, no video that fits) the
+ * rest fills in from whatever is there, always leaning on videos.
+ *  - Go outside: the place, and two videos.
+ *  - Stay in: two videos and one idea, nothing outdoors.
+ *  - Videos are fine: videos only. No screen: ideas only, with the place first when it fits.
+ */
+export function pickShortlist(candidates: Activity[], screen: CheckinInput['screen'], count = MAX_PICKS, place: CheckinInput['place'] = 'auto'): Activity[] {
+  const pool = place === 'in' ? candidates.filter((a) => !a.tags.includes('outdoors')) : candidates
+  if (screen === 'video') return pool.slice(0, count)
+  const walk = pool.find((a) => a.id === WALK_ID)
+  if (screen === 'none') {
+    const first = pool.slice(0, count)
+    return !walk || first.includes(walk) ? first : [...first.slice(0, count - 1), walk]
+  }
+  const videos = pool.filter((a) => a.video)
+  const plainIdeas = pool.filter((a) => !a.video && a.id !== WALK_ID)
+  // The idea should be a different kind of thing from the video, so the mix really is a mix.
+  const differs = plainIdeas.find((a) => a.category !== videos[0]?.category)
+  const ideas = differs ? [differs, ...plainIdeas.filter((a) => a !== differs)] : plainIdeas
+  let chosen: Activity[]
+  if (walk && place === 'out') chosen = [walk, ...videos.slice(0, 2)]
+  else if (walk) chosen = [walk, ...videos.slice(0, 1), ...ideas.slice(0, 1)] // place, video, idea
+  else chosen = [...videos.slice(0, 2), ...ideas.slice(0, 1)] // no place available: two videos and an idea
+  const set = new Set(chosen)
+  for (const a of videos) {
+    if (set.size >= count) break
+    set.add(a)
+  }
+  for (const a of pool) {
+    if (set.size >= count) break
+    set.add(a)
   }
   // Keep the order the candidates came in.
-  return candidates.filter((a) => chosen.has(a)).slice(0, count)
+  return pool.filter((a) => set.has(a)).slice(0, count)
 }
 
 // ── interpret ────────────────────────────────────────────────────────────
@@ -148,9 +198,9 @@ async function interpret(
 
 // ── retrieve ─────────────────────────────────────────────────────────────
 
-type Retrieval = { ok: true; videos: VideoRef[] } | { ok: false }
+export type Retrieval = { ok: true; videos: VideoRef[] } | { ok: false }
 
-async function retrieve(deps: Deps, activity: Activity, minutes: number): Promise<Retrieval> {
+export async function retrieve(deps: Deps, activity: Activity, minutes: number): Promise<Retrieval> {
   const q = activity.searchQuery
   let videos = await deps.cacheGet(q)
 
@@ -263,7 +313,7 @@ export async function recommend(deps: Deps, input: CheckinInput): Promise<Recomm
     energy: input.energy,
     goal: input.goal,
     dislikedTags: ctx.prefs.dislikedTags,
-    avoid: ctx.prefs.avoid,
+    avoid: input.place === 'in' ? [...ctx.prefs.avoid, 'outdoors'] : ctx.prefs.avoid,
     excludeIds: input.excludeActivityIds,
     videoOnly: input.screen === 'video',
   })
@@ -296,13 +346,17 @@ export async function recommend(deps: Deps, input: CheckinInput): Promise<Recomm
     liked: ctx.liked,
     disliked: ctx.disliked,
     likedTags: ctx.prefs.likedTags,
+    recent: ctx.recent,
   }
   const fromModel = (interp?.ids ?? [])
     .map((id) => fits.find((a) => a.id === id))
     .filter((a): a is Activity => !!a)
-  const fill = deterministicPicks(fits, signals, MAX_PICKS)
-  const candidates = [...new Set([...fromModel, ...fill, ...fits])]
-  const shortlist = pickShortlist(candidates, input.screen)
+  // Variety: start the catalog in a different place each day, so the same few never lead.
+  const spun = rotate(fits, dayOfYear(now))
+  const fill = deterministicPicks(spun, signals, MAX_PICKS)
+  const tailored = tailor([...new Set([...fromModel, ...fill, ...spun])], ctx)
+  const candidates = tailored
+  const shortlist = pickShortlist(candidates, input.screen, MAX_PICKS, input.place)
   const reply = interp?.reply ?? TEMPLATE_REPLY
 
   // Videos only where one helps (and never in screen-free mode). Everything else is
@@ -327,12 +381,18 @@ export async function recommend(deps: Deps, input: CheckinInput): Promise<Recomm
   }
 
   // Assemble in the chosen order: the video where we have one, otherwise the plain idea.
-  const ordered = shortlist.slice(0, MAX_PICKS).map((a, i) => {
-    const v = videoFor.get(a.id)
-    return v
-      ? { activityId: a.id, activityTitle: a.title, video: v.video as VideoRef | null, reason: v.reason, rank: i + 1 }
-      : { activityId: a.id, activityTitle: a.title, video: null as VideoRef | null, reason: a.blurb, rank: i + 1 }
-  })
+  // Shown in this order: videos first, then the place to visit, then other ideas.
+  const kind = (a: Activity) => (videoFor.has(a.id) ? 0 : a.id === WALK_ID ? 1 : 2)
+  const ordered = shortlist
+    .slice(0, MAX_PICKS)
+    .map((a, i) => ({ a, i }))
+    .sort((x, y) => kind(x.a) - kind(y.a) || x.i - y.i)
+    .map(({ a }, i) => {
+      const v = videoFor.get(a.id)
+      return v
+        ? { activityId: a.id, activityTitle: a.title, video: v.video as VideoRef | null, reason: v.reason, rank: i + 1 }
+        : { activityId: a.id, activityTitle: a.title, video: null as VideoRef | null, reason: a.blurb, rank: i + 1 }
+    })
 
   const checkinId = await persistCheckin({ note: true, intent: interp?.intent })
   const suggestionIds = await deps.saveSuggestions(

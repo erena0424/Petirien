@@ -6,7 +6,7 @@
 
 import { mergeStyle, normalizeStyle, type BunnyStyle } from './style'
 
-export type FeedbackReason = 'too_long' | 'too_many_questions' | 'too_cheery' | 'too_serious'
+export type FeedbackReason = 'too_long' | 'too_many_questions' | 'too_cheery' | 'too_serious' | 'too_formal' | 'too_informal'
 
 export interface ReasonChoice {
   id: FeedbackReason
@@ -21,6 +21,8 @@ export const REASONS: ReasonChoice[] = [
   { id: 'too_many_questions', label: 'Too many questions', change: { questions: 'fewer' }, ack: "Got it. I'll ask fewer questions." },
   { id: 'too_cheery', label: 'Too cheery', change: { tone: 'gentle' }, ack: "Got it. I'll be calmer." },
   { id: 'too_serious', label: 'Too serious', change: { tone: 'upbeat' }, ack: "Got it. I'll lighten up a bit." },
+  { id: 'too_formal', label: 'Too formal', change: { formality: 'casual' }, ack: "Got it. I'll sound more casual." },
+  { id: 'too_informal', label: 'Too informal', change: { formality: 'formal' }, ack: "Got it. I'll sound a bit more formal." },
 ]
 
 export const NO_CHANGE_ACK = "I'm already doing that. Tell me more about what you'd like and I'll try."

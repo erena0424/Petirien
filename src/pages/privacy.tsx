@@ -65,6 +65,15 @@ export default function Privacy() {
               while) the bunny writes a short note about it: a title, a few sentences, and a few feeling words. You can read
               and delete them under Journal.
             </li>
+            <li>
+              Reflections you write about a plan: the plan&apos;s name and time, an optional feeling word, and your own words. You can
+              read, change, and delete them under Journal.
+            </li>
+            <li>
+              Places you mark good, not right now, or never: only the place&apos;s public name, your choice and when you made it, never where you
+              were. A favorite comes up now and then, &ldquo;not right now&rdquo; leaves a place out for a couple of weeks, and you can see and undo
+              them under Preferences.
+            </li>
             <li>Your preferences: what to avoid, what you like, your usual time, and how you like the bunny to talk.</li>
             <li>A simple count of how many times you asked for ideas or chatted today, to keep usage fair.</li>
           </ul>
@@ -116,6 +125,24 @@ export default function Privacy() {
           <p>
             Video details such as titles and thumbnails come from YouTube and are refreshed about every 25 days. If they can&apos;t
             be refreshed, they are hidden after 30 days. Your own notes are not affected.
+          </p>
+          <p>
+            <strong>Places near you (optional).</strong> On the &ldquo;Visit a place nearby&rdquo; idea you are asked to share your
+            location, and can then choose a kind of place (park, caf&eacute;, library, garden). Your browser asks first. If you say yes,
+            the location is rounded to about a kilometre and sent, with the kind of place, to Google Maps through DeepSpace to find
+            a few places close by. It is used once, shown only to you, and not saved. If you say no, nothing is sent and the idea is
+            simply taking a walk.
+          </p>
+          <p>
+            <strong>Google Calendar (optional).</strong> If you connect your own Google account (through DeepSpace), the app
+            reads the next day or two of your calendar when you ask. On the check-in screen it uses only when your next event
+            starts, to suggest how much time you have, and it does not show, save, or tell the AI what your events are. On
+            Home it shows the names and times of a few plans on your screen only, and keeps nothing. Only if you press{' '}
+            &ldquo;Reflect on this&rdquo; does that plan&apos;s name and time go into your chat with the bunny, so the AI sees
+            it, and it is saved with that chat unless you chose not to save it. Notes the bunny writes from that chat go in your Journal
+            on the plan&apos;s date, with the plan&apos;s name. Reflections you wrote yourself earlier are never sent to the AI. Google&apos;s permission screen
+            says the app can &ldquo;view and edit&rdquo; events; this app only reads, and never changes your calendar. You can
+            remove the connection any time in your Google Account settings.
           </p>
         </Section>
 

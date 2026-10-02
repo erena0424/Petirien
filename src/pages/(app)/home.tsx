@@ -7,8 +7,13 @@
 
 import { Link } from 'react-router-dom'
 import { useQuery } from 'deepspace'
-import { BunnyHero } from '@/components/BunnyHero'
+import { HomeHero } from '@/components/HomeHero'
+import { HomeIdeas } from '@/components/HomeIdeas'
+import { HomePlace } from '@/components/HomePlace'
 import { MonthCalendar } from '@/components/MonthCalendar'
+import { PlansCard } from '@/components/PlansCard'
+import { suggestionsFor } from '../../plans/plan'
+import { usePlans } from '@/lib/use-plans'
 import { SaveButton } from '@/components/SaveButton'
 import { Instructions } from '@/components/checkin/Instructions'
 import { checkinDays, currentStreak, daysInMonthWithCheckin, encouragement } from '@/lib/calendar'
@@ -20,6 +25,7 @@ import { useJournal } from '@/lib/use-journal'
 import { usePreferences } from '@/lib/use-preferences'
 import { useSavedIdeas } from '@/lib/use-saved-ideas'
 import { useSavedVideos } from '@/lib/use-saved'
+import { displayMeta } from '@/lib/saved'
 import { getActivity } from '../../catalog'
 
 interface CheckinRow {
@@ -42,6 +48,7 @@ export default function HomePage() {
   const prefs = usePreferences()
   const journal = useJournal()
   const bunny = useBunnyChat()
+  const plans = usePlans()
 
   // A day counts when you did something for yourself: a check-in, a journal note, or a saved chat with the bunny.
   const days = checkinDays([
@@ -56,8 +63,8 @@ export default function HomePage() {
   const latest = checkins.status === 'ready' ? checkins.records[0] : undefined
 
   const savedItems = [
-    ...videos.records.map((r) => ({ kind: 'video' as const, activityId: r.data.activityId, createdAt: r.createdAt, id: r.recordId, title: r.data.title || 'Saved video' })),
-    ...ideas.records.map((r) => ({ kind: 'idea' as const, activityId: r.data.activityId, createdAt: r.createdAt, id: r.recordId, title: getActivity(r.data.activityId)?.title ?? 'Saved idea' })),
+    ...videos.records.map((r) => ({ kind: 'video' as const, activityId: r.data.activityId, createdAt: r.createdAt, id: r.recordId, title: r.data.title || 'Saved video', thumbnail: displayMeta(r.data).thumbnail || '' })),
+    ...ideas.records.map((r) => ({ kind: 'idea' as const, activityId: r.data.activityId, createdAt: r.createdAt, id: r.recordId, title: getActivity(r.data.activityId)?.title ?? 'Saved idea', thumbnail: '' })),
   ]
   const ordered = orderSavedForNow(savedItems, now).slice(0, 4)
 
@@ -66,47 +73,18 @@ export default function HomePage() {
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-8">
       <h1 className="sr-only">Home</h1>
-      <BunnyHero />
+      <HomeHero suggestions={suggestionsFor([...plans.calendarPlans, ...plans.typed], now)} />
 
-      <div className="mt-8 flex flex-wrap gap-3">
-        <Link to="/checkin" className={primary} data-testid="do-something">
-          Do something little for yourself
-        </Link>
-        <Link to="/messages" className={secondary}>
-          Messages
-        </Link>
-        <Link to="/journal" className={secondary}>
-          Journal
-        </Link>
-        <Link to="/saved" className={secondary}>
-          Saved
-        </Link>
+      <div className="mt-10">
+        <PlansCard plans={plans} />
       </div>
 
-      <section className={`${card} mt-8`} aria-labelledby="calendar-heading">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 id="calendar-heading" className="text-lg font-bold text-foreground">
-            Taking care of yourself
-          </h2>
-          {cheer && (
-            <p data-testid="cheer" className="text-sm font-medium text-foreground">
-              {cheer}
-            </p>
-          )}
-        </div>
-        <p className="mt-1 text-sm text-muted-foreground">Each filled day is a day you did something for yourself.</p>
-        <div className="mt-4">
-          <MonthCalendar days={days} now={now} />
-        </div>
-        {latest && (
-          <Link to="/history" data-testid="last-checkin" className="mt-4 block text-sm text-muted-foreground underline-offset-4 hover:underline">
-            Last time: {formatCheckinDate(latest.createdAt)} · feeling {label(MOOD, latest.data.mood).toLowerCase()}, {label(ENERGY, latest.data.energy).toLowerCase()} energy
-          </Link>
-        )}
-      </section>
+      <HomeIdeas />
+
+      <HomePlace />
 
       {forNow && (
-        <section className={`${card} mt-6`} aria-labelledby="now-heading" data-testid="for-now">
+        <section className={`${card} mt-10`} aria-labelledby="now-heading" data-testid="for-now">
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">For {PART_LABEL[partOfDay(now)]}</p>
           <h2 id="now-heading" className="mt-1 text-lg font-bold text-foreground">
             {forNow.title}
@@ -119,7 +97,7 @@ export default function HomePage() {
         </section>
       )}
 
-      <section className="mt-6" aria-labelledby="saved-heading">
+      <section className="mt-10" aria-labelledby="saved-heading">
         <div className="flex items-baseline justify-between">
           <h2 id="saved-heading" className="text-lg font-bold text-foreground">
             From your saved
@@ -142,7 +120,10 @@ export default function HomePage() {
                   to="/saved"
                   className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card px-4 py-3 hover:bg-secondary"
                 >
-                  <span className="min-w-0">
+                  {item.thumbnail && (
+                    <img src={item.thumbnail} alt="" loading="lazy" data-testid="home-saved-thumb" className="h-14 w-24 shrink-0 rounded-lg bg-muted object-cover" />
+                  )}
+                  <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-semibold text-foreground">{item.title}</span>
                     <span className="block text-xs text-muted-foreground">
                       {item.kind === 'video' ? 'Video' : 'Idea'}
@@ -154,6 +135,28 @@ export default function HomePage() {
               </li>
             ))}
           </ul>
+        )}
+      </section>
+
+      <section className="mt-10" aria-labelledby="calendar-heading">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 id="calendar-heading" className="text-lg font-bold text-foreground">
+            Taking care of yourself
+          </h2>
+          {cheer && (
+            <p data-testid="cheer" className="text-sm font-medium text-foreground">
+              {cheer}
+            </p>
+          )}
+        </div>
+        <p className="mt-1 text-sm text-muted-foreground">Each filled day is a day you did something for yourself.</p>
+        <div className="mt-4">
+          <MonthCalendar days={days} now={now} />
+        </div>
+        {latest && (
+          <Link to="/history" data-testid="last-checkin" className="mt-4 block text-sm text-muted-foreground underline-offset-4 hover:underline">
+            Last time: {formatCheckinDate(latest.createdAt)} · feeling {label(MOOD, latest.data.mood).toLowerCase()}, {label(ENERGY, latest.data.energy).toLowerCase()} energy
+          </Link>
         )}
       </section>
     </div>

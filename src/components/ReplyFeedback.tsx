@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react'
 import { ThumbsDown, ThumbsUp } from 'lucide-react'
 import { Button } from '@/components/ui'
 import { usePreferences } from '@/lib/use-preferences'
+import { useBunnyChat } from '@/lib/bunny-chat'
 import { REASONS, THANKS_ACK, applyFeedback, type FeedbackReason } from '../reflect/feedback'
+import { AutoTextarea } from './AutoTextarea'
 import type { BunnyStyle } from '../reflect/style'
 
-type Phase = 'idle' | 'reasons' | 'done'
+type Phase = 'idle' | 'reasons' | 'typing' | 'done'
 
 /**
  * Two small icons under the bunny's latest reply. A thumbs-up just says thanks.
@@ -14,6 +16,8 @@ type Phase = 'idle' | 'reasons' | 'done'
  */
 export function ReplyFeedback({ replyKey }: { replyKey: string }) {
   const prefs = usePreferences()
+  const chat = useBunnyChat()
+  const [typed, setTyped] = useState('')
   const [phase, setPhase] = useState<Phase>('idle')
   const [message, setMessage] = useState('')
   const [undo, setUndo] = useState<BunnyStyle | null>(null)
@@ -22,6 +26,7 @@ export function ReplyFeedback({ replyKey }: { replyKey: string }) {
     setPhase('idle')
     setMessage('')
     setUndo(null)
+    setTyped('')
   }, [replyKey])
 
   async function choose(reason: FeedbackReason) {
@@ -30,6 +35,14 @@ export function ReplyFeedback({ replyKey }: { replyKey: string }) {
     setUndo(result.next ? result.previous : null)
     setPhase('done')
     if (result.next) await prefs.setStyle(result.next)
+  }
+
+  function sendTyped() {
+    const text = typed.trim()
+    if (!text) return
+    setTyped('')
+    setPhase('idle')
+    void chat.send(text) // a normal message; the bunny's own reply is the acknowledgement
   }
 
   async function undoIt() {
@@ -62,8 +75,49 @@ export function ReplyFeedback({ replyKey }: { replyKey: string }) {
               {r.label}
             </Button>
           ))}
+          <Button variant="ghost" size="sm" onClick={() => setPhase('typing')}>
+            Something else…
+          </Button>
         </div>
       </div>
+    )
+  }
+
+  if (phase === 'typing') {
+    return (
+      <form
+        data-testid="feedback-typing"
+        className="space-y-2"
+        onSubmit={(e) => {
+          e.preventDefault()
+          sendTyped()
+        }}
+      >
+        <label htmlFor="feedback-text" className="text-sm text-muted-foreground">
+          How would you like me to talk?
+        </label>
+        <div className="flex items-end gap-2">
+          <AutoTextarea
+            id="feedback-text"
+            autoFocus
+            value={typed}
+            maxLength={300}
+            onChange={(e) => setTyped(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault()
+                sendTyped()
+              }
+            }}
+            placeholder="For example: be more direct, or use simpler words"
+            className="min-w-0 flex-1 py-2 text-sm"
+            maxLines={4}
+          />
+          <Button type="submit" size="sm" disabled={!typed.trim()}>
+            Send
+          </Button>
+        </div>
+      </form>
     )
   }
 

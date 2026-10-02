@@ -13,6 +13,8 @@ import { useMutations, useQuery } from 'deepspace'
 import { callAction } from '@/lib/actions-client'
 import { formatResetTime } from '@/lib/format'
 import { notesDue, titleFromFirstMessage } from '../reflect/auto-notes'
+import { minutesUntil, openerFor, type Plan } from '../plans/plan'
+import { choiceFor } from './free-time'
 import { MAX_MESSAGES, type ChatMessage, type ReplyResponse } from '../reflect/contract'
 
 /** The most recent messages go to the model; the rest stay on screen and in storage. */
@@ -20,6 +22,9 @@ export const CONTEXT_MESSAGES = MAX_MESSAGES - 2
 
 export interface ConversationRow {
   title?: string
+  planId?: string
+  planTitle?: string
+  planStart?: string
   lastMessageAt: number
   notedUpTo?: number
   messageCount?: number
@@ -63,6 +68,15 @@ interface BunnyChat {
   conversations: { recordId: string; data: ConversationRow; createdAt: string }[]
   conversationsReady: boolean
   deleteConversation: (id: string) => Promise<boolean>
+  /** Up to three earlier saved conversations (not the open one), newest first, with the bunny's last words in each. */
+  earlier: { id: string; title: string; text: string }[]
+  /** The bunny thinks a small idea might help right now: where the optional "Find a small idea" link goes. Null when there is no offer. */
+  offerHref: string | null
+  /** Start a fresh conversation about a plan: the bunny's first line asks how the person feels about it. */
+  startAbout: (plan: Plan) => Promise<void>
+  /** Goes up each time something asks to bring the chat forward (opens the phone sheet, shows the hidden chat, focuses the text box). */
+  focusTick: number
+  requestFocus: () => void
   /** Ask for notes about the open conversation now. Resolves true when a note was written. */
   writeNotesNow: () => Promise<boolean>
 }
@@ -103,6 +117,10 @@ export function BunnyChatProvider({ children }: { children: ReactNode }) {
   const [support, setSupport] = useState(false)
   const [saveFailed, setSaveFailed] = useState(false)
   const creating = useRef<Promise<string | null> | null>(null)
+  const [focusTick, setFocusTick] = useState(0)
+  const [offerHref, setOfferHref] = useState<string | null>(null)
+  const aboutPlan = useRef<Plan | null>(null)
+  const requestFocus = useCallback(() => setFocusTick((n) => n + 1), [])
 
   // Writes are only accepted once the connection is ready. Typing right after the page
   // loads must wait for it, or the chat would quietly not be saved.
@@ -141,12 +159,18 @@ export function BunnyChatProvider({ children }: { children: ReactNode }) {
   const ask = useCallback(
     async (conversation: ChatMessage[], id: string | null) => {
       setError(null)
+      setOfferHref(null)
       setSending(true)
       const res = await callAction<ReplyResponse>('reflectReply', { messages: conversation.slice(-CONTEXT_MESSAGES) })
       setSending(false)
       if (res?.status === 'ok') {
         const bunny: ChatMessage = { role: 'bunny', text: res.reply }
         setThread([...conversation, bunny])
+        if (res.offer) {
+          // Prefill the time from how long until the plan, so the idea fits; no plan means the form's usual default.
+          const m = aboutPlan.current ? minutesUntil(aboutPlan.current, new Date()) : null
+          setOfferHref(m === null ? '/checkin' : `/checkin?minutes=${choiceFor(m)}`)
+        }
         await persist(id, bunny, conversation.length)
       } else if (res?.status === 'support') {
         setSupport(true)
@@ -187,6 +211,8 @@ export function BunnyChatProvider({ children }: { children: ReactNode }) {
 
   const reset = useCallback(() => {
     creating.current = null
+    aboutPlan.current = null
+    setOfferHref(null)
     setThread([])
     setConversationId(null)
     setIsPrivate(false)
@@ -200,6 +226,42 @@ export function BunnyChatProvider({ children }: { children: ReactNode }) {
     noteSoon(conversationId, true)
     reset()
   }, [conversationId, noteSoon, reset])
+
+  const startAbout = useCallback(
+    async (plan: Plan) => {
+      noteSoon(conversationId, true) // like starting a new conversation: write notes for the one being left
+      reset()
+      const opener: ChatMessage = { role: 'bunny', text: openerFor(plan, new Date()) }
+      setThread([opener])
+      aboutPlan.current = plan
+      // Saved like any chat. send() waits on this same promise, so a quick reply cannot create a second conversation.
+      creating.current = (async () => {
+        if (!(await waitUntilReady())) {
+          setSaveFailed(true)
+          return null
+        }
+        try {
+          const id = await convMutRef.current.createConfirmed({
+            title: titleFromFirstMessage(plan.title),
+            lastMessageAt: Date.now(),
+            notedUpTo: 0,
+            messageCount: 0,
+            planId: plan.id,
+            planTitle: plan.title,
+            planStart: plan.start,
+          })
+          setConversationId(id)
+          await persist(id, opener, 0)
+          return id
+        } catch {
+          setSaveFailed(true)
+          return null
+        }
+      })()
+      setFocusTick((n) => n + 1)
+    },
+    [conversationId, noteSoon, reset, waitUntilReady, persist],
+  )
 
   const open = useCallback(
     (id: string) => {
@@ -260,6 +322,19 @@ export function BunnyChatProvider({ children }: { children: ReactNode }) {
     return null
   }, [thread])
 
+  const earlier = useMemo(() => {
+    const out: { id: string; title: string; text: string }[] = []
+    for (const c of convQuery.records) {
+      if (c.recordId === conversationId) continue
+      const mine = allMessages.records.filter((m) => m.data.conversationId === c.recordId)
+      const last = [...mine].reverse().find((m) => m.data.role === 'bunny') ?? mine[mine.length - 1]
+      if (!last) continue
+      out.push({ id: c.recordId, title: c.data.title || 'Earlier chat', text: last.data.text })
+      if (out.length === 3) break
+    }
+    return out
+  }, [convQuery.records, allMessages.records, conversationId])
+
   const value: BunnyChat = {
     thread,
     latest,
@@ -280,6 +355,11 @@ export function BunnyChatProvider({ children }: { children: ReactNode }) {
     conversations: convQuery.records.map((r) => ({ recordId: r.recordId, data: r.data, createdAt: r.createdAt })),
     conversationsReady: convQuery.status === 'ready',
     deleteConversation,
+    earlier,
+    offerHref,
+    startAbout,
+    focusTick,
+    requestFocus,
     writeNotesNow,
   }
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>

@@ -97,7 +97,9 @@ export async function reflectReply(deps: ReflectDeps, messages: ChatMessage[]): 
     const { next, changed } = mergeStyle(style, parsed.data.styleChange)
     if (changed) await deps.saveStyle(next).catch(() => undefined)
   }
-  return { status: 'ok', reply: cleanReply(parsed.data.reply) ?? TEMPLATE_ACK }
+  const reply = cleanReply(parsed.data.reply)
+  // An offer only goes with a real reply, never with the stock acknowledgement.
+  return reply ? { status: 'ok', reply, ...(parsed.data.offer === true ? { offer: true as const } : {}) } : { status: 'ok', reply: TEMPLATE_ACK }
 }
 
 export async function reflectSummary(deps: ReflectDeps, messages: ChatMessage[]): Promise<SummaryResponse> {
@@ -106,13 +108,13 @@ export async function reflectSummary(deps: ReflectDeps, messages: ChatMessage[])
   if (await overCap(deps)) return { status: 'capped', resetsAt: nextUtcMidnight(deps.now()) }
   await deps.bumpUsage()
 
-  const text = await deps.llm({ ...buildSummaryPrompt(messages), maxTokens: 700 })
+  const text = await deps.llm({ ...buildSummaryPrompt(messages), maxTokens: 2400 })
   const parsed = summarySchema.safeParse(parseJsonObject(text))
   if (!parsed.success) {
     return { status: 'error', message: "I couldn't write the notes just now. Your chat is still here, so you can try again." }
   }
   if (parsed.data.needsSupportResources) return { status: 'support' }
-  const draft = cleanDraft(parsed.data)
+  const draft = cleanDraft(parsed.data, userTexts(messages))
   if (!draft) {
     return { status: 'error', message: "I couldn't write good notes from that. You can keep chatting and try again." }
   }

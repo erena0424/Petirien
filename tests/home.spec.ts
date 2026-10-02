@@ -10,6 +10,7 @@
  * wording at other hours (unit-tested).
  */
 import { test, expect, loadAllTestAccounts } from 'deepspace/testing'
+import { tuck } from './tuck'
 import type { Page } from '@playwright/test'
 import { CATALOG } from '../src/catalog'
 
@@ -31,10 +32,12 @@ async function clearDana(page: Page) {
 
 test('a new account sees a welcoming, non-empty Home with no streak talk', async ({ users }) => {
   const [dana] = await users(['Dana'])
+  await tuck(dana.page)
   await clearDana(dana.page)
   await dana.page.goto('/home')
   await expect(dana.page.getByRole('heading', { level: 1 })).toHaveText('Home') // for screen readers
-  await expect(dana.page.getByTestId('bunny-words')).toContainText(/Good (morning|afternoon|evening)|night owl/)
+  await expect(dana.page.getByTestId('home-greeting')).toContainText(/Good (morning|afternoon|evening)|night owl/)
+  await expect(dana.page.getByTestId('home-hero')).toContainText("What's on your mind?")
   await expect(dana.page.getByTestId('calendar')).toBeVisible()
   await expect(dana.page.getByTestId('for-now')).toBeVisible() // a suggestion even with no history
   await expect(dana.page.getByTestId('home-saved-empty')).toBeVisible()
@@ -44,6 +47,7 @@ test('a new account sees a welcoming, non-empty Home with no streak talk', async
 
 test('checking in fills today on the calendar and shows a gentle message', async ({ users }) => {
   const [dana] = await users(['Dana'])
+  await tuck(dana.page)
   // A real check-in that stops at "nothing fits" (no paid call).
   const everything = CATALOG.map((a) => a.id)
   await dana.page.route('**/api/actions/recommend', async (route) => {
@@ -76,6 +80,7 @@ test('checking in fills today on the calendar and shows a gentle message', async
 
 test('the calendar moves between months and cannot go into the future', async ({ users }) => {
   const [dana] = await users(['Dana'])
+  await tuck(dana.page)
   await dana.page.goto('/home')
   const title = dana.page.getByTestId('calendar').getByRole('heading')
   const now = await title.innerText()
@@ -89,6 +94,7 @@ test('the calendar moves between months and cannot go into the future', async ({
 
 test('the suggestion for right now can be saved, and saved items appear on Home', async ({ users }) => {
   const [dana] = await users(['Dana'])
+  await tuck(dana.page)
   await dana.page.goto('/home')
   const nowCard = dana.page.getByTestId('for-now')
   await expect(nowCard.getByRole('button', { name: 'How to do it' })).toBeVisible()
@@ -105,6 +111,7 @@ test('the suggestion for right now can be saved, and saved items appear on Home'
 
   // Nobody else sees it. Bob is used because no other spec saves ideas in his account.
   const [bob] = await users(['Bob'])
+  await tuck(bob.page)
   await bob.page.goto('/home')
   await bob.page.waitForTimeout(1500)
   await expect(bob.page.getByTestId('home-saved').getByText('Idea')).toHaveCount(0)
@@ -114,6 +121,7 @@ test('the suggestion for right now can be saved, and saved items appear on Home'
 
 test('phone width: Home has no horizontal scroll', async ({ users }) => {
   const [dana] = await users(['Dana'])
+  await tuck(dana.page)
   await dana.page.setViewportSize({ width: 375, height: 800 })
   await dana.page.goto('/home')
   await expect(dana.page.getByTestId('calendar')).toBeVisible()

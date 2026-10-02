@@ -25,10 +25,10 @@ describe('pickForNow', () => {
   it('only ever suggests low-effort activities', () => {
     for (let h = 0; h < 24; h++) for (let day = 1; day <= 20; day++) expect(pickForNow({ now: at(h, day) })!.effort).toBe(1)
   })
-  it('suits the time of day: nights get meditation, mornings get movement or meditation', () => {
+  it('suits the time of day: nights get meditation, mornings get movement, meditation or something everyday', () => {
     for (let day = 1; day <= 20; day++) {
       expect(pickForNow({ now: at(23, day) })!.category).toBe('meditation')
-      expect(['movement', 'meditation']).toContain(pickForNow({ now: at(8, day) })!.category)
+      expect(['movement', 'meditation', 'everyday']).toContain(pickForNow({ now: at(8, day) })!.category)
     }
   })
   it('is deterministic for a given day and rotates between days', () => {

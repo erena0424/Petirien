@@ -21,6 +21,7 @@ import {
   preferencesSchema,
   usageSchema,
   searchCacheSchema,
+  placeFeedbackSchema,
 } from './schemas/wellness-schemas'
 
 export const schemas: CollectionSchema[] = [
@@ -36,4 +37,5 @@ export const schemas: CollectionSchema[] = [
   preferencesSchema,
   usageSchema,
   searchCacheSchema,
+  placeFeedbackSchema,
 ]

@@ -5,11 +5,12 @@ import { reflectReply, type ReflectDeps } from './pipeline'
 
 describe('normalizeStyle: only the fixed vocabulary survives', () => {
   it('keeps valid values and drops everything else', () => {
-    expect(normalizeStyle({ tone: 'gentle', length: 'short', questions: 'fewer', suggestions: 'more' })).toEqual({
+    expect(normalizeStyle({ tone: 'gentle', length: 'short', questions: 'fewer', suggestions: 'more', formality: 'casual' })).toEqual({
       tone: 'gentle',
       length: 'short',
       questions: 'fewer',
       suggestions: 'more',
+      formality: 'casual',
     })
     expect(normalizeStyle({ tone: 'sarcastic', length: 'long', questions: 5, extra: 'x' })).toEqual({})
     expect(normalizeStyle(null)).toEqual({})
@@ -53,6 +54,8 @@ describe('describeStyle / styleLine', () => {
     expect(line).toMatch(/very short replies/)
     expect(line).toMatch(/few or no questions/)
     expect(line).toMatch(/no suggestions unless asked/)
+    expect(styleLine({ formality: 'casual' })).toMatch(/casual, friendly/)
+    expect(styleLine({ formality: 'formal' })).toMatch(/more formal, polite/)
     expect(line).toMatch(/unless it would be unkind or unsafe/)
   })
 })
@@ -65,6 +68,8 @@ describe('the reply prompt', () => {
     expect(p.system).toMatch(/styleChange/)
     expect(p.system).toMatch(/explicitly says how they want you to talk/)
     expect(p.system).toMatch(/Never put anything about their problems, feelings, or life in it/)
+    expect(p.system).toMatch(/formality = casual \| formal/)
+    expect(p.system).toMatch(/be more direct/) // typed feedback about style is taken on board
   })
   it('has no style line when nothing is known', () => {
     expect(buildReplyPrompt(msgs).system).not.toMatch(/This person has said they like/)

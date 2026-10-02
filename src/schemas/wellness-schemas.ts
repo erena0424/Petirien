@@ -133,6 +133,12 @@ export const journalEntriesSchema: CollectionSchema = {
     text('conversationId'),
     /** 1 when the bunny wrote it on its own, 0 when the person asked. */
     num('auto'),
+    /** 'reflection' for something the person wrote about a plan; empty for the bunny's notes. */
+    text('kind'),
+    /** The calendar event (or typed plan) a reflection is about. One reflection per eventId. */
+    text('eventId'),
+    text('eventTitle'),
+    text('eventStart'),
   ],
   permissions: ownerOnly,
 }
@@ -153,6 +159,10 @@ export const conversationsSchema: CollectionSchema = {
     num('notedUpTo'),
     /** How many messages are stored, so the browser can tell when notes are due. */
     num('messageCount'),
+    /** When the chat was started about a plan: which one, so its notes land on that plan's date. */
+    text('planId'),
+    text('planTitle'),
+    text('planStart'),
   ],
   permissions: ownerOnly,
 }
@@ -221,4 +231,24 @@ export const searchCacheSchema: CollectionSchema = {
     member: { read: false, create: false, update: false, delete: false },
     admin: { read: false, create: false, update: false, delete: false },
   },
+}
+
+/**
+ * A place the person marked good or not for them. Only the place (its public name and id) and the rating are kept,
+ * never where the person was. Used to suggest that place more, or not again.
+ */
+export const placeFeedbackSchema: CollectionSchema = {
+  name: 'placeFeedback',
+  ownerField: 'userId',
+  columns: [
+    userId,
+    text('placeId', true),
+    text('name'),
+    // yes: good. no: not right now (sits out for a couple of weeks). never: do not suggest it again.
+    select('rating', ['yes', 'no', 'never'], true),
+    /** When it was rated (ms), so "not right now" can end. */
+    num('ratedAt'),
+  ],
+  uniqueOn: ['userId', 'placeId'],
+  permissions: ownerOnly,
 }

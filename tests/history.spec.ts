@@ -12,6 +12,7 @@
  * (saved videos are covered in saved.spec.ts).
  */
 import { test, expect, loadAllTestAccounts } from 'deepspace/testing'
+import { tuck } from './tuck'
 import { CATALOG } from '../src/catalog'
 
 test.skip(loadAllTestAccounts().length < 3, 'Needs 3 usable test accounts (Alice, Bob, Cara).')
@@ -23,6 +24,8 @@ test('a check-in is saved, shown on Home and History, hidden from others, and de
   // Cara has her own account in this spec so parallel specs (which clear Bob's and Alice's
   // data) cannot delete what this test is checking. Alice only looks.
   const [cara, alice] = await users(['Cara', 'Alice'])
+  await tuck(cara.page)
+  await tuck(alice.page)
   const note = `pw-test-note-${Date.now()}`
 
   // Cara checks in (real action, real database). Exclude every activity so the
@@ -69,6 +72,7 @@ test('a check-in is saved, shown on Home and History, hidden from others, and de
 
 test('history shows a friendly empty state for an account with no check-ins', async ({ users }) => {
   const [alice] = await users(1)
+  await tuck(alice.page)
   await alice.page.goto('/history')
   await expect(alice.page.getByRole('heading', { name: 'Your check-ins' })).toBeVisible()
   // Either empty or a list, but never an error.

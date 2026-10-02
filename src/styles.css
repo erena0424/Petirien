@@ -1,4 +1,5 @@
 @import "@fontsource-variable/nunito";
+@import "@fontsource/patrick-hand/latin-400.css";
 @import "tailwindcss" source(none);
 @import "./themes.css";
 
@@ -232,4 +233,11 @@
   a, button, [role="button"], input, select, textarea {
     touch-action: manipulation;
   }
+}
+
+/* The person's own journal words: a handwritten feel, only where the words are theirs. */
+.font-hand {
+  font-family: 'Patrick Hand', 'Nunito Variable', ui-rounded, cursive;
+  font-size: 1.2em;
+  line-height: 1.5;
 }

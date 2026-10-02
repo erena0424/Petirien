@@ -64,13 +64,19 @@ describe('toInput', () => {
     expect(toInput({ ...EMPTY_FORM, mood: 3, energy: 2 })).toEqual({ mood: 3, energy: 2, minutes: 10 })
   })
   it('sends screen only when the person chose no screen', () => {
-    expect(toInput({ mood: 3, energy: 2, minutes: 5, goal: '', note: '', screen: 'none' })).toEqual({ mood: 3, energy: 2, minutes: 5, screen: 'none' })
-    expect(toInput({ mood: 3, energy: 2, minutes: 5, goal: '', note: '', screen: 'video' })).toEqual({ mood: 3, energy: 2, minutes: 5, screen: 'video' })
-    expect(toInput({ mood: 3, energy: 2, minutes: 5, goal: '', note: '', screen: 'auto' })).not.toHaveProperty('screen')
+    expect(toInput({ mood: 3, energy: 2, minutes: 5, goal: '', note: '', screen: 'none', place: 'auto' })).toEqual({ mood: 3, energy: 2, minutes: 5, screen: 'none' })
+    expect(toInput({ mood: 3, energy: 2, minutes: 5, goal: '', note: '', screen: 'video', place: 'auto' })).toEqual({ mood: 3, energy: 2, minutes: 5, screen: 'video' })
+    expect(toInput({ mood: 3, energy: 2, minutes: 5, goal: '', note: '', screen: 'auto', place: 'auto' })).not.toHaveProperty('screen')
+  })
+  it('sends place only when the person chose to stay in or go outside', () => {
+    const base = { mood: 3, energy: 3, minutes: 20, goal: '' as const, note: '', screen: 'auto' as const }
+    expect(toInput({ ...base, place: 'out' })).toEqual({ mood: 3, energy: 3, minutes: 20, place: 'out' })
+    expect(toInput({ ...base, place: 'in' })).toEqual({ mood: 3, energy: 3, minutes: 20, place: 'in' })
+    expect(toInput({ ...base, place: 'auto' })).not.toHaveProperty('place')
   })
   it('omits an empty goal and a blank note, and trims the note', () => {
-    expect(toInput({ mood: 3, energy: 2, minutes: 5, goal: '', note: '   ', screen: 'auto' })).toEqual({ mood: 3, energy: 2, minutes: 5 })
-    expect(toInput({ mood: 3, energy: 2, minutes: 5, goal: 'calm', note: ' hi ', screen: 'auto' })).toEqual({
+    expect(toInput({ mood: 3, energy: 2, minutes: 5, goal: '', note: '   ', screen: 'auto', place: 'auto' })).toEqual({ mood: 3, energy: 2, minutes: 5 })
+    expect(toInput({ mood: 3, energy: 2, minutes: 5, goal: 'calm', note: ' hi ', screen: 'auto', place: 'auto' })).toEqual({
       mood: 3,
       energy: 2,
       minutes: 5,

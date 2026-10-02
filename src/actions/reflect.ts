@@ -10,6 +10,7 @@ import { extractText } from '../recommend/parse'
 import { z } from 'zod'
 import { writeAutoNote, type AutoNoteDeps } from '../reflect/auto-notes'
 import type { ChatMessage } from '../reflect/contract'
+import { backgroundRows } from '../plans/reflection'
 import { parseMessages, reflectReply, type ReflectDeps } from '../reflect/pipeline'
 import { normalizeStyle } from '../reflect/style'
 
@@ -43,10 +44,10 @@ export function createReflectDeps(userId: string, tools: ActionTools, env?: { OW
 
     async recentNotes() {
       // Server actions run with RBAC off: scope to the caller explicitly.
-      const r = await tools.query<Row>('journalEntries', { where: { userId }, orderBy: 'createdAt', orderDir: 'desc', limit: 5 })
+      const r = await tools.query<Row>('journalEntries', { where: { userId }, orderBy: 'createdAt', orderDir: 'desc', limit: 15 })
       if (!r.success) return []
-      return r.data.records.map((rec) => {
-        const d = rec.data as Row
+      // Reflections are the person's own writing about a plan: they stay in the Journal and are never sent to the model as background.
+      return backgroundRows(r.data.records.map((rec) => rec.data as Row)).map((d) => {
         return {
           title: typeof d.title === 'string' ? d.title : '',
           notes: Array.isArray(d.notes) ? (d.notes as unknown[]).filter((x): x is string => typeof x === 'string') : [],
@@ -116,9 +117,14 @@ function createNoteDeps(userId: string, tools: ActionTools, env?: { OWNER_USER_I
       // Ownership: the row must belong to the caller. Never trust an id from the browser.
       if (!r.success || (r.data.record.data as Row).userId !== userId) return null
       const d = r.data.record.data as Row
+      const plan =
+        typeof d.planId === 'string' && d.planId && typeof d.planTitle === 'string' && typeof d.planStart === 'string'
+          ? { id: d.planId, title: d.planTitle, start: d.planStart }
+          : undefined
       return {
         lastMessageAt: typeof d.lastMessageAt === 'number' ? d.lastMessageAt : 0,
         notedUpTo: typeof d.notedUpTo === 'number' ? d.notedUpTo : 0,
+        ...(plan ? { plan } : {}),
       }
     },
 
@@ -131,12 +137,13 @@ function createNoteDeps(userId: string, tools: ActionTools, env?: { OWNER_USER_I
         .map((d) => ({ role: d.role as 'user' | 'bunny', text: d.text as string }))
     },
 
-    async writeNote(id, draft, notedUpTo) {
+    async writeNote(id, draft, notedUpTo, plan) {
       const made = await tools.create('journalEntries', {
         userId,
         title: draft.title,
         notes: draft.notes,
         feelings: draft.feelings,
+        ...(plan ? { eventId: plan.id, eventTitle: plan.title, eventStart: plan.start } : {}),
         bunnyNote: draft.bunnyNote,
         conversationId: id,
         auto: 1,

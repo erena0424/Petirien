@@ -244,7 +244,7 @@ function SavedCard({ recordId, data, onRemove, onNote, onAvailability }: CardPro
     <li data-testid="saved-item" className="overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-card)]">
       <div className="flex gap-4 p-4">
         {meta.thumbnail && (
-          <img src={meta.thumbnail} alt="" loading="lazy" className="hidden h-20 w-36 shrink-0 rounded-lg bg-muted object-cover sm:block" />
+          <img src={meta.thumbnail} alt="" loading="lazy" className="h-14 w-24 shrink-0 rounded-lg bg-muted object-cover sm:h-20 sm:w-36" />
         )}
         <div className="min-w-0 flex-1">
           {activity && (

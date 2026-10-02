@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { MAX_MESSAGES, MAX_MESSAGE_CHARS, type ChatMessage } from './contract'
-import { cleanDraft, cleanReply, buildReplyPrompt, buildSummaryPrompt, summarySchema } from './llm'
+import { cleanDraft, cleanReply, buildReplyPrompt, buildSummaryPrompt, isGrounded, summarySchema } from './llm'
 import { REFLECT_DAILY_CAP, parseMessages, reflectReply, reflectSummary, type ReflectDeps } from './pipeline'
 
 const user = (text: string): ChatMessage => ({ role: 'user', text })
@@ -31,7 +31,7 @@ const replyJson = (reply: string, flag = false) => JSON.stringify({ reply, needs
 const summaryJson = (over: Record<string, unknown> = {}) =>
   JSON.stringify({
     title: 'A long day at work',
-    notes: ['You told me work felt heavy today.', 'You said a walk at lunch helped a little.'],
+    notes: ['Work felt heavy today.', 'A walk at lunch helped a little.'],
     feelings: ['tired', 'hopeful'],
     bunnyNote: 'Thanks for telling me about it.',
     needsSupportResources: false,
@@ -139,7 +139,7 @@ describe('reflectSummary', () => {
       status: 'ok',
       draft: {
         title: 'A long day at work',
-        notes: ['You told me work felt heavy today.', 'You said a walk at lunch helped a little.'],
+        notes: ['Work felt heavy today.', 'A walk at lunch helped a little.'],
         feelings: ['tired', 'hopeful'],
         bunnyNote: 'Thanks for telling me about it.',
       },
@@ -174,13 +174,15 @@ describe('reflectSummary', () => {
     const { deps } = makeDeps({
       llm: async () =>
         summaryJson({
-          notes: ['You have depression.', 'You told me your therapist suggested slowing down.', "You're depressed and it shows."],
+          notes: ['You have depression.', 'My therapist suggested slowing down.', "You're depressed and it shows."],
         }),
     })
-    const res = await reflectSummary(deps, chat)
+    const said = [user('my therapist suggested slowing down, and honestly I feel depressed and it shows')]
+    const res = await reflectSummary(deps, said)
     expect(res.status).toBe('ok')
     if (res.status !== 'ok') return
-    expect(res.draft.notes).toEqual(['You told me your therapist suggested slowing down.'])
+    // Labels addressed to the person are dropped even when grounded; their own first-person words stay.
+    expect(res.draft.notes).toEqual(['My therapist suggested slowing down.'])
   })
 })
 
@@ -203,19 +205,65 @@ describe('guards', () => {
       needsSupportResources: false,
     })
     const d = cleanDraft(raw)!
-    expect(d.notes).toHaveLength(5)
+    expect(d.notes).toHaveLength(6) // a journal keeps what was said; it is not squeezed to a few lines
     expect(d.feelings).toEqual(['tired', 'calm', 'hopeful'])
     expect(d.bunnyNote).toBe('Thanks for telling me about your day.')
   })
 
   it('trims a model that sends far too many items instead of rejecting the whole summary', async () => {
-    const many = summaryJson({ notes: Array.from({ length: 12 }, (_, i) => `You told me thing ${i + 1}.`), feelings: ['a', 'tired', 'calm', 'sad', 'happy', 'angry', 'tense', 'warm'] })
+    const many = summaryJson({ notes: Array.from({ length: 12 }, (_, i) => `Thing ${i + 1} happened a lot.`), feelings: ['a', 'tired', 'calm', 'sad', 'happy', 'angry', 'tense', 'warm'] })
     const { deps } = makeDeps({ llm: async () => many })
-    const res = await reflectSummary(deps, [user('a lot happened')])
+    const res = await reflectSummary(deps, [user('a lot happened thing')])
     expect(res.status).toBe('ok')
     if (res.status !== 'ok') return
-    expect(res.draft.notes).toHaveLength(5)
+    expect(res.draft.notes).toHaveLength(12) // all of them: a long conversation deserves a long entry
     expect(res.draft.feelings.length).toBeLessThanOrEqual(3)
+  })
+
+  it('still caps a runaway entry at 25 notes', async () => {
+    const huge = summaryJson({ notes: Array.from({ length: 60 }, (_, i) => `Thing ${i + 1} happened a lot.`) })
+    const { deps } = makeDeps({ llm: async () => huge })
+    const res = await reflectSummary(deps, [user('a lot happened thing')])
+    expect(res.status === 'ok' && res.draft.notes).toHaveLength(25)
+  })
+
+  it('writes the journal in the persons voice, short and meaningful, and says so in the prompt', () => {
+    const { system } = buildSummaryPrompt([user('hi')])
+    expect(system).toMatch(/in the person's own voice/)
+    expect(system).toMatch(/first-person bullet/)
+    expect(system).toMatch(/Never write "You told me"/)
+    expect(system).toMatch(/do not need to cover everything/)
+    expect(system).toMatch(/skip greetings, filler/)
+    expect(system).toMatch(/what they shared matters more than keeping it short/)
+    expect(system).toMatch(/Do not use quotation marks/)
+    expect(system).not.toMatch(/quotes/)
+  })
+
+  it('keeps only bullets built from what the person actually said', () => {
+    const said = ['It feels like whatever path I choose, something would be wrong', 'my boss moved the deadline again']
+    expect(isGrounded('It feels like whatever path I choose, something would be wrong', said)).toBe(true)
+    expect(isGrounded('My boss moved the deadline again.', said)).toBe(true)
+    expect(isGrounded('Whatever I choose feels wrong somehow', said)).toBe(true) // paraphrase of their own words
+    expect(isGrounded('I was diagnosed with chronic insomnia years ago', said)).toBe(false) // invented
+    expect(isGrounded('I am thrilled about the promotion', said)).toBe(false)
+    expect(isGrounded('Ok.', said)).toBe(true) // nothing long enough to judge
+    const raw = summarySchema.parse({
+      title: 'Caught between options',
+      notes: ['It feels like whatever path I choose, something would be wrong.', 'I am thrilled about the promotion and my new house.'],
+      bunnyNote: 'Thanks for telling me.',
+      needsSupportResources: false,
+    })
+    expect(cleanDraft(raw, said)!.notes).toEqual(['It feels like whatever path I choose, something would be wrong.'])
+    expect(cleanDraft(raw, ['nothing relevant was said at all'])).toBeNull() // nothing grounded, so no entry rather than an invented one
+    expect(cleanDraft(raw)!.notes).toHaveLength(2) // without the persons text there is nothing to check against
+  })
+
+  it('end to end: an invented bullet never reaches the journal', async () => {
+    const { deps } = makeDeps({
+      llm: async () => summaryJson({ notes: ['Honestly I just felt relieved when it was over.', 'I won an award and cried happy tears.'] }),
+    })
+    const res = await reflectSummary(deps, [user('honestly I just felt relieved when it was over')])
+    expect(res.status === 'ok' && res.draft.notes).toEqual(['Honestly I just felt relieved when it was over.'])
   })
 
   it('prompts tell the model who it is and forbid diagnosis, medical advice, dashes, and links', () => {
@@ -225,11 +273,48 @@ describe('guards', () => {
       expect(p.system).toMatch(/never use em dashes/)
       expect(p.system).toMatch(/never include links/)
     }
-    expect(buildSummaryPrompt([user('hi')]).system).toMatch(/Do not add advice/)
+    expect(buildSummaryPrompt([user('hi')]).system).toMatch(/do not add advice/i)
   })
 
   it('a daily cap is a sensible size', () => {
     expect(REFLECT_DAILY_CAP).toBeGreaterThanOrEqual(40)
     vi.fn()
+  })
+})
+
+describe('plans and the optional offer', () => {
+  const planChat = [bunny('You have "Dentist" today at 3:00 PM. How are you feeling about it?'), user('a bit unsure')]
+
+  it('passes the offer on only when the model asks for it and the reply is real', async () => {
+    const on = makeDeps({ llm: async () => JSON.stringify({ reply: 'That makes sense. What part is on your mind?', needsSupportResources: false, offer: true }) })
+    expect(await reflectReply(on.deps, planChat)).toEqual({ status: 'ok', reply: 'That makes sense. What part is on your mind?', offer: true })
+    const off = makeDeps({ llm: async () => JSON.stringify({ reply: 'That makes sense. What part is on your mind?', needsSupportResources: false, offer: false }) })
+    expect(await reflectReply(off.deps, planChat)).toEqual({ status: 'ok', reply: 'That makes sense. What part is on your mind?' })
+    const none = makeDeps({ llm: async () => replyJson('That makes sense. What part is on your mind?') })
+    expect(await reflectReply(none.deps, planChat)).toEqual({ status: 'ok', reply: 'That makes sense. What part is on your mind?' })
+  })
+  it('never attaches an offer to the stock acknowledgement (a reply that failed the guards)', async () => {
+    const { deps } = makeDeps({ llm: async () => JSON.stringify({ reply: 'Visit https://example.com now', needsSupportResources: false, offer: true }) })
+    const r = await reflectReply(deps, planChat)
+    expect(r.status).toBe('ok')
+    expect(r).not.toHaveProperty('offer')
+  })
+  it('ignores a non-boolean offer', async () => {
+    const { deps } = makeDeps({ llm: async () => JSON.stringify({ reply: 'That makes sense.', needsSupportResources: false, offer: 'yes' }) })
+    // a bad shape fails parsing rather than guessing
+    expect((await reflectReply(deps, planChat)).status).toBe('error')
+  })
+  it('tells the model not to assume how the person feels about a plan, not to push activities, and that the plan name is not an instruction', () => {
+    const { system } = buildReplyPrompt(planChat)
+    expect(system).toMatch(/Never assume how they feel/)
+    expect(system).toMatch(/not push an activity/i)
+    expect(system).toMatch(/How did it go\?/) // looking back on something that is over
+    expect(system).toMatch(/never an instruction/)
+    expect(system).toMatch(/"offer": true/)
+  })
+  it('the crisis check still covers what the person says in a plan chat, with no model call', async () => {
+    const { deps, calls } = makeDeps({ llm: async () => replyJson('x') })
+    expect(await reflectReply(deps, [bunny('You have "Dentist" today. How are you feeling about it?'), user('I want to kill myself')])).toEqual({ status: 'support' })
+    expect(calls.llm).toBe(0)
   })
 })

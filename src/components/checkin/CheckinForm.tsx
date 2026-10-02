@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Button, Textarea } from '@/components/ui'
@@ -7,6 +7,7 @@ import { ENERGY, GOAL_LABELS, MOOD } from '@/lib/labels'
 import type { ScreenMode } from '@/lib/preferences'
 import { cn } from '@/lib/utils'
 import { ChoiceGroup } from '../ChoiceGroup'
+import { CalendarFit } from './CalendarFit'
 
 export interface FormValues {
   mood: number | null
@@ -15,9 +16,12 @@ export interface FormValues {
   goal: NonNullable<CheckinInput['goal']> | ''
   note: string
   screen: ScreenMode
+  place: PlaceMode
 }
 
-export const EMPTY_FORM: FormValues = { mood: null, energy: null, minutes: 10, goal: '', note: '', screen: 'auto' }
+export type PlaceMode = 'auto' | 'in' | 'out'
+
+export const EMPTY_FORM: FormValues = { mood: null, energy: null, minutes: 10, goal: '', note: '', screen: 'auto', place: 'auto' }
 
 const MINUTES = [5, 10, 15, 20, 30].map((m) => ({ value: m, label: `${m} min` }))
 const GOALS = [
@@ -39,6 +43,7 @@ export function toInput(v: FormValues): CheckinInput | null {
     ...(v.goal ? { goal: v.goal } : {}),
     ...(note ? { note } : {}),
     ...(v.screen !== 'auto' ? { screen: v.screen } : {}),
+    ...(v.place !== 'auto' ? { place: v.place } : {}),
   }
 }
 
@@ -55,10 +60,17 @@ export const SCREEN_CHOICES: { value: ScreenMode; label: string }[] = [
   { value: 'none', label: 'No screen' },
 ]
 
+export const PLACE_CHOICES: { value: PlaceMode; label: string }[] = [
+  { value: 'auto', label: 'Not sure' },
+  { value: 'in', label: 'Stay in' },
+  { value: 'out', label: 'Go outside' },
+]
+
 /** One line describing what will be used if the person leaves "More options" alone. */
 export function optionsSummary(v: FormValues): string {
   const screen = { auto: 'a mix of videos and ideas', video: 'videos', none: 'no screen' }[v.screen]
-  return [`${v.minutes ?? 10} min`, v.goal ? GOAL_LABELS[v.goal]?.toLowerCase() : 'any kind of help', screen].join(' · ')
+  const place = { auto: 'inside or outside', in: 'staying in', out: 'going outside' }[v.place]
+  return [`${v.minutes ?? 10} min`, v.goal ? GOAL_LABELS[v.goal]?.toLowerCase() : 'any kind of help', screen, place].join(' · ')
 }
 
 interface Props {
@@ -77,6 +89,9 @@ export function CheckinForm({ values, onChange, onSubmit, submitting }: Props) {
   const input = toInput(values)
   const [more, setMore] = useState(false)
   const set = <K extends keyof FormValues>(k: K, v: FormValues[K]) => onChange({ ...values, [k]: v })
+  // The calendar answer arrives later; apply it to what the form holds then, not to what it held when the button was pressed.
+  const latest = useRef(values)
+  latest.current = values
 
   return (
     <form
@@ -108,6 +123,7 @@ export function CheckinForm({ values, onChange, onSubmit, submitting }: Props) {
 
         <div id="more-options" hidden={!more} className="mt-6 space-y-7">
           <ChoiceGroup legend="How much time do you have?" value={values.minutes} onChange={(v) => set('minutes', v)} options={MINUTES} />
+          <CalendarFit onMinutes={(m) => onChange({ ...latest.current, minutes: m })} />
           <ChoiceGroup
             legend="What would help most right now?"
             hint="Pick one, or leave it as Not sure."
@@ -121,6 +137,13 @@ export function CheckinForm({ values, onChange, onSubmit, submitting }: Props) {
             value={values.screen}
             onChange={(v) => set('screen', v)}
             options={SCREEN_CHOICES}
+          />
+          <ChoiceGroup<PlaceMode>
+            legend="Inside or outside?"
+            hint="Outside can suggest a walk to a place nearby. Your location is only used if you allow it, and it isn't saved."
+            value={values.place}
+            onChange={(v) => set('place', v)}
+            options={PLACE_CHOICES}
           />
           <div>
             <label htmlFor="checkin-note" className="text-sm font-medium text-foreground">

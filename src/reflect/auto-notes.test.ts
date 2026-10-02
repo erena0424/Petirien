@@ -12,7 +12,7 @@ const bunny = (text: string): ChatMessage => ({ role: 'bunny', text })
 const summaryJson = (over: Record<string, unknown> = {}) =>
   JSON.stringify({
     title: 'A heavy day',
-    notes: ['You told me work felt heavy today.'],
+    notes: ['Work was heavy today.'],
     feelings: ['tired'],
     bunnyNote: 'Thanks for telling me.',
     needsSupportResources: false,
@@ -77,6 +77,7 @@ describe('writeAutoNote', () => {
     const { deps, log } = makeDeps({
       conv: { lastMessageAt: NOW - QUIET_MS - 1, notedUpTo: 2 },
       messages: [user('OLD first thing'), bunny('OLD reply'), user('NEW second thing')],
+      llm: () => summaryJson({ notes: ['The NEW second thing.'] }),
     })
     await writeAutoNote(deps, 'c1')
     expect(log.prompts[0]).toContain('NEW second thing')

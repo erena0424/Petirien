@@ -3,8 +3,8 @@ import { NO_CHANGE_ACK, REASONS, THANKS_ACK, applyFeedback, type FeedbackReason 
 import { normalizeStyle } from './style'
 
 describe('the four reasons', () => {
-  it('there are exactly four, each with a short label and a fixed reply', () => {
-    expect(REASONS.map((r) => r.id)).toEqual(['too_long', 'too_many_questions', 'too_cheery', 'too_serious'])
+  it('there are exactly six, each with a short label and a fixed reply', () => {
+    expect(REASONS.map((r) => r.id)).toEqual(['too_long', 'too_many_questions', 'too_cheery', 'too_serious', 'too_formal', 'too_informal'])
     for (const r of REASONS) {
       expect(r.label.length).toBeLessThanOrEqual(20)
       expect(r.ack).toMatch(/^Got it\./)
@@ -28,6 +28,8 @@ describe('applyFeedback', () => {
     ['too_many_questions', { questions: 'fewer' }],
     ['too_cheery', { tone: 'gentle' }],
     ['too_serious', { tone: 'upbeat' }],
+    ['too_formal', { formality: 'casual' }],
+    ['too_informal', { formality: 'formal' }],
   ]
   it.each(cases)('%s changes the style and remembers how to undo it', (reason, change) => {
     const r = applyFeedback(reason, { tone: 'playful', suggestions: 'more' })

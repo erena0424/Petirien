@@ -11,6 +11,7 @@ import type { ActionHandler, ActionTools } from 'deepspace/worker'
 import type { Env } from '../../worker'
 import type { RecommendResponse, VideoRef, VideoSourceUsed } from '../contract'
 import { recommend as runPipeline, parseCheckinInput, type Deps, type UserContext } from '../recommend/pipeline'
+import { homeIdeas } from '../recommend/home'
 import { extractText } from '../recommend/parse'
 import { searchVideos as ytSearch, videoDetails as ytDetails } from '../server/youtube-api'
 import { integrationSource, withHelper, type VideoSource } from '../server/youtube-source'
@@ -98,6 +99,8 @@ export function createDeps(
         prefs: { likedTags: strings(p.likedTags), dislikedTags: strings(p.dislikedTags), avoid: strings(p.avoid) },
         liked: [...new Set(withHelpful('yes'))],
         disliked: [...new Set(withHelpful('no'))],
+        // What the last few check-ins showed (about three per check-in), newest first, so the same ones do not keep coming up.
+        recent: [...new Set(rows.slice(0, 9).map((r) => (r.data as Row).activityId).filter((x): x is string => typeof x === 'string'))],
         usageToday: typeof count === 'number' ? count : 0,
         exempt: !!env?.OWNER_USER_ID && userId === env.OWNER_USER_ID,
       }
@@ -144,5 +147,15 @@ export const recommend: ActionHandler<Env> = async ({ userId, params, tools, env
     // Log the error type only: messages could echo user content.
     console.error('[recommend] failed', err instanceof Error ? err.name : 'unknown')
     return respond({ status: 'error', message: 'Something went wrong on our side. Please try again in a moment.' })
+  }
+}
+
+/** `homeIdeas`: two videos for right now, for anyone signed in, with no history needed. */
+export const homeIdeasAction: ActionHandler<Env> = async ({ userId, tools, env }) => {
+  try {
+    return { success: true, data: await homeIdeas(createDeps(userId, tools, env)) }
+  } catch (err) {
+    console.error('[homeIdeas] failed', err instanceof Error ? err.name : 'unknown')
+    return { success: true, data: { status: 'error', message: 'Something went wrong on our side.' } }
   }
 }

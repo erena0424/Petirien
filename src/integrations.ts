@@ -21,4 +21,6 @@ export const integrations: Record<string, { billing: 'developer' | 'user' }> = {
   // 1 credit = $0.01). Sign-in is required anyway; no anonymous spend.
   youtube: { billing: 'user' },
   anthropic: { billing: 'user' },
+  // Places near the person: about 3 cents a search, so it is billed to the person who asks, like the others.
+  serpapi: { billing: 'user' },
 }

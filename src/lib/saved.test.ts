@@ -80,6 +80,6 @@ describe('toSavedData / categories', () => {
     expect(categoryOf('doodle-along')).toBe('creative')
     expect(categoryOf('nope')).toBeUndefined()
     expect(categoryOf(undefined)).toBeUndefined()
-    expect(CATEGORY_ORDER).toEqual(['meditation', 'movement', 'creative'])
+    expect(CATEGORY_ORDER).toEqual(['meditation', 'movement', 'creative', 'everyday'])
   })
 })

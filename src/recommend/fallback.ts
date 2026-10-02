@@ -15,6 +15,8 @@ export interface Signals {
   disliked: string[]
   /** Tags the person said they enjoy (a nudge, not a rule). */
   likedTags?: string[]
+  /** Activity ids shown in the last few check-ins, so the same few do not come up every time. */
+  recent?: string[]
 }
 
 function score(a: Activity, s: Signals): number {
@@ -23,6 +25,7 @@ function score(a: Activity, s: Signals): number {
   if (s.liked.includes(a.id)) n += 1
   n += 0.5 * a.tags.filter((t) => s.likedTags?.includes(t)).length
   if (s.disliked.includes(a.id)) n -= 2
+  if (s.recent?.includes(a.id) && !s.liked.includes(a.id)) n -= 1.5
   if (s.energy <= 2) n -= a.effort * 0.1 // nudge gentler options first
   return n
 }

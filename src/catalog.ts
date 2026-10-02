@@ -10,7 +10,7 @@
 export const GOALS = ['calm', 'express', 'connect', 'move', 'break'] as const
 export type Goal = (typeof GOALS)[number]
 
-export const CATEGORIES = ['meditation', 'movement', 'creative'] as const
+export const CATEGORIES = ['meditation', 'movement', 'creative', 'everyday'] as const
 export type Category = (typeof CATEGORIES)[number]
 
 /** 1 = barely any effort, 3 = needs real energy. */
@@ -27,6 +27,7 @@ export type Setting = (typeof SETTINGS)[number]
  *  follow-along    someone demonstrates; you copy
  *  eyes-closed     can be done with eyes closed
  *  needs-supplies  paper, pens, paint, etc.
+ *  outdoors        happens outside the home
  */
 export interface Activity {
   id: string
@@ -54,6 +55,8 @@ export interface Activity {
   tip: string
   /** Curated YouTube query. Never model-written. */
   searchQuery: string
+  /** True when the card offers to find real places nearby (a park, a café), using the person's location if they allow it. */
+  places?: boolean
 }
 
 export const CATALOG: Activity[] = [
@@ -346,6 +349,29 @@ export const CATALOG: Activity[] = [
     searchQuery: '10 minute easy indoor walk low impact beginner',
   },
   {
+    id: 'walk-nearby',
+    title: 'Visit a place nearby',
+    category: 'movement',
+    goals: ['move', 'break', 'calm'],
+    minMinutes: 10,
+    maxMinutes: 30,
+    effort: 2,
+    setting: 'standing',
+    tags: ['outdoors', 'no-voice'],
+    blurb: 'Walk to a real place close by, like a park or a quiet café, and spend a few minutes there. A change of scene, at your own pace.',
+    video: false,
+    needs: 'Comfortable shoes and a little time outside',
+    steps: [
+      'Share your location to see places near you, or just pick a direction you like.',
+      'Walk there at an easy pace and notice what is around you.',
+      'Stay a few minutes if you like: sit, look around, or get a drink.',
+      'Walk back whenever you are ready.',
+    ],
+    tip: 'Skip this one if the weather, the hour, or the route does not feel right. Stop if anything hurts.',
+    searchQuery: 'relaxing walk in nature outdoors',
+    places: true,
+  },
+  {
     id: 'shake-it-out',
     title: 'Shake it out',
     category: 'movement',
@@ -499,6 +525,117 @@ export const CATALOG: Activity[] = [
     ],
     tip: 'There\'s no wrong color.',
     searchQuery: 'relaxing mandala coloring with calm music',
+  },
+  // ── Everyday ──────────────────────────────────────────────────
+  {
+    id: 'tidy-one-thing',
+    title: 'Tidy one small spot',
+    category: 'everyday',
+    goals: ['break', 'calm', 'move'],
+    minMinutes: 5,
+    maxMinutes: 15,
+    effort: 1,
+    setting: 'standing',
+    tags: ['no-voice'],
+    blurb: 'Pick one small spot, like a desk corner or a shelf, and put it in order. Small, easy to see, and done.',
+    video: false,
+    needs: 'Nothing special, maybe a bag for things to throw away',
+    steps: [
+      'Choose one small spot, not the whole room.',
+      'Take out what does not belong there.',
+      'Put the rest back where it goes.',
+      'Look at it for a moment, then stop.',
+    ],
+    tip: 'Set a timer if you like. Skip anything that feels like too much: one spot is plenty.',
+    searchQuery: 'tidy one small spot',
+  },
+  {
+    id: 'draw-what-you-see',
+    title: 'Draw what you see',
+    category: 'creative',
+    goals: ['express', 'calm', 'break'],
+    minMinutes: 5,
+    maxMinutes: 20,
+    effort: 1,
+    setting: 'desk',
+    tags: ['needs-supplies', 'no-voice'],
+    blurb: 'Draw something in front of you, like a mug or a plant. It does not have to look good.',
+    video: false,
+    needs: 'Paper and a pen or pencil',
+    steps: [
+      'Pick one thing you can see from where you are.',
+      'Draw its outline slowly, without lifting your pen too often.',
+      'Add any details you notice, or leave it simple.',
+      'Stop when you feel like it. You do not have to show anyone.',
+    ],
+    tip: 'There is no right way to do this. Skip it if you are not in the mood.',
+    searchQuery: 'draw what you see',
+  },
+  {
+    id: 'warm-drink',
+    title: 'Make a warm drink slowly',
+    category: 'everyday',
+    goals: ['calm', 'break'],
+    minMinutes: 5,
+    maxMinutes: 15,
+    effort: 1,
+    setting: 'standing',
+    tags: ['no-voice'],
+    blurb: 'Make tea, cocoa, or whatever warm drink you like, and take your time with it.',
+    video: false,
+    needs: 'A warm drink you like',
+    steps: [
+      'Pick something warm you enjoy.',
+      'Make it without hurrying, and notice the smell.',
+      'Hold the cup in both hands for a moment.',
+      'Drink it slowly, with your phone out of reach if you can.',
+    ],
+    tip: 'Choose something without caffeine later in the day if you like. Skip it if you are not thirsty.',
+    searchQuery: 'make a warm drink slowly',
+  },
+  {
+    id: 'tend-a-plant',
+    title: 'Look after a plant',
+    category: 'everyday',
+    goals: ['calm', 'break'],
+    minMinutes: 5,
+    maxMinutes: 10,
+    effort: 1,
+    setting: 'standing',
+    tags: ['no-voice'],
+    blurb: 'Water a plant, wipe a leaf, or just look at it for a minute. Small care for something that grows.',
+    video: false,
+    needs: 'A plant, and some water if it needs it',
+    steps: [
+      'Go to a plant, at home or nearby.',
+      'Check whether it needs water, and give it some if so.',
+      'Look at the leaves and the colors for a moment.',
+      'Leave it be, and carry on with your day.',
+    ],
+    tip: 'No plant? A few minutes at a window looking at the trees or sky does the same job. Skip this if it is not for you today.',
+    searchQuery: 'look after a plant',
+  },
+  {
+    id: 'say-hello',
+    title: 'Send someone a short hello',
+    category: 'everyday',
+    goals: ['connect'],
+    minMinutes: 5,
+    maxMinutes: 10,
+    effort: 1,
+    setting: 'seated',
+    tags: ['no-voice'],
+    blurb: 'Message someone you like with something small: a photo, a joke, or just hello.',
+    video: false,
+    needs: 'Your phone or computer',
+    steps: [
+      'Think of one person you would like to hear from.',
+      'Write one or two lines: how you are, a photo, or something that made you smile.',
+      'Send it, and put your phone down.',
+      'There is no need to wait for a reply.',
+    ],
+    tip: 'You do not have to reply to anything or explain yourself. Skip this if today is not the day.',
+    searchQuery: 'send someone a short hello',
   },
 ]
 

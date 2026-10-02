@@ -18,6 +18,8 @@ import {
   type ScreenMode,
 } from '@/lib/preferences'
 import { SCREEN_CHOICES } from '@/components/checkin/CheckinForm'
+import { usePlaceFeedback } from '@/lib/use-place-feedback'
+import { daysUntilBack, type RatingInfo } from '../../../places/places'
 import { usePreferences } from '@/lib/use-preferences'
 import { STYLE_KEYS, STYLE_LABELS, describeStyle, type BunnyStyle, type StyleKey } from '../../../reflect/style'
 
@@ -137,6 +139,7 @@ export default function PreferencesPage() {
 
       {status === 'ready' && <BunnyStyleSettings style={style} ready={ready} onChange={setStyle} />}
 
+      <RatedPlaces />
       <DeleteEverything />
     </div>
   )
@@ -146,6 +149,42 @@ interface Counts {
   checkins: number
   suggestions: number
   saved: number
+}
+
+function ratingLabel(info: RatingInfo): string {
+  if (info.rating === 'yes') return 'Good'
+  if (info.rating === 'never') return 'Never suggest'
+  const days = daysUntilBack(info, Date.now())
+  return days > 0 ? `Not right now (back in about ${days} day${days === 1 ? '' : 's'})` : 'Not right now (back in the mix)'
+}
+
+/** Places the person marked good or not for them, so it is clear what is remembered and easy to undo. */
+function RatedPlaces() {
+  const feedback = usePlaceFeedback()
+  if (feedback.status !== 'ready' || feedback.records.length === 0) return null
+  return (
+    <section className="mt-10" aria-labelledby="places-heading" data-testid="rated-places">
+      <h2 id="places-heading" className="text-lg font-semibold text-foreground">
+        Places you rated
+      </h2>
+      <p className="mt-1 text-sm text-muted-foreground">
+        A place you marked good comes up now and then, alongside new ones. &ldquo;Not right now&rdquo; leaves a place out for a couple of weeks, and &ldquo;never&rdquo; keeps it out. Remove one to undo it.
+      </p>
+      <ul className="mt-3 space-y-2">
+        {feedback.records.map((r) => (
+          <li key={r.recordId} data-testid="rated-place" className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card px-4 py-2">
+            <span className="min-w-0 text-sm text-foreground">
+              <span className="font-semibold">{r.data.name || 'A place'}</span>
+              <span className="text-muted-foreground"> · {ratingLabel({ rating: r.data.rating, at: typeof r.data.ratedAt === 'number' ? r.data.ratedAt : Date.parse(r.createdAt) || 0 })}</span>
+            </span>
+            <Button variant="ghost" size="sm" onClick={() => void feedback.remove(r.recordId)} aria-label={`Remove rating: ${r.data.name || 'place'}`}>
+              Remove
+            </Button>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
 }
 
 /** Removes the person's check-ins, suggestions, saved videos, and preferences. */
@@ -158,6 +197,7 @@ function DeleteEverything() {
   const conversations = useQuery<Record<string, unknown>>('conversations')
   const messages = useQuery<Record<string, unknown>>('messages')
   const prefs = useQuery<Record<string, unknown>>('preferences')
+  const placeRatings = useQuery<Record<string, unknown>>('placeFeedback')
   const mCheckins = useMutations<Record<string, unknown>>('checkins')
   const mSuggestions = useMutations<Record<string, unknown>>('suggestions')
   const mSaved = useMutations<Record<string, unknown>>('savedVideos')
@@ -166,6 +206,7 @@ function DeleteEverything() {
   const mConversations = useMutations<Record<string, unknown>>('conversations')
   const mMessages = useMutations<Record<string, unknown>>('messages')
   const mPrefs = useMutations<Record<string, unknown>>('preferences')
+  const mPlaces = useMutations<Record<string, unknown>>('placeFeedback')
 
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -179,7 +220,8 @@ function DeleteEverything() {
     prefs.records.length +
     journal.records.length +
     conversations.records.length +
-    messages.records.length
+    messages.records.length +
+    placeRatings.records.length
 
   async function run() {
     setOpen(false)
@@ -192,6 +234,7 @@ function DeleteEverything() {
       for (const r of journal.records) await mJournal.removeConfirmed(r.recordId)
       for (const r of messages.records) await mMessages.removeConfirmed(r.recordId)
       for (const r of conversations.records) await mConversations.removeConfirmed(r.recordId)
+      for (const r of placeRatings.records) await mPlaces.removeConfirmed(r.recordId)
       for (const r of prefs.records) await mPrefs.removeConfirmed(r.recordId)
       setResult('done')
     } catch {
@@ -207,7 +250,7 @@ function DeleteEverything() {
         Delete my data
       </h2>
       <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-        This removes all your check-ins and notes, your conversations with the bunny, its journal notes, the ideas I suggested, your saved videos and ideas, and these preferences.
+        This removes all your check-ins and notes, your conversations with the bunny, its journal notes, the ideas I suggested, your saved videos and ideas, the places you marked good or not for you, and these preferences.
         It can&apos;t be undone. Your sign-in account itself is not deleted.
       </p>
       <Button

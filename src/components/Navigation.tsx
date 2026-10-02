@@ -60,7 +60,7 @@ export default function Navigation() {
         className={cn(
           'px-3 py-1.5 text-sm',
           active
-            ? 'font-bold text-[color:var(--color-nav-foreground,var(--color-foreground))] underline decoration-2 underline-offset-8'
+            ? 'font-bold text-primary underline decoration-2 underline-offset-8'
             : 'font-medium text-[color:var(--color-nav-muted,var(--color-muted-foreground))] hover:text-[color:var(--color-nav-foreground,var(--color-foreground))]',
         )}
       >

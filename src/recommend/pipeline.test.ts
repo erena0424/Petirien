@@ -132,7 +132,7 @@ describe('recommend: happy path', () => {
     const res = await recommend(deps, input)
     expect(res.status).toBe('ok')
     if (res.status !== 'ok') return
-    for (const p of res.picks) expect(p.video!.videoId).toMatch(/^vid0000000[123]$/)
+    for (const p of res.picks.filter((x) => x.video)) expect(p.video!.videoId).toMatch(/^vid0000000[123]$/) // the plain idea has no video, by design
     expect(res.degraded).toContain('rank')
   })
 
@@ -202,7 +202,7 @@ describe('recommend: retrieval', () => {
     const res = await recommend(deps, input) // 10 minutes
     expect(res.status).toBe('ok')
     if (res.status !== 'ok') return
-    for (const p of res.picks) expect(p.video!.durationSec).toBeLessThanOrEqual(12 * 60)
+    for (const p of res.picks.filter((x) => x.video)) expect(p.video!.durationSec).toBeLessThanOrEqual(12 * 60)
   })
 
   it('asks for details only when search results lack a length, and merges them', async () => {
@@ -255,7 +255,7 @@ describe('recommend: retrieval', () => {
       expect(p.video).toBeNull()
       expect(p.reason).toBe(getActivity(p.activityId)!.blurb)
     }
-    expect(search.mock.calls.length).toBe(res.picks.length) // once per video activity, never retried
+    expect(search.mock.calls.length).toBe(res.picks.filter((p) => getActivity(p.activityId)!.video).length) // once per video activity, never retried
   })
 
   it('still returns picks when only some activities fail to retrieve', async () => {
@@ -281,7 +281,7 @@ describe('recommend: embeddability and YouTube outages', () => {
     const res = await recommend(deps, input)
     expect(res.status).toBe('ok')
     if (res.status !== 'ok') return
-    for (const p of res.picks) expect(p.video!.videoId).toBe(vid(2).id)
+    for (const p of res.picks.filter((x) => x.video)) expect(p.video!.videoId).toBe(vid(2).id)
   })
 
   it('asks for details when embeddability is unknown, and keeps a video that turns out fine', async () => {
@@ -327,9 +327,15 @@ describe('recommend: videos only where they help', () => {
     const res = await recommend(deps, mixedInput)
     expect(res.status).toBe('ok')
     if (res.status !== 'ok') return
-    expect(res.picks.map((p) => p.activityId)).toEqual(['grounding-54321', 'desk-stretch', 'journaling-prompts'])
-    expect(res.picks.map((p) => p.video === null)).toEqual([true, false, true])
-    expect(res.picks[0]!.reason).toBe(getActivity('grounding-54321')!.blurb)
+    // The default is two videos and one idea without a video, leaning on videos: the model's first video and plain
+    // idea stay, and a second video joins from the rest of what fits.
+    // The default is one place to visit, one video, and one other idea. The model's first idea and first video stay.
+    // Shown in this order: the video, then the place to visit, then the idea.
+    expect(res.picks.map((p) => p.activityId)).toEqual(['desk-stretch', 'walk-nearby', 'grounding-54321'])
+    expect(res.picks.map((p) => p.video === null)).toEqual([false, true, true])
+    expect(res.picks.map((p) => p.rank)).toEqual([1, 2, 3])
+    expect(res.picks[1]!.reason).toBe(getActivity('walk-nearby')!.blurb)
+    expect(res.picks[2]!.reason).toBe(getActivity('grounding-54321')!.blurb)
     // Only the activity where a video helps is searched.
     expect(searched).toEqual([getActivity('desk-stretch')!.searchQuery])
   })
@@ -344,15 +350,15 @@ describe('recommend: videos only where they help', () => {
     })
     await recommend(deps, mixedInput)
     const sent = (JSON.parse(rankPrompt).activities as { activityId: string }[]).map((a) => a.activityId)
-    expect(sent).toEqual(['desk-stretch'])
+    expect(sent).toEqual(['desk-stretch']) // only the activity with a video goes to ranking
   })
 
   it('stores plain ideas as suggestions without a video id', async () => {
     const { deps, calls } = makeDeps({ llm: llmScript(mixed, () => null) })
     await recommend(deps, mixedInput)
-    const idea = calls.suggestions.find((r) => r.activityId === 'grounding-54321')!
+    const idea = calls.suggestions.find((r) => r.activityId === 'walk-nearby')!
     expect(idea.videoId).toBe('')
-    expect(idea.title).toBe(getActivity('grounding-54321')!.title)
+    expect(idea.title).toBe(getActivity('walk-nearby')!.title)
   })
 
   it('screen-free mode: no video search, no ranking call, plain ideas only', async () => {
@@ -412,8 +418,11 @@ describe('recommend: "Not sure" is a real mix, and the response says where video
     if (res.status !== 'ok') return
     expect(res.picks.some((p) => p.video !== null)).toBe(true)
     expect(res.picks.some((p) => p.video === null)).toBe(true)
-    // the model's first choice is still first
-    expect(res.picks[0]!.activityId).toBe('grounding-54321')
+    // A place to visit, a video, and an idea (the model chose only plain ones, so the idea is its first choice).
+    expect(res.picks.filter((p) => p.video !== null)).toHaveLength(1)
+    const plain = res.picks.filter((p) => p.video === null).map((p) => p.activityId)
+    expect(plain).toContain('walk-nearby')
+    expect(plain).toContain('grounding-54321')
   })
 
   it('"Videos are fine" never shows a plain idea, and "No screen" never shows a video, from the same model answer', async () => {
@@ -531,5 +540,129 @@ describe('recommend: check-in ownership', () => {
     if (res.status !== 'ok') return
     expect(res.checkinId).not.toBe('someone-elses')
     expect(calls.checkins.length).toBe(1)
+  })
+})
+
+describe('recommend: inside or outside', () => {
+  const llm = interpretJson({ goal: null, activityIds: ['grounding-54321', 'desk-stretch', 'journaling-prompts'] })
+  const base: CheckinInput = { mood: 3, energy: 4, minutes: 20 }
+
+  it('"Not sure" can put a walk in the mix when time and energy allow it, and not when they do not', async () => {
+    const withTime = await recommend(makeDeps({ llm: llmScript(llm, () => null) }).deps, base)
+    expect(withTime.status === 'ok' && withTime.picks.some((p) => p.activityId === 'walk-nearby')).toBe(true)
+    const tooShort = await recommend(makeDeps({ llm: llmScript(llm, () => null) }).deps, { ...base, minutes: 5 })
+    expect(tooShort.status === 'ok' && tooShort.picks.some((p) => p.activityId === 'walk-nearby')).toBe(false)
+    const tooTired = await recommend(makeDeps({ llm: llmScript(llm, () => null) }).deps, { ...base, energy: 1 })
+    expect(tooTired.status === 'ok' && tooTired.picks.some((p) => p.activityId === 'walk-nearby')).toBe(false)
+  })
+  it('"Stay in" never offers anything outdoors', async () => {
+    const res = await recommend(makeDeps({ llm: llmScript(llm, () => null) }).deps, { ...base, place: 'in' })
+    expect(res.status).toBe('ok')
+    if (res.status !== 'ok') return
+    expect(res.picks.length).toBeGreaterThan(0)
+    for (const p of res.picks) expect(getActivity(p.activityId)!.tags, p.activityId).not.toContain('outdoors')
+  })
+  it('"Go outside" gives the walk as the idea (with two videos), and stays quiet about it when it cannot fit', async () => {
+    const out = await recommend(makeDeps({ llm: llmScript(llm, () => null) }).deps, { ...base, place: 'out' })
+    expect(out.status === 'ok' && out.picks.filter((p) => p.video === null).map((p) => p.activityId)).toEqual(['walk-nearby'])
+    const none = await recommend(makeDeps({ llm: llmScript(llm, () => null) }).deps, { ...base, place: 'out', screen: 'none' })
+    expect(none.status === 'ok' && none.picks.some((p) => p.activityId === 'walk-nearby')).toBe(true)
+    const short = await recommend(makeDeps({ llm: llmScript(llm, () => null) }).deps, { ...base, place: 'out', minutes: 5 })
+    expect(short.status).toBe('ok') // ordinary picks, no error
+  })
+  it('"Videos are fine" never shows the walk, since it has no video', async () => {
+    const res = await recommend(makeDeps({ llm: llmScript(llm, () => null) }).deps, { ...base, screen: 'video', place: 'out' })
+    expect(res.status === 'ok' && res.picks.every((p) => p.video !== null)).toBe(true)
+  })
+  it('accepts the new field and rejects nonsense in it', () => {
+    expect(parseCheckinInput({ mood: 3, energy: 3, minutes: 20, place: 'out' }).ok).toBe(true)
+    expect(parseCheckinInput({ mood: 3, energy: 3, minutes: 20, place: 'beach' }).ok).toBe(false)
+  })
+})
+
+describe('recommend: the default is a place, a video, and an idea', () => {
+  const llm = interpretJson({ goal: null, activityIds: ['desk-stretch', 'chair-yoga', 'grounding-54321'] })
+  const base: CheckinInput = { mood: 3, energy: 4, minutes: 10 } // the form's default time
+
+  it('with the default time and any energy of 3 or more, the three are: one place, one video, one idea', async () => {
+    const res = await recommend(makeDeps({ llm: llmScript(llm, () => null) }).deps, base)
+    expect(res.status).toBe('ok')
+    if (res.status !== 'ok') return
+    expect(res.picks).toHaveLength(3)
+    expect(res.picks.filter((p) => p.activityId === 'walk-nearby')).toHaveLength(1)
+    expect(res.picks.filter((p) => p.video !== null)).toHaveLength(1)
+    expect(res.picks.filter((p) => p.video === null && p.activityId !== 'walk-nearby')).toHaveLength(1)
+  })
+  it('stay in is two videos and an idea, with nothing outdoors', async () => {
+    const res = await recommend(makeDeps({ llm: llmScript(llm, () => null) }).deps, { ...base, place: 'in' })
+    expect(res.status === 'ok' && res.picks.filter((p) => p.video !== null)).toHaveLength(2)
+    expect(res.status === 'ok' && res.picks.some((p) => p.activityId === 'walk-nearby')).toBe(false)
+  })
+  it('go outside is the place and two videos', async () => {
+    const res = await recommend(makeDeps({ llm: llmScript(llm, () => null) }).deps, { ...base, place: 'out' })
+    expect(res.status === 'ok' && res.picks.map((p) => p.activityId)).toContain('walk-nearby')
+    expect(res.status === 'ok' && res.picks.filter((p) => p.video !== null)).toHaveLength(2)
+  })
+})
+
+describe('recommend: what the person said was good or not', () => {
+  it('a suggestion marked not for me is not offered again while other choices exist', async () => {
+    const ctx = { prefs: { dislikedTags: [], avoid: [], likedTags: [] }, liked: [], disliked: ['desk-stretch'], usageToday: 0 }
+    const { deps } = makeDeps({ loadContext: async () => ctx, llm: llmScript(interpretJson({ goal: null, activityIds: ['desk-stretch', 'chair-yoga'] }), () => null) })
+    const res = await recommend(deps, { mood: 3, energy: 4, minutes: 15 })
+    expect(res.status === 'ok' && res.picks.some((p) => p.activityId === 'desk-stretch')).toBe(false)
+  })
+})
+
+describe('recommend: variety, order and tailoring', () => {
+  const llm = interpretJson({ goal: null, activityIds: ['box-breathing', 'desk-stretch', 'grounding-54321'] })
+  const input: CheckinInput = { mood: 3, energy: 4, minutes: 15 }
+
+  it('shows videos first, then the place to visit, then ideas', async () => {
+    for (const day of ['2026-10-01', '2026-10-02', '2026-10-03', '2026-10-04']) {
+      const { deps } = makeDeps({ now: () => new Date(`${day}T15:00:00Z`), llm: llmScript(llm, () => null) })
+      const res = await recommend(deps, input)
+      expect(res.status).toBe('ok')
+      if (res.status !== 'ok') return
+      const order = res.picks.map((p) => (p.video ? 'video' : p.activityId === 'walk-nearby' ? 'place' : 'idea'))
+      const rank = { video: 0, place: 1, idea: 2 } as const
+      expect(order.map((o) => rank[o as keyof typeof rank])).toEqual([...order.map((o) => rank[o as keyof typeof rank])].sort())
+    }
+  })
+
+  it('what the last check-ins showed does not come first again (unless it was liked)', async () => {
+    const ctx = (recent: string[], liked: string[] = []) => ({ prefs: { dislikedTags: [], avoid: [], likedTags: [] }, liked, disliked: [], recent, usageToday: 0 })
+    const a = await recommend(makeDeps({ llm: llmScript(llm, () => null) }).deps, input)
+    expect(a.status === 'ok' && a.picks.some((p) => p.activityId === 'box-breathing')).toBe(true) // nothing recent: the model's choice stands
+    const b = await recommend(makeDeps({ loadContext: async () => ctx(['box-breathing', 'desk-stretch']), llm: llmScript(llm, () => null) }).deps, input)
+    expect(b.status === 'ok' && b.picks.some((p) => p.activityId === 'box-breathing')).toBe(false)
+    const c = await recommend(makeDeps({ loadContext: async () => ctx(['box-breathing'], ['box-breathing']), llm: llmScript(llm, () => null) }).deps, input)
+    expect(c.status === 'ok' && c.picks.some((p) => p.activityId === 'box-breathing')).toBe(true) // liked: still welcome
+  })
+
+  it('the idea is a different kind of thing from the video, and can be an everyday or creative one', async () => {
+    const seen = new Set<string>()
+    for (let d = 1; d <= 12; d++) {
+      const day = `2026-10-${String(d).padStart(2, '0')}`
+      const { deps } = makeDeps({ now: () => new Date(`${day}T15:00:00Z`), llm: llmScript(interpretJson({ goal: null, activityIds: [] }), () => null) })
+      const res = await recommend(deps, { ...input, minutes: 20 })
+      if (res.status !== 'ok') continue
+      const video = res.picks.find((p) => p.video)
+      const idea = res.picks.find((p) => !p.video && p.activityId !== 'walk-nearby')
+      if (video && idea) expect(getActivity(idea.activityId)!.category).not.toBe(getActivity(video.activityId)!.category)
+      if (idea) seen.add(getActivity(idea.activityId)!.category)
+    }
+    expect(seen.size).toBeGreaterThan(1) // not always the same sort of idea
+  })
+
+  it('the same few do not come up day after day: the first choice changes with the day when the model gives none', async () => {
+    const firsts = new Set<string>()
+    for (let d = 1; d <= 10; d++) {
+      const day = `2026-10-${String(d).padStart(2, '0')}`
+      const { deps } = makeDeps({ now: () => new Date(`${day}T15:00:00Z`), llm: llmScript(interpretJson({ goal: null, activityIds: [] }), () => null) })
+      const res = await recommend(deps, input)
+      if (res.status === 'ok' && res.picks[0]) firsts.add(res.picks[0].activityId)
+    }
+    expect(firsts.size).toBeGreaterThan(2)
   })
 })

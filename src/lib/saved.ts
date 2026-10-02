@@ -92,9 +92,10 @@ export const CATEGORY_LABELS: Record<Category, string> = {
   meditation: 'Meditation',
   movement: 'Movement',
   creative: 'Creative',
+  everyday: 'Everyday',
 }
 
 /** Categories that actually appear in the catalog, in a stable order. */
-export const CATEGORY_ORDER: Category[] = (['meditation', 'movement', 'creative'] as Category[]).filter((c) =>
+export const CATEGORY_ORDER: Category[] = (['meditation', 'movement', 'creative', 'everyday'] as Category[]).filter((c) =>
   CATALOG.some((a) => a.category === c),
 )

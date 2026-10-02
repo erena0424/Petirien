@@ -11,6 +11,7 @@
  * Uses its own account (Eli) so parallel specs cannot clear its data.
  */
 import { test, expect, loadAllTestAccounts } from 'deepspace/testing'
+import { tuck } from './tuck'
 import type { Page } from '@playwright/test'
 
 test.skip(loadAllTestAccounts().length < 5, 'Needs 5 usable test accounts (Alice, Bob, Cara, Dana, Eli).')
@@ -50,21 +51,47 @@ async function clearConversations(page: Page) {
   }
 }
 
+/** Home no longer has a chat card: the floating bunny is on it, so open its panel. */
+async function openHome(page: Page) {
+  await page.goto('/home')
+  await openPanel(page)
+}
+async function openPanel(page: Page) {
+  // Wait for the bunny, then use its own open/closed state (a computer shows the chat by default, a phone does not).
+  const toggle = page.getByTestId('floating-toggle')
+  await expect(toggle.or(page.getByTestId('floating-panel')).first()).toBeVisible() // on a phone the bunny hides while the sheet is open
+  if ((await toggle.isVisible()) && (await toggle.getAttribute('aria-expanded')) === 'false') await toggle.click()
+  await expect(page.getByTestId('floating-panel')).toBeVisible()
+}
+
 async function sayOnHome(page: Page, text: string) {
+  await openPanel(page)
   await page.getByLabel('Tell the bunny something').fill(text)
   await page.getByRole('button', { name: 'Send' }).click()
 }
 
-test('Home is a very big bunny with its words: a greeting first, then its latest reply, with no chat card', async ({ users }) => {
+test('Home has the floating bunny with its words beside it: a greeting first, then its latest reply, with no chat card', async ({ users }) => {
   const [eli] = await users(['Eli'])
+  await tuck(eli.page)
   await clearConversations(eli.page)
   const seen = await mockBunny(eli.page)
   await eli.page.goto('/home')
 
+  // Home has its own big bunny, so the floating chat starts folded away there until the person opens it.
+  await expect(eli.page.getByTestId('home-hero')).toBeVisible()
+  await expect(eli.page.getByTestId('floating-toggle')).toHaveAttribute('aria-expanded', 'false')
+  await expect(eli.page.getByTestId('bunny-words')).toHaveCount(0)
+  await openPanel(eli.page)
   const words = eli.page.getByTestId('bunny-words')
   await expect(words).toContainText(/Say something/)
   await expect(eli.page.getByTestId('chat-log')).toHaveCount(0) // the log lives on Messages, not here
-  await expect(eli.page.getByTestId('chat')).not.toContainText('not a therapist') // the AI note is in the footer
+  await expect(eli.page.getByTestId('chat')).toHaveCount(0) // no fixed chat card on Home any more
+
+  // The words sit to the RIGHT of the bunny (side by side, not below) in their lavender bubble.
+  const bunnyBox = (await eli.page.getByTestId('floating-toggle').boundingBox())!
+  const wordsBox = (await words.boundingBox())!
+  expect(wordsBox.x).toBeGreaterThanOrEqual(bunnyBox.x + bunnyBox.width - 2)
+  expect(await words.evaluate((el) => getComputedStyle(el).backgroundColor)).not.toBe('rgba(0, 0, 0, 0)') // keeps its lavender bubble
   await expect(eli.page.getByRole('contentinfo')).toContainText('The bunny is an AI')
 
   await sayOnHome(eli.page, FIRST)
@@ -78,9 +105,11 @@ test('Home is a very big bunny with its words: a greeting first, then its latest
 
 test('conversations are saved by default, listed on Messages, readable after a reload, and private to the account', async ({ users }) => {
   const [eli, alice] = await users(['Eli', 'Alice'])
+  await tuck(eli.page)
+  await tuck(alice.page)
   await clearConversations(eli.page)
   await mockBunny(eli.page)
-  await eli.page.goto('/home')
+  await openHome(eli.page)
   await sayOnHome(eli.page, FIRST)
   await expect(eli.page.getByTestId('bunny-words')).toContainText('(1)')
   await expect(eli.page.getByTestId('chat-private-note')).toContainText('Saved to Messages')
@@ -104,6 +133,7 @@ test('conversations are saved by default, listed on Messages, readable after a r
 
 test('a conversation can be continued from Messages like texting', async ({ users }) => {
   const [eli] = await users(['Eli'])
+  await tuck(eli.page)
   const seen = await mockBunny(eli.page)
   await eli.page.goto('/messages')
   await eli.page.getByTestId('conversation-item').filter({ hasText: FIRST }).click()
@@ -120,9 +150,10 @@ test('a conversation can be continued from Messages like texting', async ({ user
 
 test('"Don\'t save this chat" stores nothing and says so', async ({ users }) => {
   const [eli] = await users(['Eli'])
+  await tuck(eli.page)
   await clearConversations(eli.page)
   await mockBunny(eli.page)
-  await eli.page.goto('/home')
+  await openHome(eli.page)
   await eli.page.getByLabel("Don't save this chat").check()
   await sayOnHome(eli.page, 'something I want to keep to myself')
   await expect(eli.page.getByTestId('bunny-words')).toContainText('(1)')
@@ -137,6 +168,7 @@ test('"Don\'t save this chat" stores nothing and says so', async ({ users }) => 
 
 test('starting a new conversation keeps the old one, and asks for notes about the one you left', async ({ users }) => {
   const [eli] = await users(['Eli'])
+  await tuck(eli.page)
   await clearConversations(eli.page)
   const seen = await mockBunny(eli.page)
   await eli.page.goto('/messages')
@@ -165,33 +197,36 @@ test('starting a new conversation keeps the old one, and asks for notes about th
 
 test('deleting a conversation removes it and its messages for good', async ({ users }) => {
   const [eli] = await users(['Eli'])
+  await tuck(eli.page)
   await mockBunny(eli.page)
   await eli.page.goto('/messages')
   await expect(eli.page.getByTestId('conversation-item').first()).toBeVisible({ timeout: 15_000 })
   await clearConversations(eli.page)
   await eli.page.reload()
   await expect(eli.page.getByTestId('messages-empty')).toBeVisible({ timeout: 15_000 })
-  await eli.page.goto('/home') // a fresh chat there starts from the greeting, nothing carried over
+  await openHome(eli.page) // a fresh chat there starts from the greeting, nothing carried over
   await expect(eli.page.getByTestId('bunny-words')).toContainText(/Say something/)
 })
 
 test('a saved conversation counts as a day on the calendar', async ({ users }) => {
   const [eli] = await users(['Eli'])
+  await tuck(eli.page)
   await clearConversations(eli.page)
-  await eli.page.goto('/home')
+  await openHome(eli.page)
   await expect(eli.page.getByTestId('calendar').locator('[data-done]')).toHaveCount(0, { timeout: 15_000 })
   await mockBunny(eli.page)
   await sayOnHome(eli.page, 'counting for the calendar')
   await expect(eli.page.getByTestId('bunny-words')).toContainText('(1)')
-  await eli.page.goto('/home')
+  await openHome(eli.page)
   await expect(eli.page.getByTestId('calendar').locator('[data-done]')).toHaveCount(1, { timeout: 15_000 })
   await clearConversations(eli.page)
 })
 
 test('crisis words on the REAL server show the support card on Home, with no bunny reply', async ({ users }) => {
   const [eli] = await users(['Eli'])
+  await tuck(eli.page)
   await clearConversations(eli.page)
-  await eli.page.goto('/home') // no mocks: the real action stops before any model call
+  await openHome(eli.page) // no mocks: the real action stops before any model call
   await eli.page.getByLabel("Don't save this chat").check()
   await sayOnHome(eli.page, 'I want to kill myself')
   const card = eli.page.getByTestId('chat-support')
@@ -203,8 +238,9 @@ test('crisis words on the REAL server show the support card on Home, with no bun
 
 test('the model flagging a crisis also shows the support card', async ({ users }) => {
   const [eli] = await users(['Eli'])
+  await tuck(eli.page)
   await mockBunny(eli.page, { reply: () => ({ status: 'support' }) })
-  await eli.page.goto('/home')
+  await openHome(eli.page)
   await eli.page.getByLabel("Don't save this chat").check()
   await sayOnHome(eli.page, 'everything feels pointless lately')
   await expect(eli.page.getByTestId('chat-support')).toBeVisible()
@@ -212,6 +248,7 @@ test('the model flagging a crisis also shows the support card', async ({ users }
 
 test('failures keep what you wrote and offer Try again; the daily limit is explained kindly', async ({ users }) => {
   const [eli] = await users(['Eli'])
+  await tuck(eli.page)
   await mockBunny(eli.page, {
     reply: (n) =>
       n === 1
@@ -220,7 +257,7 @@ test('failures keep what you wrote and offer Try again; the daily limit is expla
           ? { status: 'ok', reply: 'I am here now.' }
           : { status: 'capped', resetsAt: '2026-10-02T00:00:00.000Z' },
   })
-  await eli.page.goto('/home')
+  await openHome(eli.page)
   await eli.page.getByLabel("Don't save this chat").check()
   await sayOnHome(eli.page, 'testing a failure')
   await expect(eli.page.getByTestId('chat-error')).toContainText('still here')
@@ -233,8 +270,9 @@ test('failures keep what you wrote and offer Try again; the daily limit is expla
 
 test('the text box grows as you type, stops growing at a limit, and shrinks back after sending', async ({ users }) => {
   const [eli] = await users(['Eli'])
+  await tuck(eli.page)
   await mockBunny(eli.page)
-  await eli.page.goto('/home')
+  await openHome(eli.page)
   await eli.page.getByLabel("Don't save this chat").check()
   const box = eli.page.getByLabel('Tell the bunny something')
   const height = async () => (await box.boundingBox())!.height
@@ -257,8 +295,9 @@ test('the text box grows as you type, stops growing at a limit, and shrinks back
 
 test('Shift+Enter makes a new line and Enter sends', async ({ users }) => {
   const [eli] = await users(['Eli'])
+  await tuck(eli.page)
   const seen = await mockBunny(eli.page)
-  await eli.page.goto('/home')
+  await openHome(eli.page)
   await eli.page.getByLabel("Don't save this chat").check()
   const box = eli.page.getByLabel('Tell the bunny something')
   await box.click()
@@ -270,19 +309,19 @@ test('Shift+Enter makes a new line and Enter sends', async ({ users }) => {
   expect(seen.reply[0].messages[0].text).toBe('first\nsecond')
 })
 
-test('a new empty conversation has no big empty block under the text box', async ({ users }) => {
+test('a new empty conversation has no big empty block under the text box (the card is tall on purpose, controls sit at its bottom)', async ({ users }) => {
   const [eli] = await users(['Eli'])
+  await tuck(eli.page)
   await mockBunny(eli.page)
   await eli.page.goto('/messages')
   await eli.page.getByRole('button', { name: 'New conversation' }).click()
   const thread = eli.page.getByTestId('chat')
   await expect(thread).toBeVisible()
-  const card = thread.locator('xpath=..')
+  const card = thread.locator('xpath=ancestor::div[contains(@class,"bg-card")][1]') // the white card around the bunny and the chat
   const cardBox = (await card.boundingBox())!
   const checkbox = (await eli.page.getByLabel("Don't save this chat").boundingBox())!
-  // The card ends right after the last control, with only its padding below.
-  expect(cardBox.y + cardBox.height - (checkbox.y + checkbox.height)).toBeLessThan(40)
-  expect(cardBox.height).toBeLessThan(420)
+  // The card is tall on purpose (the chat gets the page), but nothing empty hangs below the last control.
+  expect(cardBox.y + cardBox.height - (checkbox.y + checkbox.height)).toBeLessThan(60)
 })
 
 
@@ -300,9 +339,10 @@ async function forgetStyle(page: Page) {
 
 test('thumbs-down offers four reasons; one tap changes how the bunny talks (real database), and Undo puts it back', async ({ users }) => {
   const [eli] = await users(['Eli'])
+  await tuck(eli.page)
   await forgetStyle(eli.page)
   await mockBunny(eli.page)
-  await eli.page.goto('/home')
+  await openHome(eli.page)
   await eli.page.getByLabel("Don't save this chat").check()
   await sayOnHome(eli.page, 'tell me something')
   await expect(eli.page.getByTestId('bunny-words')).toContainText('(1)')
@@ -312,8 +352,8 @@ test('thumbs-down offers four reasons; one tap changes how the bunny talks (real
   await expect(eli.page.getByTestId('feedback-reasons')).toHaveCount(0)
   await eli.page.getByRole('button', { name: "This reply wasn't quite right" }).click()
   const reasons = eli.page.getByTestId('feedback-reasons').getByRole('button')
-  await expect(reasons).toHaveCount(4)
-  await expect(reasons).toHaveText(['Too long', 'Too many questions', 'Too cheery', 'Too serious'])
+  await expect(reasons).toHaveCount(7) // six reasons and a way to type something else
+  await expect(reasons).toHaveText(['Too long', 'Too many questions', 'Too cheery', 'Too serious', 'Too formal', 'Too informal', 'Something else…'])
 
   await reasons.filter({ hasText: 'Too long' }).click()
   await expect(eli.page.getByTestId('feedback-ack')).toContainText("I'll keep my replies shorter")
@@ -326,9 +366,11 @@ test('thumbs-down offers four reasons; one tap changes how the bunny talks (real
 
 test('a reason sticks: it shows up under Preferences, can be set again without change, and is private', async ({ users }) => {
   const [eli, alice] = await users(['Eli', 'Alice'])
+  await tuck(eli.page)
+  await tuck(alice.page)
   await forgetStyle(eli.page)
   await mockBunny(eli.page)
-  await eli.page.goto('/home')
+  await openHome(eli.page)
   await eli.page.getByLabel("Don't save this chat").check()
   await sayOnHome(eli.page, 'tell me something')
   await expect(eli.page.getByTestId('bunny-words')).toContainText('(1)')
@@ -340,7 +382,7 @@ test('a reason sticks: it shows up under Preferences, can be set again without c
   await expect(eli.page.getByTestId('style-summary')).toContainText('Fewer questions', { timeout: 15_000 })
 
   // Same reason again on a new reply: nothing to change, and it says so honestly.
-  await eli.page.goto('/home')
+  await openHome(eli.page)
   await eli.page.getByLabel("Don't save this chat").check()
   await sayOnHome(eli.page, 'and again')
   // (the fake bunny numbers its replies per page, and that count carries over from the earlier page load)
@@ -358,11 +400,48 @@ test('a reason sticks: it shows up under Preferences, can be set again without c
   await forgetStyle(eli.page)
 })
 
+test('"Too formal" and "Too informal" change the style; "Something else" sends your own words to the bunny', async ({ users }) => {
+  const [eli] = await users(['Eli'])
+  await tuck(eli.page)
+  await forgetStyle(eli.page)
+  const seen = await mockBunny(eli.page)
+  await openHome(eli.page)
+  await eli.page.getByLabel("Don't save this chat").check()
+  await sayOnHome(eli.page, 'tell me something')
+  await expect(eli.page.getByTestId('bunny-words')).toContainText('What part felt heaviest?')
+
+  await eli.page.getByRole('button', { name: "This reply wasn't quite right" }).click()
+  await eli.page.getByRole('button', { name: 'Too formal' }).click()
+  await expect(eli.page.getByTestId('feedback-ack')).toContainText('more casual')
+  await eli.page.goto('/preferences')
+  await expect(eli.page.getByTestId('style-summary')).toContainText('Casual, like a friend', { timeout: 15_000 })
+
+  // Typing something else: it goes to the bunny as an ordinary message, and nothing is stored as a profile.
+  await openHome(eli.page)
+  await eli.page.getByLabel("Don't save this chat").check()
+  await sayOnHome(eli.page, 'hello again')
+  await expect(eli.page.getByTestId('bunny-words')).toContainText('What part felt heaviest?')
+  const before = seen.reply.length
+  await eli.page.getByRole('button', { name: "This reply wasn't quite right" }).click()
+  await eli.page.getByRole('button', { name: 'Something else…' }).click()
+  await expect(eli.page.getByLabel('How would you like me to talk?')).toBeVisible()
+  const feedbackBox = eli.page.getByTestId('feedback-typing')
+  await expect(feedbackBox.getByRole('button', { name: 'Send' })).toBeDisabled() // nothing typed yet
+  await eli.page.getByLabel('How would you like me to talk?').fill('please use simpler words')
+  await feedbackBox.getByRole('button', { name: 'Send' }).click()
+  await expect.poll(() => seen.reply.length).toBe(before + 1) // sent to the bunny as an ordinary message
+  expect(seen.reply[before].messages.at(-1)).toEqual({ role: 'user', text: 'please use simpler words' })
+  await expect(eli.page.getByTestId('feedback-typing')).toHaveCount(0) // the box closes after sending
+  await forgetStyle(eli.page)
+})
+
+
 test('thumbs-up just says thanks and does not change anything', async ({ users }) => {
   const [eli] = await users(['Eli'])
+  await tuck(eli.page)
   await forgetStyle(eli.page)
   await mockBunny(eli.page)
-  await eli.page.goto('/home')
+  await openHome(eli.page)
   await eli.page.getByLabel("Don't save this chat").check()
   await sayOnHome(eli.page, 'tell me something')
   await expect(eli.page.getByTestId('bunny-words')).toContainText('(1)')
@@ -375,6 +454,7 @@ test('thumbs-up just says thanks and does not change anything', async ({ users }
 
 test('feedback controls come back for each new reply, and appear once on Messages, under the latest reply only', async ({ users }) => {
   const [eli] = await users(['Eli'])
+  await tuck(eli.page)
   await clearConversations(eli.page)
   await mockBunny(eli.page)
   await eli.page.goto('/messages')
@@ -393,8 +473,9 @@ test('feedback controls come back for each new reply, and appear once on Message
 
 test('no feedback controls appear on the support card', async ({ users }) => {
   const [eli] = await users(['Eli'])
+  await tuck(eli.page)
   await mockBunny(eli.page, { reply: () => ({ status: 'support' }) })
-  await eli.page.goto('/home')
+  await openHome(eli.page)
   await eli.page.getByLabel("Don't save this chat").check()
   await sayOnHome(eli.page, 'everything feels pointless lately')
   await expect(eli.page.getByTestId('chat-support')).toBeVisible()
@@ -404,10 +485,11 @@ test('no feedback controls appear on the support card', async ({ users }) => {
 
 test('phone width: Home, Messages, and the thread have no horizontal scroll', async ({ users }) => {
   const [eli] = await users(['Eli'])
+  await tuck(eli.page)
   await eli.page.setViewportSize({ width: 375, height: 800 })
   await mockBunny(eli.page)
   const overflow = () => eli.page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
-  await eli.page.goto('/home')
+  await openHome(eli.page)
   await eli.page.getByLabel("Don't save this chat").check()
   await sayOnHome(eli.page, 'a fairly long message to see how it wraps on a small screen without breaking the layout at all')
   await expect(eli.page.getByTestId('bunny-words')).toContainText('(1)')

@@ -16,10 +16,10 @@ export function partOfDay(d: Date): Part {
   return 'night'
 }
 
-const PREFERRED: Record<Part, Category[]> = {
-  morning: ['movement', 'meditation'],
-  afternoon: ['movement', 'creative'],
-  evening: ['meditation', 'creative'],
+export const PREFERRED: Record<Part, Category[]> = {
+  morning: ['movement', 'meditation', 'everyday'],
+  afternoon: ['movement', 'creative', 'everyday'],
+  evening: ['meditation', 'creative', 'everyday'],
   night: ['meditation'],
 }
 
@@ -50,10 +50,16 @@ export function pickForNow(opts: { now: Date; avoid?: string[]; skipIds?: string
   const avoid = new Set(opts.avoid ?? [])
   const ok = (a: Activity) => a.effort === 1 && !a.tags.some((t) => avoid.has(t)) && !(opts.skipIds ?? []).includes(a.id)
   const preferred = PREFERRED[partOfDay(opts.now)]
-  const pool = CATALOG.filter((a) => ok(a) && preferred.includes(a.category))
-  const fallback = CATALOG.filter(ok)
-  const list = pool.length ? pool : fallback
-  if (list.length === 0) return null
+  // The one written suggestion is an idea without a video (the videos for right now have their own cards). Only when
+  // nothing like that fits what the person avoids does it fall back to any gentle activity, so Home is never empty.
+  const tiers = [
+    CATALOG.filter((a) => ok(a) && !a.video && preferred.includes(a.category)),
+    CATALOG.filter((a) => ok(a) && !a.video),
+    CATALOG.filter((a) => ok(a) && preferred.includes(a.category)),
+    CATALOG.filter(ok),
+  ]
+  const list = tiers.find((t) => t.length > 0)
+  if (!list) return null
   return list[dayOfYear(opts.now) % list.length] ?? null
 }
 
