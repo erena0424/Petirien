@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { MapPin, ThumbsDown, ThumbsUp } from 'lucide-react'
-import { AuthOverlay, useAuthStatus } from 'deepspace'
+import { useAuthStatus } from 'deepspace'
 import { Button } from '@/components/ui'
 import { usePlaceFeedback } from '@/lib/use-place-feedback'
 import { usePlaces } from '@/lib/use-places'
@@ -38,7 +38,7 @@ interface Props {
 }
 
 /** One place, said as something to do, with how far, a link to Google Maps, and a good / not for me pair. */
-function PlaceRow({ kind, place, miles, onRate, rating }: { kind: PlaceKindId; place: Place; miles: boolean; onRate: (r: 'yes' | 'no') => void; rating?: 'yes' }) {
+function PlaceRow({ kind, place, miles, onRate, rating }: { kind: PlaceKindId; place: Place; miles: boolean; onRate?: (r: 'yes' | 'no') => void; rating?: 'yes' }) {
   const [photoFailed, setPhotoFailed] = useState(false)
   const btn = (active: boolean) =>
     cn(
@@ -77,6 +77,7 @@ function PlaceRow({ kind, place, miles, onRate, rating }: { kind: PlaceKindId; p
             Open in Google Maps
           </a>
         </div>
+        {onRate && (
         <div className="flex shrink-0 gap-1" role="group" aria-label={`Rate ${place.name}`}>
           <button type="button" className={btn(rating === 'yes')} aria-pressed={rating === 'yes'} aria-label={`Good place: ${place.name}`} onClick={() => onRate('yes')}>
             <ThumbsUp aria-hidden className="h-4 w-4" />
@@ -85,6 +86,7 @@ function PlaceRow({ kind, place, miles, onRate, rating }: { kind: PlaceKindId; p
             <ThumbsDown aria-hidden className="h-4 w-4" />
           </button>
         </div>
+        )}
       </div>
     </li>
   )
@@ -98,16 +100,13 @@ function PlaceRow({ kind, place, miles, onRate, rating }: { kind: PlaceKindId; p
 export function PlaceSuggestions({ kinds: kindsProp, autoEveryMs, showOthers = true, fallback }: Props) {
   // Today's pair (something outside, somewhere to sit) unless told otherwise; it changes from day to day.
   const kinds = kindsProp ?? suggestedKinds(dayOfYear(new Date()))
-  const { state, find, findSuggested } = usePlaces()
-  const { isSignedIn, isLoaded } = useAuthStatus()
-  const [signIn, setSignIn] = useState(false)
+  const { isSignedIn } = useAuthStatus()
+  const { state, find, findSuggested } = usePlaces(isSignedIn)
   const { ratings, rate, ready } = usePlaceFeedback()
   const [permission, setPermission] = useState<'granted' | 'other'>('other')
   const [othersOpen, setOthersOpen] = useState(false)
   const [lastNo, setLastNo] = useState<Place | null>(null)
   const asked = useRef(false)
-  const signedInRef = useRef(isSignedIn)
-  signedInRef.current = isSignedIn
   const busy = state.kind === 'locating' || state.kind === 'searching'
   const miles = typeof navigator !== 'undefined' && prefersMiles(navigator.language)
 
@@ -121,7 +120,6 @@ export function PlaceSuggestions({ kinds: kindsProp, autoEveryMs, showOthers = t
       .then((r) => {
         if (r.state !== 'granted') return
         setPermission('granted')
-        if (!signedInRef.current) return // a signed-out visitor is asked to sign in first; nothing is searched
         if (autoEveryMs === undefined || autoDue(autoEveryMs)) {
           if (autoEveryMs !== undefined) markAuto()
           void findSuggested(kinds)
@@ -146,17 +144,9 @@ export function PlaceSuggestions({ kinds: kindsProp, autoEveryMs, showOthers = t
           <p className="mt-1 text-xs text-muted-foreground">
             Your browser will ask first. Your location is rounded to about a kilometre, used once to look for places, and not saved.
           </p>
-          {isLoaded && !isSignedIn ? (
-            // Places are a paid search billed to the person, so they need to be signed in first.
-            <Button type="button" className="mt-3 min-h-11" onClick={() => setSignIn(true)}>
-              Sign in to see places
-            </Button>
-          ) : (
-            <Button type="button" className="mt-3 min-h-11" onClick={() => void findSuggested(kinds)}>
-              {permission === 'granted' ? 'Show places near me' : 'Share my location'}
-            </Button>
-          )}
-          {signIn && <AuthOverlay onClose={() => setSignIn(false)} />}
+          <Button type="button" className="mt-3 min-h-11" onClick={() => void findSuggested(kinds)}>
+            {permission === 'granted' ? 'Show places near me' : 'Share my location'}
+          </Button>
         </div>
       )}
 
@@ -196,7 +186,7 @@ export function PlaceSuggestions({ kinds: kindsProp, autoEveryMs, showOthers = t
               <div>
                 <ul className="space-y-2" data-testid="places-list">
                   {rows.map(({ kind, place }) => (
-                    <PlaceRow key={`${kind}-${place.id}`} kind={kind} place={place} miles={miles} rating={ratings.get(place.id)?.rating === 'yes' ? 'yes' : undefined} onRate={(r) => rateIt(place, r)} />
+                    <PlaceRow key={`${kind}-${place.id}`} kind={kind} place={place} miles={miles} rating={ratings.get(place.id)?.rating === 'yes' ? 'yes' : undefined} onRate={isSignedIn ? (r) => rateIt(place, r) : undefined} />
                   ))}
                 </ul>
                 <p className="mt-2 text-xs text-muted-foreground">Places and photos from Google Maps.</p>
@@ -217,7 +207,7 @@ export function PlaceSuggestions({ kinds: kindsProp, autoEveryMs, showOthers = t
             ) : (
               <ul className="space-y-2" data-testid="other-places-list">
                 {places.map((p) => (
-                  <PlaceRow key={p.id} kind={state.type} place={p} miles={miles} rating={ratings.get(p.id)?.rating === 'yes' ? 'yes' : undefined} onRate={(r) => rateIt(p, r)} />
+                  <PlaceRow key={p.id} kind={state.type} place={p} miles={miles} rating={ratings.get(p.id)?.rating === 'yes' ? 'yes' : undefined} onRate={isSignedIn ? (r) => rateIt(p, r) : undefined} />
                 ))}
               </ul>
             )

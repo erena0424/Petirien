@@ -18,6 +18,10 @@ export async function tuck(page: Page) {
   await page.route('**/api/integrations/serpapi/places-search', (route) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, data: { local_results: [] } }) }),
   )
+  // Signed-out visitors search through our own capped endpoint (billed to the app owner). Never a real one in tests.
+  await page.route('**/api/public/places', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, data: { local_results: [] } }) }),
+  )
   // Home asks the server for two videos for right now (a YouTube search when not cached, which costs money). Tests never do that.
   await page.route('**/api/actions/homeIdeas', (route) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, data: HOME_IDEAS_FIXTURE }) }),

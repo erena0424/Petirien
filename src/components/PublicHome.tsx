@@ -2,13 +2,16 @@ import { useRef, useState } from 'react'
 import { AuthOverlay } from 'deepspace'
 import { Button } from '@/components/ui'
 import { GREETING, partOfDay } from '@/lib/for-now'
+import { dayOfYear } from '@/lib/for-now'
+import { homeKind } from '../places/places'
 import { Bunny } from './Bunny'
+import { PlaceSuggestions } from './PlaceSuggestions'
 import { PreviewSection } from './PreviewSection'
 
 /**
  * Home for someone who has not signed in. The bunny, one sentence about what this is, and one clear invitation. Nothing
- * empty and nothing that needs an account: sample suggestions are ready to view, a short preview asks only for energy and
- * time, and signing in is always one press away (and can be skipped past). Calendar, places, saved and history wait until
+ * empty and nothing that needs an account: sample suggestions are ready to view, a place to go asks for location only when pressed (or already allowed), a short preview asks only for energy and
+ * time, and signing in is always one press away (and can be skipped past). Calendar, saved and history wait until
  * after sign-in, when they mean something.
  */
 export function PublicHome() {
@@ -48,6 +51,14 @@ export function PublicHome() {
       <div ref={previewRef}>
         <PreviewSection asking={asking} onClose={() => setAsking(false)} />
       </div>
+      <section aria-labelledby="place-heading" data-testid="home-place" className="mt-10">
+        <h2 id="place-heading" className="text-lg font-bold text-foreground">
+          Somewhere to go
+        </h2>
+        <div className="mt-3 rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-card)]">
+          <PlaceSuggestions kinds={[homeKind(dayOfYear(new Date()))]} autoEveryMs={30 * 60_000} showOthers={false} fallback="Even a few minutes outside can help. Pick any direction you like." />
+        </div>
+      </section>
       {signIn && <AuthOverlay onClose={() => setSignIn(false)} />}
     </div>
   )

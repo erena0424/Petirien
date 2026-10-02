@@ -25,7 +25,7 @@ Built on [DeepSpace](https://deep.space) for the AI-native GTM engineer build ex
   of them later.
 - **Places near you:** concrete suggestions ("Take a walk to ...", "Spend quality time at ...") from Google Maps, using your
   location only if you allow it. A place can be marked good, not right now (it sits out for two weeks), or never.
-- **Home:** two video ideas for right now (no history needed), a place to go, your plans, and what you saved.
+- **Home:** (signed out: sample suggestions and a place to go) two video ideas for right now (no history needed), a place to go, your plans, and what you saved.
 - **Saved, History, Preferences, Privacy:** save videos and ideas, review check-ins, set what to avoid, and delete
   everything in one step.
 
@@ -39,7 +39,9 @@ Built on [DeepSpace](https://deep.space) for the AI-native GTM engineer build ex
 | `serpapi/places-search` | Nearby places, from a location rounded to about a kilometre. |
 
 Also DeepSpace platform features: auth, the Records database with per-user permissions, and server actions. Paid
-integrations are billed to the signed-in person, so nothing is spent by anonymous visitors. An optional Google API key
+integrations are billed to the signed-in person. The one exception is "Somewhere to go" for visitors who have not signed in:
+it goes through `/api/public/places`, billed to the app owner, and boxed in (fixed kinds of place, a location rounded to
+about a kilometre, results shared and kept for a day, and 60 fresh searches a day for all visitors together, about $2). An optional Google API key
 (a DeepSpace secret) only backs YouTube up and checks which videos can be embedded.
 
 ## Privacy and safety choices

@@ -37,9 +37,68 @@ test.describe('someone who has not signed in', () => {
     await expect(page.getByTestId('nav-sign-in-button')).toBeVisible()
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Home') // for screen readers
     // Nothing that needs an account, and nothing empty.
-    for (const id of ['plans', 'home-place', 'home-saved-empty', 'calendar', 'for-now', 'home-ideas']) await expect(page.getByTestId(id)).toHaveCount(0)
+    for (const id of ['plans', 'home-saved-empty', 'calendar', 'for-now', 'home-ideas']) await expect(page.getByTestId(id)).toHaveCount(0)
     await expect(page.getByText('From your saved')).toHaveCount(0)
     await expect(page.getByText('Finding a couple of things')).toHaveCount(0)
+  })
+
+  test('Somewhere to go asks for location, then shows a real place with no sign-in, sending only a rounded location', async ({ page }) => {
+    await tuck(page)
+    // The permission is still to be asked (not granted yet), so nothing runs until the button; the fix is a precise one on purpose.
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, 'geolocation', {
+        value: { getCurrentPosition: (ok: (p: unknown) => void) => ok({ coords: { latitude: 40.753612, longitude: -73.983244 } }) },
+        configurable: true,
+      })
+    })
+    await page.clock.setFixedTime(new Date(2026, 0, 4, 12, 0)) // a park day
+    const sent: any[] = []
+    await page.route('**/api/public/places', (route) => {
+      sent.push(route.request().postDataJSON())
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ success: true, data: { local_results: [{ title: 'Corner Park', place_id: 'id-CornerPark', gps_coordinates: { latitude: 40.7545, longitude: -73.982 }, rating: 4.6, type: 'Park', address: '12 Quiet Street' }] } }),
+      })
+    })
+    await page.goto('/home')
+    const section = page.getByTestId('home-place')
+    await expect(section.getByText('Somewhere to go')).toBeVisible()
+    expect(sent).toHaveLength(0) // nothing is asked or searched before the person presses
+    await section.getByRole('button', { name: 'Share my location' }).click()
+    await expect(section.getByTestId('place-line')).toContainText('Corner Park')
+    await expect(section.getByRole('link', { name: 'Open in Google Maps' })).toBeVisible()
+    await expect(section.getByRole('group', { name: /^Rate/ })).toHaveCount(0) // remembering likes needs an account
+    expect(sent).toHaveLength(1)
+    expect(sent[0]).toEqual({ kind: 'park', lat: 40.75, lng: -73.98 })
+  })
+
+  test('Somewhere to go falls back to taking a walk when location is declined, and says so kindly when the daily limit is reached', async ({ page }) => {
+    await tuck(page)
+    await page.goto('/home')
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, 'geolocation', {
+        value: { getCurrentPosition: (_ok: unknown, err: (e: { code: number }) => void) => err({ code: 1 }) },
+        configurable: true,
+      })
+    })
+    await page.reload()
+    await page.getByTestId('home-place').getByRole('button', { name: 'Share my location' }).click()
+    await expect(page.getByTestId('places-denied')).toContainText('Pick any direction you like')
+
+    await page.context().grantPermissions(['geolocation'])
+    await page.context().setGeolocation({ latitude: 40.75, longitude: -73.98 })
+    await page.unroute('**/api/public/places')
+    await page.route('**/api/public/places', (route) => route.fulfill({ status: 429, contentType: 'application/json', body: JSON.stringify({ success: false, code: 'daily_limit' }) }))
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, 'geolocation', {
+        value: { getCurrentPosition: (ok: (p: unknown) => void) => ok({ coords: { latitude: 40.75, longitude: -73.98 } }) },
+        configurable: true,
+      })
+    })
+    await page.reload()
+    // Location is already allowed here, so the place is looked for on arrival.
+    await expect(page.getByTestId('places-error')).toContainText("I'm resting my map")
   })
 
   test('sample suggestions are ready to view on arrival: one playable video and two ideas, labelled as samples', async ({ page }) => {
