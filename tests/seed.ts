@@ -28,3 +28,38 @@ export async function seedJournal(
   expect(lastError, 'seeding a journal entry').toBe('')
   return ''
 }
+
+/** Check-ins (mood and energy) in the REAL local database, dev build only, for the signed-in test account. */
+export async function seedCheckin(page: Page, row: { mood: number; energy: number; goal?: string; note?: string; minutes?: number }) {
+  return retryUntilReady(page, 'seedCheckin', row)
+}
+
+/** Removes every check-in this test account has, so a test starts from nothing. */
+export async function clearCheckins(page: Page) {
+  await page.waitForFunction(() => typeof (window as unknown as { __petirien?: { clearCheckins?: unknown } }).__petirien?.clearCheckins === 'function')
+  await page.waitForTimeout(1200) // let the stored check-ins arrive first
+  await retryUntilReady(page, 'clearCheckins', undefined)
+}
+
+async function retryUntilReady(page: Page, fn: string, arg: unknown) {
+  await page.waitForFunction((name) => typeof (window as unknown as { __petirien?: Record<string, unknown> }).__petirien?.[name] === 'function', fn)
+  let lastError = ''
+  for (let i = 0; i < 40; i++) {
+    const result = await page.evaluate(
+      async ([name, a]) => {
+        try {
+          return { value: await (window as unknown as { __petirien: Record<string, (x?: unknown) => Promise<unknown>> }).__petirien[name as string]!(a) ?? 'done' }
+        } catch (e) {
+          return { error: String(e) }
+        }
+      },
+      [fn, arg] as const,
+    )
+    if ('value' in result) return result.value as string
+    lastError = result.error ?? ''
+    if (!/not ready/i.test(lastError)) break
+    await page.waitForTimeout(250)
+  }
+  expect(lastError, fn).toBe('')
+  return ''
+}

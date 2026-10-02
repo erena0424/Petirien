@@ -10,16 +10,18 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { ConfirmModal, Button } from '@/components/ui'
 import { Bunny } from '@/components/Bunny'
 import { EventDialog } from '@/components/journal/EventDialog'
-import { DayView, MonthView, WeekView } from '@/components/journal/JournalCalendar'
+import { DayView, MonthView, WeekView, type CheckinItem } from '@/components/journal/JournalCalendar'
+import { MoodChart } from '@/components/journal/MoodChart'
 import { JournalEntryCard, type JournalRecord } from '@/components/journal/JournalEntryCard'
 import { ReflectionDialog, type ReflectOn } from '@/components/ReflectionDialog'
 import { useBunnyChat } from '@/lib/bunny-chat'
 import { useCalendarRange } from '@/lib/use-calendar-range'
+import { useCheckins } from '@/lib/use-checkins'
 import { useJournal } from '@/lib/use-journal'
 import type { Plan } from '../../../plans/plan'
 import { reflectedIds } from '../../../journal/layout'
 import { cn } from '@/lib/utils'
-import { VIEWS, groupByDay, isView, rangeLabel, shift, startOfDay, type View } from '../../../journal/calendar'
+import { VIEWS, dayKey, groupByDay, isView, rangeLabel, shift, startOfDay, type View } from '../../../journal/calendar'
 
 const VIEW_KEY = 'petirien.journalView'
 const VIEW_LABEL: Record<View, string> = { month: 'Month', week: 'Week', day: 'Day', list: 'List' }
@@ -87,6 +89,19 @@ export default function JournalPage() {
 
   const records = journal.records as JournalRecord[]
   const calendar = useCalendarRange(view, anchor)
+  const checkinData = useCheckins()
+  const checkinRecords = checkinData.records as CheckinItem[]
+  const checkins = useMemo(() => {
+    const m = new Map<string, CheckinItem[]>()
+    for (const r of checkinRecords) {
+      const t = Date.parse(r.createdAt)
+      if (!Number.isFinite(t)) continue
+      const k = dayKey(new Date(t))
+      m.set(k, [...(m.get(k) ?? []), r])
+    }
+    for (const [k, list] of m) m.set(k, [...list].sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt)))
+    return m
+  }, [checkinRecords])
   const reflected = useMemo(() => reflectedIds(records.map((r) => r.data)), [records])
   const byDay = useMemo(() => groupByDay(records.map((r) => ({ ...r, kind: r.data.kind, eventStart: r.data.eventStart }))), [records])
 
@@ -103,7 +118,7 @@ export default function JournalPage() {
     setAnchor(startOfDay(d))
     if (view === 'week') setView('day')
   }
-  const common = { byDay, events: calendar.events, reflected, anchor, onSelect: select, onOpenEvent: setOpenEvent, onEdit: setEditing, onDelete: setDeleting }
+  const common = { byDay, checkins, events: calendar.events, reflected, anchor, onSelect: select, onOpenEvent: setOpenEvent, onEdit: setEditing, onDelete: setDeleting }
 
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-8">
@@ -166,6 +181,10 @@ export default function JournalPage() {
             <h2 data-testid="journal-range" aria-live="polite" className="mt-5 text-xl font-bold text-foreground">
               {rangeLabel(view, anchor)}
             </h2>
+
+            <div className="mt-4">
+              <MoodChart rows={checkinRecords} view={view} anchor={anchor} />
+            </div>
 
             {view !== 'list' && <CalendarBar state={calendar.state} onLoad={() => void calendar.load()} />}
 

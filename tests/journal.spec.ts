@@ -8,7 +8,7 @@
  * Uses its own account (Dana); specs run one at a time.
  */
 import { test, expect, loadAllTestAccounts } from 'deepspace/testing'
-import { seedJournal } from './seed'
+import { clearCheckins, seedCheckin, seedJournal } from './seed'
 import { tuck } from './tuck'
 import type { Page } from '@playwright/test'
 
@@ -204,4 +204,73 @@ test('phone width: no horizontal scroll in any view, with events showing', async
     await page.getByTestId(`journal-view-${v}`).click()
     expect(await overflow(), v).toBeLessThanOrEqual(0)
   }
+})
+
+test('check-ins show on the Journal: a mood and energy chart, the day\'s check-ins, and markers at their times', async ({ users }) => {
+  const [dana] = await users(['Dana'])
+  const page = dana.page
+  await tuck(page)
+  await mockCalendar(page)
+  await page.goto('/journal')
+  await clearCheckins(page)
+  await page.getByTestId('journal-view-month').click()
+
+  // Nothing yet: a calm invitation, no chart, no verdict.
+  await expect(page.getByTestId('mood-empty')).toContainText('No check-ins in this stretch yet')
+  await expect(page.getByTestId('mood-svg')).toHaveCount(0)
+
+  await seedCheckin(page, { mood: 2, energy: 3, note: `quiet start ${run}` })
+  await seedCheckin(page, { mood: 4, energy: 2, goal: 'calm' })
+  const chart = page.getByTestId('mood-chart')
+  await expect(chart.getByTestId('mood-summary')).toContainText('Across 2 check-ins', { timeout: 15_000 })
+  await expect(chart.getByTestId('mood-summary')).toContainText(/mostly felt (okay|good|low).*energy/)
+  await expect(chart).not.toContainText(/bad|worse|poor|problem|concern|should/i)
+  // A month shows one point a day (the average of that day), two lines that differ by shape as well as color.
+  await expect(chart.getByTestId('mood-point')).toHaveCount(1)
+  await expect(chart.getByTestId('energy-point')).toHaveCount(1)
+  await expect(chart.getByTestId('energy-line')).toHaveAttribute('stroke-dasharray', /\d/) // dashed
+  await expect(chart.getByTestId('mood-line')).not.toHaveAttribute('stroke-dasharray', /./) // solid
+  await expect(chart.getByTestId('mood-svg')).toHaveAttribute('aria-label', /Chart of mood and energy from 1 to 5/)
+
+  // The numbers, for anyone who cannot see the chart.
+  await chart.getByText('See the numbers').click()
+  const rows = chart.getByTestId('mood-table').locator('tbody tr')
+  await expect(rows).toHaveCount(2)
+  await expect(rows.nth(0)).toContainText('4 · Good')
+  await expect(rows.nth(0)).toContainText('2 · Low')
+  await expect(rows.nth(1)).toContainText('2 · Low')
+  await expect(rows.nth(1)).toContainText('3 · Medium')
+
+  // On the calendar: the day has a check-in dot, and the day's list says what was said.
+  const cell = page.locator(`[data-testid="journal-day"][data-date="${todayKey()}"]`)
+  await expect(cell).toHaveAttribute('data-checkins', '2')
+  await expect(cell).toHaveAttribute('aria-label', /2 check-ins/)
+  await expect(cell.getByTestId('checkin-dot')).toHaveCount(1)
+  const list = page.getByTestId('journal-day-checkins')
+  await expect(list.getByTestId('day-checkin')).toHaveCount(2)
+  await expect(list).toContainText('Feeling low, medium energy')
+  await expect(list).toContainText('Feeling good, low energy')
+  await expect(list).toContainText(`quiet start ${run}`)
+  await expect(list).toContainText('Wanted: calm down')
+
+  // The Day view plots every check-in, and marks each at its time in the hour grid.
+  await page.getByTestId('journal-view-day').click()
+  await expect(chart.getByTestId('mood-point')).toHaveCount(2)
+  await expect(chart.getByTestId('energy-point')).toHaveCount(2)
+  await expect(page.getByTestId('checkin-marker')).toHaveCount(2)
+  await expect(page.getByTestId('checkin-marker').first()).toHaveAttribute('aria-label', /^Check-in: Feeling (low, medium|good, low) energy, /)
+
+  // A stretch without check-ins goes back to the invitation.
+  await page.getByTestId('journal-view-month').click()
+  await page.getByRole('button', { name: 'Previous month' }).click()
+  await expect(page.getByTestId('mood-empty')).toBeVisible()
+
+  // Phone width: the chart and its table do not make the page scroll sideways.
+  await page.getByRole('button', { name: 'Today', exact: true }).click()
+  await page.setViewportSize({ width: 375, height: 700 })
+  for (const v of ['month', 'week', 'day', 'list']) {
+    await page.getByTestId(`journal-view-${v}`).click()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth), v).toBeLessThanOrEqual(0)
+  }
+  await clearCheckins(page)
 })

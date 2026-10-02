@@ -1,6 +1,9 @@
 import { useEffect, useRef } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui'
+import { ENERGY, GOAL_LABELS, MOOD, label } from '@/lib/labels'
+import type { CheckinRow } from '@/lib/use-checkins'
 import { cn } from '@/lib/utils'
 import type { Plan } from '../../plans/plan'
 import { addDays, dayKey, fullDate, monthGrid, sameDay, weekDays } from '../../journal/calendar'
@@ -10,9 +13,17 @@ import type { ReflectOn } from '../ReflectionDialog'
 
 const WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
 
+export interface CheckinItem {
+  recordId: string
+  createdAt: string
+  data: CheckinRow
+}
+
 interface Common {
   /** Journal entries by local day. */
   byDay: Map<string, JournalRecord[]>
+  /** Check-ins (mood and energy) by local day. */
+  checkins: Map<string, CheckinItem[]>
   /** Calendar events in view (empty until the person shows their calendar). */
   events: Plan[]
   /** Event ids that already have journal entries. */
@@ -26,6 +37,9 @@ interface Common {
 
 const countLabel = (n: number, noun: string) => (n === 0 ? `no ${noun}s` : n === 1 ? `1 ${noun}` : `${n} ${noun}s`)
 const clock = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+/** "Feeling low, medium energy", the same words as the check-in form. */
+export const feelingLine = (c: CheckinRow) => `Feeling ${label(MOOD, c.mood).toLowerCase()}, ${label(ENERGY, c.energy).toLowerCase()} energy`
+
 const hourLabel = (h: number) => new Date(2000, 0, 1, h).toLocaleTimeString([], { hour: 'numeric' })
 
 /** One event as a row: time, name, a marker if it has a journal entry, and the one action. Used in the day's agenda. */
@@ -49,8 +63,9 @@ function EventRow({ plan, reflected, onOpen }: { plan: Plan; reflected: boolean;
 }
 
 /** The day in words: what was on the calendar, then what you wrote. */
-export function DayAgenda({ byDay, events, reflected, anchor, onOpenEvent, onEdit, onDelete }: Omit<Common, 'onSelect'>) {
+export function DayAgenda({ byDay, checkins, events, reflected, anchor, onOpenEvent, onEdit, onDelete }: Omit<Common, 'onSelect'>) {
   const written = byDay.get(dayKey(anchor)) ?? []
+  const checked = checkins.get(dayKey(anchor)) ?? []
   const planned = eventsOn(events, anchor)
   return (
     <section aria-labelledby="day-heading" data-testid="journal-day-entries" className="mt-6">
@@ -63,6 +78,25 @@ export function DayAgenda({ byDay, events, reflected, anchor, onOpenEvent, onEdi
             <EventRow key={p.id} plan={p} reflected={reflected.has(p.id)} onOpen={onOpenEvent} />
           ))}
         </ul>
+      )}
+      {checked.length > 0 && (
+        <section aria-label="Check-ins" data-testid="journal-day-checkins" className="mt-4">
+          <h3 className="text-sm font-semibold text-foreground">Check-ins</h3>
+          <ul className="mt-2 space-y-2">
+            {checked.map((c) => (
+              <li key={c.recordId} data-testid="day-checkin" className="rounded-xl border border-border bg-card px-4 py-3">
+                <p className="text-sm font-semibold text-foreground">
+                  {clock(c.createdAt)} · {feelingLine(c.data)}
+                </p>
+                {c.data.goal && <p className="text-sm text-muted-foreground">Wanted: {(GOAL_LABELS[c.data.goal] ?? '').toLowerCase()}</p>}
+                {c.data.note && <p className="font-hand mt-1 whitespace-pre-wrap text-base text-foreground">{c.data.note}</p>}
+              </li>
+            ))}
+          </ul>
+          <Link to="/history" className="mt-1 inline-flex min-h-10 items-center text-sm font-medium text-primary underline-offset-4 hover:underline">
+            See all check-ins
+          </Link>
+        </section>
       )}
       {written.length === 0 ? (
         <p data-testid="journal-day-empty" className="mt-3 text-sm text-muted-foreground">
@@ -101,6 +135,7 @@ export function MonthView(c: Common) {
               {week.map((d) => {
                 const written = c.byDay.get(dayKey(d))?.length ?? 0
                 const planned = eventsOn(c.events, d)
+                const checked = c.checkins.get(dayKey(d))?.length ?? 0
                 const inMonth = d.getMonth() === c.anchor.getMonth()
                 const selected = sameDay(d, c.anchor)
                 return (
@@ -111,8 +146,9 @@ export function MonthView(c: Common) {
                       data-date={dayKey(d)}
                       data-count={written}
                       data-events={planned.length}
+                      data-checkins={checked}
                       aria-pressed={selected}
-                      aria-label={`${fullDate(d)}, ${countLabel(written, 'journal entry').replace('journal entrys', 'journal entries')}, ${countLabel(planned.length, 'event')}`}
+                      aria-label={`${fullDate(d)}, ${countLabel(written, 'journal entry').replace('journal entrys', 'journal entries')}, ${countLabel(planned.length, 'event')}, ${countLabel(checked, 'check-in')}`}
                       onClick={() => c.onSelect(d)}
                       className={cn(
                         'flex min-h-16 w-full flex-col items-stretch gap-0.5 rounded-xl border p-1 text-left text-sm focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 sm:min-h-28',
@@ -123,13 +159,12 @@ export function MonthView(c: Common) {
                     >
                       <span className="flex items-center justify-between px-0.5">
                         <span>{d.getDate()}</span>
-                        {written > 0 && (
-                          <span aria-hidden className="flex gap-0.5">
-                            {Array.from({ length: Math.min(written, 3) }, (_, i) => (
-                              <span key={i} className="h-1.5 w-1.5 rounded-full bg-primary" />
-                            ))}
-                          </span>
-                        )}
+                        <span aria-hidden className="flex gap-0.5">
+                          {Array.from({ length: Math.min(written, 3) }, (_, i) => (
+                            <span key={i} className="h-1.5 w-1.5 rounded-full bg-primary" />
+                          ))}
+                          {checked > 0 && <span className="h-1.5 w-1.5 rounded-full border border-primary" data-testid="checkin-dot" />}
+                        </span>
                       </span>
                       {/* Event names show on wider screens; on a phone a small bar says there is something. */}
                       <span className="hidden flex-col gap-0.5 sm:flex">
@@ -255,6 +290,23 @@ function TimeGrid({ days, c, minWidth }: { days: Date[]; c: Common; minWidth: nu
                       >
                         <span className="block truncate font-semibold">{b.plan.title}</span>
                         <span className="block truncate text-[11px] text-muted-foreground">{clock(b.plan.start)}</span>
+                      </button>
+                    )
+                  })}
+                  {(c.checkins.get(dayKey(d)) ?? []).map((ck) => {
+                    const t = new Date(ck.createdAt)
+                    const min = t.getHours() * 60 + t.getMinutes()
+                    return (
+                      <button
+                        key={ck.recordId}
+                        type="button"
+                        data-testid="checkin-marker"
+                        onClick={() => c.onSelect(d)}
+                        aria-label={`Check-in: ${feelingLine(ck.data)}, ${clock(ck.createdAt)}`}
+                        style={{ top: (min / 60) * HOUR_PX }}
+                        className="absolute left-0.5 z-20 max-w-[60%] truncate rounded-full border border-dashed border-primary bg-card px-2 py-0.5 text-[11px] text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                      >
+                        {label(MOOD, ck.data.mood)} · {label(ENERGY, ck.data.energy)}
                       </button>
                     )
                   })}
