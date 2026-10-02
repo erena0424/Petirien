@@ -8,7 +8,8 @@ describe('partOfDay', () => {
   it('splits the day at 5, 11, 17 and 22 (local)', () => {
     expect(partOfDay(at(5))).toBe('morning')
     expect(partOfDay(at(10))).toBe('morning')
-    expect(partOfDay(at(11))).toBe('afternoon')
+    expect(partOfDay(at(11))).toBe('morning') // 11 AM is still morning
+    expect(partOfDay(at(12))).toBe('afternoon') // from noon
     expect(partOfDay(at(16))).toBe('afternoon')
     expect(partOfDay(at(17))).toBe('evening')
     expect(partOfDay(at(21))).toBe('evening')

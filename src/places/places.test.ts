@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { FAVORITE_EVERY, ROTATE_AMONG, SNOOZE_DAYS, homeKind, suggestedKinds, applyPlaceFeedback, daysUntilBack, isHidden, pickPlace, suggestionLine, type Place, type Rating, type Ratings, MAX_PLACES, PLACE_KINDS, distanceKm, formatDistance, isKind, llParam, mapsUrl, parsePlaces, prefersMiles, roundCoord, roundOrigin, validOrigin } from './places'
+import { safeThumbnail, FAVORITE_EVERY, ROTATE_AMONG, SNOOZE_DAYS, homeKind, suggestedKinds, applyPlaceFeedback, daysUntilBack, isHidden, pickPlace, suggestionLine, type Place, type Rating, type Ratings, MAX_PLACES, PLACE_KINDS, distanceKm, formatDistance, isKind, llParam, mapsUrl, parsePlaces, prefersMiles, roundCoord, roundOrigin, validOrigin } from './places'
 
 const origin = { lat: 40.7536, lng: -73.9832 }
 const item = (title: string, lat: number, lng: number, extra: Record<string, unknown> = {}) => ({
@@ -109,7 +109,7 @@ describe('suggestionLine', () => {
 const NOW = Date.parse('2026-10-02T12:00:00Z')
 const DAY = 86_400_000
 const rate = (entries: [string, Rating, number?][]): Ratings => new Map(entries.map(([id, rating, at]) => [id, { rating, at: at ?? NOW }]))
-const mkPlace = (id: string): Place => ({ id, name: id, type: 'Park', address: '', rating: 4, openState: '', distanceKm: 1, mapsUrl: 'https://www.google.com/maps/search/?api=1&query=x' })
+const mkPlace = (id: string): Place => ({ id, name: id, type: 'Park', address: '', rating: 4, openState: '', thumbnail: null, distanceKm: 1, mapsUrl: 'https://www.google.com/maps/search/?api=1&query=x' })
 
 describe('"not right now" is not forever', () => {
   it('sits out for a while, then comes back; "never" stays hidden', () => {
@@ -205,5 +205,23 @@ describe('which kinds of place, day by day', () => {
   it('Home: cycles through every kind of place', () => {
     expect(new Set(Array.from({ length: 8 }, (_, d) => homeKind(d)))).toEqual(new Set(['park', 'cafe', 'library', 'garden']))
     expect(homeKind(3)).toBe(homeKind(7))
+  })
+})
+
+describe('place photos', () => {
+  it('only shows photos hosted by Google or SerpApi over https', () => {
+    expect(safeThumbnail('https://lh3.googleusercontent.com/grass-cs/abc=w1000')).toBe('https://lh3.googleusercontent.com/grass-cs/abc=w1000')
+    expect(safeThumbnail('https://serpapi.com/searches/x/images/y.jpeg')).toContain('serpapi.com')
+    expect(safeThumbnail('https://encrypted-tbn0.gstatic.com/images?q=1')).toContain('gstatic.com')
+    for (const bad of ['http://lh3.googleusercontent.com/a', 'https://evil.example/a.png', 'https://googleusercontent.com.evil.example/a', 'javascript:alert(1)', 'data:image/png;base64,AAAA', '', null, undefined, 42, 'https://' + 'a'.repeat(2000) + '.googleusercontent.com/x']) {
+      expect(safeThumbnail(bad), String(bad)).toBeNull()
+    }
+  })
+  it('a place carries its photo, preferring the original and falling back to the SerpApi copy', () => {
+    const origin = { lat: 40.7536, lng: -73.9832 }
+    const base = { title: 'P', place_id: 'p', gps_coordinates: { latitude: 40.7545, longitude: -73.982 } }
+    expect(parsePlaces({ local_results: [{ ...base, thumbnail: 'https://lh3.googleusercontent.com/a', serpapi_thumbnail: 'https://serpapi.com/b' }] }, origin)[0]!.thumbnail).toBe('https://lh3.googleusercontent.com/a')
+    expect(parsePlaces({ local_results: [{ ...base, thumbnail: 'https://evil.example/a', serpapi_thumbnail: 'https://serpapi.com/b' }] }, origin)[0]!.thumbnail).toBe('https://serpapi.com/b')
+    expect(parsePlaces({ local_results: [{ ...base }] }, origin)[0]!.thumbnail).toBeNull()
   })
 })

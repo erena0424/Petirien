@@ -22,6 +22,7 @@ const place = (title: string, lat: number, lng: number, type: string) => ({
   type,
   address: '12 Quiet Street',
   open_state: 'Open · Closes 8 PM',
+  thumbnail: `https://lh3.googleusercontent.com/test-photo-${title.replace(/\W/g, '')}`,
 })
 // Each list is in the service's own (relevance) order, not by distance.
 const PARKS = { local_results: [place('Faraway Green', 40.79, -73.95, 'Park'), place('Corner Park', 40.7545, -73.982, 'Park'), place('Mid Park', 40.768, -73.972, 'Park'), place('Tiny Garden Park', 40.754, -73.984, 'Park')] }
@@ -50,7 +51,11 @@ async function fixDay(page: Page, month = 0, day = 4) {
 }
 
 async function mockMaps(page: Page) {
-  await tuck(page) // first: a route registered later wins, so this test's own Maps route must come after the default one
+  await tuck(page)
+  // The place photos: a tiny picture for any Google image link, so no real network is needed.
+  await page.route('https://lh3.googleusercontent.com/**', (route) =>
+    route.fulfill({ status: 200, contentType: 'image/gif', body: Buffer.from('R0lGODlhAQABAIAAAAUEBAAAACwAAAAAAQABAAACAkQBADs=', 'base64') }),
+  ) // first: a route registered later wins, so this test's own Maps route must come after the default one
   const calls: any[] = []
   await page.route('**/api/integrations/serpapi/places-search', (route) => {
     const body = route.request().postDataJSON()
@@ -115,6 +120,9 @@ test('the card is video, then a concrete place to walk to and one to spend time 
   await expect(lines).toHaveCount(2)
   await expect(lines.nth(0)).toHaveText(/^Take a walk to (Corner Park|Tiny Garden Park|Mid Park)$/)
   await expect(lines.nth(1)).toHaveText(/^Spend quality time at (Blue Door Cafe|Far Cafe)$/)
+  await expect(placeCard.getByTestId('place-photo')).toHaveCount(2) // a photo for each place, as a small picture next to its name
+  await expect(placeCard.getByTestId('place-photo').first()).toBeVisible()
+  await expect(placeCard).toContainText('Places and photos from Google Maps')
   await expect(placeCard).not.toContainText('Faraway Green') // further than an easy walk, whatever order the service listed it
   await expect(placeCard.getByRole('link', { name: 'Open in Google Maps' }).first()).toHaveAttribute('href', /^https:\/\/www\.google\.com\/maps\/search\/\?api=1&query=/)
   await expect(placeCard.getByRole('group', { name: 'Kind of place' })).toHaveCount(0) // the other kinds are tucked away

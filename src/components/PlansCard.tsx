@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { CalendarDays, RefreshCw } from 'lucide-react'
+import { AuthOverlay, useAuthStatus } from 'deepspace'
 import { Button } from '@/components/ui'
 import { useBunnyChat } from '@/lib/bunny-chat'
 import type { usePlans } from '@/lib/use-plans'
@@ -18,12 +19,28 @@ const smallBtn = 'min-h-10 px-3 text-sm'
  * type one. This is not an agenda: it shows a handful of things and nothing else.
  */
 export function PlansCard({ plans }: Props) {
+  const { isSignedIn, isLoaded } = useAuthStatus()
+  const [signIn, setSignIn] = useState(false)
   const chat = useBunnyChat()
   const [title, setTitle] = useState('')
   const [time, setTime] = useState('')
   const [adding, setAdding] = useState(false)
   const [formError, setFormError] = useState('')
   const now = new Date()
+  if (isLoaded && !isSignedIn) {
+    return (
+      <section data-testid="plans" aria-labelledby="plans-heading">
+        <h2 id="plans-heading" className="text-lg font-bold text-foreground">
+          Your plans
+        </h2>
+        <p className="mt-2 text-sm text-muted-foreground">Sign in to see what&apos;s coming up on your calendar and to reflect on it with the bunny.</p>
+        <Button variant="outline" className="mt-2 min-h-11" onClick={() => setSignIn(true)}>
+          Sign in
+        </Button>
+        {signIn && <AuthOverlay onClose={() => setSignIn(false)} />}
+      </section>
+    )
+  }
   const all = [...plans.calendarPlans, ...plans.typed].sort((a, b) => Date.parse(a.start) - Date.parse(b.start))
   const loading = plans.state.kind === 'loading'
 

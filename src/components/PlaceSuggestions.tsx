@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { MapPin, ThumbsDown, ThumbsUp } from 'lucide-react'
+import { AuthOverlay, useAuthStatus } from 'deepspace'
 import { Button } from '@/components/ui'
 import { usePlaceFeedback } from '@/lib/use-place-feedback'
 import { usePlaces } from '@/lib/use-places'
@@ -38,6 +39,7 @@ interface Props {
 
 /** One place, said as something to do, with how far, a link to Google Maps, and a good / not for me pair. */
 function PlaceRow({ kind, place, miles, onRate, rating }: { kind: PlaceKindId; place: Place; miles: boolean; onRate: (r: 'yes' | 'no') => void; rating?: 'yes' }) {
+  const [photoFailed, setPhotoFailed] = useState(false)
   const btn = (active: boolean) =>
     cn(
       'inline-flex h-10 w-10 items-center justify-center rounded-lg border text-foreground hover:bg-secondary focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
@@ -46,7 +48,19 @@ function PlaceRow({ kind, place, miles, onRate, rating }: { kind: PlaceKindId; p
   return (
     <li data-testid="place" className="rounded-xl border border-border bg-card p-3">
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+        {place.thumbnail && !photoFailed && (
+          // A decorative photo (the name next to it says what it is). If it cannot load, it simply is not there.
+          <img
+            src={place.thumbnail}
+            alt=""
+            loading="lazy"
+            referrerPolicy="no-referrer"
+            data-testid="place-photo"
+            onError={() => setPhotoFailed(true)}
+            className="h-16 w-16 shrink-0 rounded-lg bg-muted object-cover sm:h-20 sm:w-20"
+          />
+        )}
+        <div className="min-w-0 flex-1">
           <p data-testid="place-line" className="text-base font-semibold leading-snug text-foreground">
             {suggestionLine(kind, place.name)}
           </p>
@@ -85,11 +99,15 @@ export function PlaceSuggestions({ kinds: kindsProp, autoEveryMs, showOthers = t
   // Today's pair (something outside, somewhere to sit) unless told otherwise; it changes from day to day.
   const kinds = kindsProp ?? suggestedKinds(dayOfYear(new Date()))
   const { state, find, findSuggested } = usePlaces()
+  const { isSignedIn, isLoaded } = useAuthStatus()
+  const [signIn, setSignIn] = useState(false)
   const { ratings, rate, ready } = usePlaceFeedback()
   const [permission, setPermission] = useState<'granted' | 'other'>('other')
   const [othersOpen, setOthersOpen] = useState(false)
   const [lastNo, setLastNo] = useState<Place | null>(null)
   const asked = useRef(false)
+  const signedInRef = useRef(isSignedIn)
+  signedInRef.current = isSignedIn
   const busy = state.kind === 'locating' || state.kind === 'searching'
   const miles = typeof navigator !== 'undefined' && prefersMiles(navigator.language)
 
@@ -103,6 +121,7 @@ export function PlaceSuggestions({ kinds: kindsProp, autoEveryMs, showOthers = t
       .then((r) => {
         if (r.state !== 'granted') return
         setPermission('granted')
+        if (!signedInRef.current) return // a signed-out visitor is asked to sign in first; nothing is searched
         if (autoEveryMs === undefined || autoDue(autoEveryMs)) {
           if (autoEveryMs !== undefined) markAuto()
           void findSuggested(kinds)
@@ -127,9 +146,17 @@ export function PlaceSuggestions({ kinds: kindsProp, autoEveryMs, showOthers = t
           <p className="mt-1 text-xs text-muted-foreground">
             Your browser will ask first. Your location is rounded to about a kilometre, used once to look for places, and not saved.
           </p>
-          <Button type="button" className="mt-3 min-h-11" onClick={() => void findSuggested(kinds)}>
-            {permission === 'granted' ? 'Show places near me' : 'Share my location'}
-          </Button>
+          {isLoaded && !isSignedIn ? (
+            // Places are a paid search billed to the person, so they need to be signed in first.
+            <Button type="button" className="mt-3 min-h-11" onClick={() => setSignIn(true)}>
+              Sign in to see places
+            </Button>
+          ) : (
+            <Button type="button" className="mt-3 min-h-11" onClick={() => void findSuggested(kinds)}>
+              {permission === 'granted' ? 'Show places near me' : 'Share my location'}
+            </Button>
+          )}
+          {signIn && <AuthOverlay onClose={() => setSignIn(false)} />}
         </div>
       )}
 
@@ -166,11 +193,14 @@ export function PlaceSuggestions({ kinds: kindsProp, autoEveryMs, showOthers = t
                 I didn&apos;t find anything new within an easy walk. Try another kind below, or just walk anywhere you like.
               </p>
             ) : (
-              <ul className="space-y-2" data-testid="places-list">
-                {rows.map(({ kind, place }) => (
-                  <PlaceRow key={`${kind}-${place.id}`} kind={kind} place={place} miles={miles} rating={ratings.get(place.id)?.rating === 'yes' ? 'yes' : undefined} onRate={(r) => rateIt(place, r)} />
-                ))}
-              </ul>
+              <div>
+                <ul className="space-y-2" data-testid="places-list">
+                  {rows.map(({ kind, place }) => (
+                    <PlaceRow key={`${kind}-${place.id}`} kind={kind} place={place} miles={miles} rating={ratings.get(place.id)?.rating === 'yes' ? 'yes' : undefined} onRate={(r) => rateIt(place, r)} />
+                  ))}
+                </ul>
+                <p className="mt-2 text-xs text-muted-foreground">Places and photos from Google Maps.</p>
+              </div>
             )
           })()}
         </>

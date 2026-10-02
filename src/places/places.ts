@@ -26,6 +26,8 @@ export interface Place {
   address: string
   rating: number | null
   openState: string
+  /** A small photo of the place from Google, or null. Only ever a link on a known Google or SerpApi image host. */
+  thumbnail: string | null
   /** Straight-line kilometres from the rounded origin. */
   distanceKm: number
   mapsUrl: string
@@ -60,6 +62,19 @@ export function distanceKm(a: Origin, b: Origin): number {
   const dLng = rad(b.lng - a.lng)
   const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2
   return 2 * 6371 * Math.asin(Math.min(1, Math.sqrt(h)))
+}
+
+const IMAGE_HOSTS = [/(^|\.)googleusercontent\.com$/, /(^|\.)ggpht\.com$/, /(^|\.)gstatic\.com$/, /(^|\.)serpapi\.com$/]
+
+/** A place photo link we are willing to show: https, on a Google or SerpApi image host, never anything else a response might hold. */
+export function safeThumbnail(v: unknown): string | null {
+  if (typeof v !== 'string' || v.length > 1500) return null
+  try {
+    const u = new URL(v)
+    return u.protocol === 'https:' && IMAGE_HOSTS.some((h) => h.test(u.hostname)) ? u.toString() : null
+  } catch {
+    return null
+  }
 }
 
 const str = (v: unknown, max: number) => (typeof v === 'string' ? v.replace(/\s+/g, ' ').trim().slice(0, max) : '')
@@ -97,6 +112,7 @@ export function parsePlaces(data: unknown, origin: Origin, max = MAX_PLACES): Pl
       address: str(r.address, 120),
       rating: typeof r.rating === 'number' && r.rating >= 0 && r.rating <= 5 ? r.rating : null,
       openState: str(r.open_state, 60),
+      thumbnail: safeThumbnail(r.thumbnail) ?? safeThumbnail(r.serpapi_thumbnail),
       distanceKm: km,
       mapsUrl: mapsUrl(name, placeId),
     })

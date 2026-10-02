@@ -6,6 +6,7 @@ import { useHomeIdeas } from '@/lib/use-home-ideas'
 import { useSavedVideos } from '@/lib/use-saved'
 import { watchUrl, type PlayerErrorKind } from '@/lib/youtube'
 import type { HomeIdea } from '../contract'
+import { chooseHomeActivities } from '../recommend/home-pick'
 import { Instructions } from './checkin/Instructions'
 import { SaveButton } from './SaveButton'
 import { YouTubePlayer } from './YouTubePlayer'
@@ -18,6 +19,7 @@ export function HomeIdeas() {
   const state = useHomeIdeas()
   const saved = useSavedVideos()
   if (state.kind === 'error') return null // Home still has its written suggestion; nothing to apologise for here
+  if (state.kind === 'signedOut') return <GenericIdeas />
   return (
     <section aria-labelledby="ideas-heading" data-testid="home-ideas" className="mt-10">
       <h2 id="ideas-heading" className="text-lg font-bold text-foreground">
@@ -44,6 +46,30 @@ export function HomeIdeas() {
           ))}
         </ul>
       )}
+    </section>
+  )
+}
+
+/**
+ * For visitors who are not signed in: the same kind of ideas Home would offer, as plain ideas with their steps (no video
+ * search, so nothing is spent), so the site shows what it offers before anyone signs in.
+ */
+function GenericIdeas() {
+  const ideas: HomeIdea[] = chooseHomeActivities(new Date()).map((a) => ({ activityId: a.id, activityTitle: a.title, video: null, reason: a.blurb }))
+  if (ideas.length === 0) return null
+  return (
+    <section aria-labelledby="ideas-heading" data-testid="home-ideas" className="mt-10">
+      <h2 id="ideas-heading" className="text-lg font-bold text-foreground">
+        Ideas for right now
+      </h2>
+      <ul className="mt-3 space-y-4">
+        {ideas.map((idea) => (
+          <IdeaCard key={idea.activityId} idea={idea} saved={false} canSave={false} onToggleSave={() => undefined} />
+        ))}
+      </ul>
+      <p data-testid="home-ideas-signin" className="mt-3 text-sm text-muted-foreground">
+        Sign in and I&apos;ll find a video for each of these, and suggest places near you.
+      </p>
     </section>
   )
 }

@@ -1,5 +1,3 @@
-@import "@fontsource-variable/nunito";
-@import "@fontsource/patrick-hand/latin-400.css";
 @import "tailwindcss" source(none);
 @import "./themes.css";
 
@@ -237,7 +235,8 @@
 
 /* The person's own journal words: a handwritten feel, only where the words are theirs. */
 .font-hand {
-  font-family: 'Patrick Hand', 'Nunito Variable', ui-rounded, cursive;
+  /* The calligraphic hand Apple devices ship is what Elena liked; everyone else gets the self-hosted Patrick Hand. */
+  font-family: 'Apple Chancery', 'Snell Roundhand', 'Patrick Hand', 'Nunito Variable', ui-rounded, cursive;
   font-size: 1.2em;
   line-height: 1.5;
 }

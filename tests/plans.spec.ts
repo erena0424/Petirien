@@ -92,7 +92,7 @@ test('plans: a short list from the calendar with times only for what is coming, 
 
   // The person answers; the model sees the opener as part of the conversation, and nothing else about the event.
   await cara.page.getByLabel('Tell the bunny something').fill('a bit unsure, honestly')
-  await cara.page.getByRole('button', { name: 'Send' }).click()
+  await cara.page.getByRole('button', { name: 'Send', exact: true }).click()
   await expect(cara.page.getByTestId('bunny-words')).toContainText('What part is on your mind most?')
   expect(replies).toHaveLength(1)
   expect(replies[0].messages).toEqual([
@@ -115,7 +115,7 @@ test('the bunny may offer a small idea, only as an optional link that fits the t
   await cara.page.getByRole('button', { name: `Reflect on this: ${COMING}` }).click()
   await expect(cara.page.getByTestId('bunny-offer')).toHaveCount(0) // no offer just because a plan was opened
   await cara.page.getByLabel('Tell the bunny something').fill('I could use a minute to settle')
-  await cara.page.getByRole('button', { name: 'Send' }).click()
+  await cara.page.getByRole('button', { name: 'Send', exact: true }).click()
   const offer = cara.page.getByTestId('bunny-offer')
   await expect(offer).toBeVisible()
   await expect(offer).toHaveAttribute('href', '/checkin?minutes=30') // the plan is about 95 minutes away

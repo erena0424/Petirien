@@ -67,7 +67,7 @@ async function openPanel(page: Page) {
 async function sayOnHome(page: Page, text: string) {
   await openPanel(page)
   await page.getByLabel('Tell the bunny something').fill(text)
-  await page.getByRole('button', { name: 'Send' }).click()
+  await page.getByRole('button', { name: 'Send', exact: true }).click()
 }
 
 test('Home has the floating bunny with its words beside it: a greeting first, then its latest reply, with no chat card', async ({ users }) => {
@@ -138,7 +138,7 @@ test('a conversation can be continued from Messages like texting', async ({ user
   await eli.page.goto('/messages')
   await eli.page.getByTestId('conversation-item').filter({ hasText: FIRST }).click()
   await eli.page.getByLabel('Tell the bunny something').fill('and then I felt a bit better')
-  await eli.page.getByRole('button', { name: 'Send' }).click()
+  await eli.page.getByRole('button', { name: 'Send', exact: true }).click()
   await expect(eli.page.getByTestId('chat-bunny')).toHaveCount(2)
   // The model sees the earlier saved messages, not just the new one.
   expect(seen.reply[0].messages.map((m: any) => m.role)).toEqual(['user', 'bunny', 'user'])
@@ -173,7 +173,7 @@ test('starting a new conversation keeps the old one, and asks for notes about th
   const seen = await mockBunny(eli.page)
   await eli.page.goto('/messages')
   await eli.page.getByLabel('Tell the bunny something').fill(FIRST)
-  await eli.page.getByRole('button', { name: 'Send' }).click()
+  await eli.page.getByRole('button', { name: 'Send', exact: true }).click()
   await expect(eli.page.getByTestId('chat-bunny')).toBeVisible()
   await expect(eli.page.getByTestId('conversation-item')).toHaveCount(1, { timeout: 15_000 })
 
@@ -191,7 +191,7 @@ test('starting a new conversation keeps the old one, and asks for notes about th
   expect(seen.notes[1]).toEqual({ conversationId: oldId, force: true })
 
   await eli.page.getByLabel('Tell the bunny something').fill('a second, different thing')
-  await eli.page.getByRole('button', { name: 'Send' }).click()
+  await eli.page.getByRole('button', { name: 'Send', exact: true }).click()
   await expect(eli.page.getByTestId('conversation-item')).toHaveCount(2, { timeout: 15_000 })
 })
 
@@ -288,7 +288,7 @@ test('the text box grows as you type, stops growing at a limit, and shrinks back
   expect(await box.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true)
 
   await box.fill('hello')
-  await eli.page.getByRole('button', { name: 'Send' }).click()
+  await eli.page.getByRole('button', { name: 'Send', exact: true }).click()
   await expect(eli.page.getByTestId('bunny-words')).toContainText('(1)')
   expect(Math.abs((await height()) - one)).toBeLessThan(4) // back to one line
 })
@@ -426,9 +426,9 @@ test('"Too formal" and "Too informal" change the style; "Something else" sends y
   await eli.page.getByRole('button', { name: 'Something else…' }).click()
   await expect(eli.page.getByLabel('How would you like me to talk?')).toBeVisible()
   const feedbackBox = eli.page.getByTestId('feedback-typing')
-  await expect(feedbackBox.getByRole('button', { name: 'Send' })).toBeDisabled() // nothing typed yet
+  await expect(feedbackBox.getByRole('button', { name: 'Send', exact: true })).toBeDisabled() // nothing typed yet
   await eli.page.getByLabel('How would you like me to talk?').fill('please use simpler words')
-  await feedbackBox.getByRole('button', { name: 'Send' }).click()
+  await feedbackBox.getByRole('button', { name: 'Send', exact: true }).click()
   await expect.poll(() => seen.reply.length).toBe(before + 1) // sent to the bunny as an ordinary message
   expect(seen.reply[before].messages.at(-1)).toEqual({ role: 'user', text: 'please use simpler words' })
   await expect(eli.page.getByTestId('feedback-typing')).toHaveCount(0) // the box closes after sending
@@ -459,12 +459,12 @@ test('feedback controls come back for each new reply, and appear once on Message
   await mockBunny(eli.page)
   await eli.page.goto('/messages')
   await eli.page.getByLabel('Tell the bunny something').fill('first thing')
-  await eli.page.getByRole('button', { name: 'Send' }).click()
+  await eli.page.getByRole('button', { name: 'Send', exact: true }).click()
   await expect(eli.page.getByTestId('chat-bunny')).toHaveCount(1)
   await eli.page.getByRole('button', { name: 'This reply was good' }).click()
   await expect(eli.page.getByTestId('feedback-ack')).toBeVisible()
   await eli.page.getByLabel('Tell the bunny something').fill('second thing')
-  await eli.page.getByRole('button', { name: 'Send' }).click()
+  await eli.page.getByRole('button', { name: 'Send', exact: true }).click()
   await expect(eli.page.getByTestId('chat-bunny')).toHaveCount(2)
   await expect(eli.page.getByTestId('feedback-icons')).toHaveCount(1) // only under the latest reply, fresh again
   await expect(eli.page.getByTestId('feedback-ack')).toHaveCount(0)

@@ -7,11 +7,11 @@ import { CATALOG, getActivity, type Activity, type Category } from '../catalog'
 
 export type Part = 'morning' | 'afternoon' | 'evening' | 'night'
 
-/** Local hour: 5-10 morning, 11-16 afternoon, 17-21 evening, otherwise night. */
+/** Local hour: 5-11 morning (until noon), 12-16 afternoon, 17-21 evening, otherwise night. */
 export function partOfDay(d: Date): Part {
   const h = d.getHours()
-  if (h >= 5 && h < 11) return 'morning'
-  if (h >= 11 && h < 17) return 'afternoon'
+  if (h >= 5 && h < 12) return 'morning'
+  if (h >= 12 && h < 17) return 'afternoon'
   if (h >= 17 && h < 22) return 'evening'
   return 'night'
 }

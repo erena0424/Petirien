@@ -69,15 +69,15 @@ test('the bunny floats on every page except Messages, and never covers the suppo
   expect(inputBox.y).toBeGreaterThanOrEqual(wordsBox.y + wordsBox.height - 2) // below the words, not beside them
   expect(Math.abs(inputBox.x - wordsBox.x)).toBeLessThan(20)
   await page.getByLabel('Tell the bunny something').fill('rough day')
-  await page.getByRole('button', { name: 'Send' }).click()
+  await page.getByRole('button', { name: 'Send', exact: true }).click()
   await expect(page.getByTestId('floating-thread')).toContainText('What felt heaviest?')
 
   // Older messages shrink, fade, and finally disappear; the latest stay full size.
   for (let i = 2; i <= 5; i++) {
     await page.getByLabel('Tell the bunny something').fill(`message number ${i}`)
-    await page.getByRole('button', { name: 'Send' }).click()
+    await page.getByRole('button', { name: 'Send', exact: true }).click()
     await expect(page.getByTestId('bunny-words')).toContainText('What felt heaviest?')
-    await expect(page.getByRole('button', { name: 'Send' })).toBeDisabled() // text box empty again
+    await expect(page.getByRole('button', { name: 'Send', exact: true })).toBeDisabled() // text box empty again
   }
   await page.waitForTimeout(600) // let the size and fade transitions finish
   const items = page.getByTestId('floating-thread').locator('> li')
