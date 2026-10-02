@@ -109,7 +109,7 @@ function SampleVideo({ activityId, title, blurb, videoId, onSave }: { activityId
   return (
     <li data-testid="sample-video" className="overflow-hidden rounded-3xl border border-border bg-card shadow-[var(--shadow-card)] md:col-span-2">
       <div className="sm:flex">
-      <div className="relative sm:w-[46%] sm:shrink-0">
+      <div className="relative sm:w-[34%] sm:shrink-0">
         <img src={thumbnailFor(videoId)} alt="" loading="lazy" data-testid="sample-video-thumb" className="aspect-video w-full bg-muted object-cover sm:h-full" />
         {!playing && (
           <span aria-hidden className="pointer-events-none absolute inset-0 flex items-center justify-center">

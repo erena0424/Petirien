@@ -51,8 +51,8 @@ export default function Landing() {
           </div>
 
           <div className="relative flex shrink-0 items-center justify-center">
-            <Blob className="absolute h-72 w-72 sm:h-[30rem] sm:w-[30rem]" />
-            <Bunny className="relative w-56 sm:w-96" />
+            <Blob className="absolute h-64 w-64 sm:h-[24rem] sm:w-[24rem]" />
+            <Bunny className="relative w-48 sm:w-80" />
             <Cloud className="absolute -top-2 right-0 w-20 sm:right-2 sm:w-24" />
             <Star className="absolute bottom-6 left-0 w-9 sm:left-4 sm:w-11" />
             <Sparkle className="absolute left-6 top-4 w-6 sm:left-10 sm:top-6" />
@@ -62,7 +62,7 @@ export default function Landing() {
         <ol className="mt-16 grid w-full max-w-6xl gap-4 text-left sm:grid-cols-3" aria-label="How it works">
           {STEPS.map((s) => (
             <li key={s.n} className="rounded-3xl border border-border bg-card p-7 shadow-[var(--shadow-card)]">
-              <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[var(--color-apricot)] text-xl font-semibold text-[color:var(--color-ink)]">{s.n}</span>
+              <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[var(--color-backdrop)] text-xl font-semibold text-[color:var(--color-ink)]">{s.n}</span>
               <h2 className="mt-4 text-2xl font-semibold text-foreground">{s.title}</h2>
               <p className="mt-2 text-lg leading-relaxed text-muted-foreground">{s.text}</p>
             </li>

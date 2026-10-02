@@ -34,8 +34,8 @@ export function PublicHome() {
     <div className="mx-auto w-full max-w-6xl px-5 py-10 sm:px-8">
       <section aria-label="Welcome" data-testid="home-hero" className="flex flex-col items-center gap-8 text-center md:flex-row md:items-center md:gap-14 md:text-left">
         <div className="relative flex shrink-0 items-center justify-center">
-          <Blob className="absolute h-64 w-64 sm:h-96 sm:w-96" />
-          <Bunny className="relative w-52 sm:w-80" />
+          <Blob className="absolute h-56 w-56 sm:h-80 sm:w-80" />
+          <Bunny className="relative w-44 sm:w-64" />
           <Cloud className="absolute -top-1 right-0 w-20 sm:right-2 sm:w-28" />
           <Star className="absolute bottom-6 left-0 w-9 sm:left-4 sm:w-12" />
           <Sparkle className="absolute left-6 top-4 w-6 sm:left-10 sm:top-8 sm:w-8" />

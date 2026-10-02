@@ -42,10 +42,10 @@
   --font-display: 'Fredoka Variable', 'Nunito Variable', ui-rounded, sans-serif;
   /* Decorative accents (calm theme sets the real values): never behind small text. */
   --color-blush: #ffe1d6;
-  --color-butter: #ffe9a8;
-  --color-ink: #30243d;
-  --color-apricot: #f5b895;
-  --color-apricot-soft: #ffebdd;
+  --color-butter: #f4d98b;
+  --color-ink: #29243b;
+  --color-backdrop: #e3e9fc;
+  --color-backdrop-soft: #eef2fd;
 
   /*
    * Map the rounded-* utilities onto --radius so a theme (or you) can change

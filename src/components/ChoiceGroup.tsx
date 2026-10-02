@@ -58,7 +58,7 @@ export function ChoiceGroup<T extends string | number>({
                   'flex min-h-11 cursor-pointer items-center justify-center gap-1.5 rounded-xl border px-4 py-2 text-center text-base transition-colors',
                   'border-input bg-card text-foreground hover:bg-secondary',
                   'peer-focus-visible:ring-[3px] peer-focus-visible:ring-ring/50',
-                  selected && 'border-primary bg-[var(--color-apricot-soft)] font-semibold',
+                  selected && 'border-primary bg-[var(--color-backdrop-soft)] font-semibold',
                 )}
               >
                 {selected && <Check aria-hidden className="h-4 w-4 shrink-0 text-primary" />}
