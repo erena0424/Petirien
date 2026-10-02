@@ -182,10 +182,6 @@ export default function JournalPage() {
               {rangeLabel(view, anchor)}
             </h2>
 
-            <div className="mt-4">
-              <MoodChart rows={checkinRecords} view={view} anchor={anchor} />
-            </div>
-
             {view !== 'list' && <CalendarBar state={calendar.state} onLoad={() => void calendar.load()} />}
 
             <div className="mt-4">
@@ -212,6 +208,10 @@ export default function JournalPage() {
                   ))}
                 </ul>
               )}
+            </div>
+
+            <div className="mt-8">
+              <MoodChart rows={checkinRecords} view={view} anchor={anchor} />
             </div>
           </>
         )}
