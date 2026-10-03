@@ -110,7 +110,7 @@ export function CheckinForm({ values, onChange, onSubmit, submitting }: Props) {
           aria-expanded={more}
           aria-controls="more-options"
           onClick={() => setMore((m) => !m)}
-          className="flex min-h-11 w-full items-center justify-between gap-3 rounded-xl border border-border bg-card px-4 py-2 text-left hover:bg-secondary focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          className="flex min-h-11 w-full items-center justify-between gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-left hover:bg-secondary focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
         >
           <span>
             <span className="block text-sm font-semibold text-foreground">More options</span>
@@ -168,7 +168,7 @@ export function CheckinForm({ values, onChange, onSubmit, submitting }: Props) {
         </div>
       </div>
 
-      <Button type="submit" size="lg" className="w-full" disabled={!input} loading={submitting}>
+      <Button type="submit" size="lg" className="min-h-14 w-full rounded-full text-lg" disabled={!input} loading={submitting}>
         Show me a few ideas
       </Button>
       {!input && (

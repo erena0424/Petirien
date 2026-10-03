@@ -10,6 +10,7 @@ import { Link } from 'react-router-dom'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { ConfirmModal, Button } from '@/components/ui'
 import { Bunny } from '@/components/Bunny'
+import { EntryDialog } from '@/components/journal/EntryDialog'
 import { EventDialog } from '@/components/journal/EventDialog'
 import { DayView, MonthView, WeekView, type CheckinItem } from '@/components/journal/JournalCalendar'
 import { MoodChart } from '@/components/journal/MoodChart'
@@ -85,6 +86,7 @@ export default function JournalPage() {
   const [editing, setEditing] = useState<ReflectOn | null>(null)
   const [view, setViewState] = useState<View>(savedView)
   const [openEvent, setOpenEvent] = useState<Plan | null>(null)
+  const [openEntryId, setOpenEntryId] = useState<string | null>(null)
   const chat = useBunnyChat()
   const [anchor, setAnchor] = useState(() => startOfDay(new Date()))
 
@@ -114,12 +116,24 @@ export default function JournalPage() {
       /* storage unavailable: the view just is not remembered */
     }
   }
-  // Choosing a day from the month or week goes to that day in the same view (month) or opens it (week).
+  // Choosing a day in the month or the week opens that day.
   const select = (d: Date) => {
     setAnchor(startOfDay(d))
-    if (view === 'week') setView('day')
+    if (view !== 'list') setView('day')
   }
-  const common = { byDay, checkins, events: calendar.events, reflected, anchor, onSelect: select, onOpenEvent: setOpenEvent, onEdit: setEditing, onDelete: setDeleting }
+  const openEntry = openEntryId ? records.find((r) => r.recordId === openEntryId) ?? null : null
+  const common = {
+    byDay,
+    checkins,
+    events: calendar.events,
+    reflected,
+    anchor,
+    onSelect: select,
+    onOpenEvent: setOpenEvent,
+    onOpenEntry: (r: JournalRecord) => setOpenEntryId(r.recordId),
+    onEdit: setEditing,
+    onDelete: setDeleting,
+  }
 
   return (
     <div className="w-full">
@@ -223,6 +237,18 @@ export default function JournalPage() {
         entries={openEvent ? records.filter((r) => r.data.eventId === openEvent.id) : []}
         onClose={() => setOpenEvent(null)}
         onReflect={(p) => void chat.startAbout(p)}
+      />
+      <EntryDialog
+        record={openEntry}
+        onClose={() => setOpenEntryId(null)}
+        onEdit={(p) => {
+          setOpenEntryId(null)
+          setEditing(p)
+        }}
+        onDelete={(id) => {
+          setOpenEntryId(null)
+          setDeleting(id)
+        }}
       />
       <ReflectionDialog plan={editing} onClose={() => setEditing(null)} />
       <ConfirmModal

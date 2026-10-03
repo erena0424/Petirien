@@ -32,6 +32,8 @@ interface Common {
   anchor: Date
   onSelect: (d: Date) => void
   onOpenEvent: (p: Plan) => void
+  /** Open one journal entry to read it, from its title on the calendar. */
+  onOpenEntry: (r: JournalRecord) => void
   onEdit: (plan: ReflectOn) => void
   onDelete: (recordId: string) => void
 }
@@ -64,7 +66,7 @@ function EventRow({ plan, reflected, onOpen }: { plan: Plan; reflected: boolean;
 }
 
 /** What is on the calendar for the day chosen, then the journal for the whole stretch on screen (month, week or day). */
-export function DayAgenda({ byDay, events, reflected, anchor, view, onOpenEvent, onEdit, onDelete }: Omit<Common, 'onSelect'> & { view: View }) {
+export function DayAgenda({ byDay, events, reflected, anchor, view, onOpenEvent, onEdit, onDelete }: Omit<Common, 'onSelect' | 'onOpenEntry'> & { view: View }) {
   const planned = eventsOn(events, anchor)
   const { from, to } = chartRange(view, anchor, new Date())
   // Every entry whose day falls in the range, newest day first and newest first within a day: like the List tab, for these days.
@@ -134,6 +136,14 @@ export function MonthView(c: Common) {
                 const selected = sameDay(d, c.anchor)
                 return (
                   <td key={dayKey(d)} className="p-0 align-top">
+                    <div
+                      className={cn(
+                        'flex min-h-16 flex-col rounded-xl border sm:min-h-28',
+                        selected ? 'border-primary bg-accent' : 'border-transparent hover:bg-secondary',
+                        inMonth ? 'text-foreground' : 'text-muted-foreground opacity-60',
+                        sameDay(d, today) && !selected && 'border-input',
+                      )}
+                    >
                     <button
                       type="button"
                       data-testid="journal-day"
@@ -145,10 +155,8 @@ export function MonthView(c: Common) {
                       aria-label={`${fullDate(d)}, ${countLabel(written, 'journal entry').replace('journal entrys', 'journal entries')}, ${countLabel(planned.length, 'event')}, ${countLabel(checked, 'check-in')}`}
                       onClick={() => c.onSelect(d)}
                       className={cn(
-                        'flex min-h-16 w-full flex-col items-stretch gap-0.5 rounded-xl border p-1 text-left text-sm focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 sm:min-h-28',
-                        selected ? 'border-primary bg-accent font-semibold text-foreground' : 'border-transparent hover:bg-secondary',
-                        inMonth ? 'text-foreground' : 'text-muted-foreground opacity-60',
-                        sameDay(d, today) && !selected && 'border-input',
+                        'flex w-full flex-1 flex-col items-stretch gap-0.5 rounded-xl p-1 text-left text-sm focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+                        selected && 'font-semibold',
                       )}
                     >
                       <span className="flex items-center justify-between px-0.5">
@@ -178,6 +186,23 @@ export function MonthView(c: Common) {
                       </span>
                       {planned.length > 0 && <span aria-hidden className="mx-0.5 mt-auto h-1 rounded bg-secondary sm:hidden" />}
                     </button>
+                    {(c.byDay.get(dayKey(d)) ?? []).length > 0 && (
+                      <span className="hidden flex-col gap-0.5 px-1 pb-1 sm:flex">
+                        {(c.byDay.get(dayKey(d)) ?? []).slice(0, 2).map((r) => (
+                          <button
+                            key={r.recordId}
+                            type="button"
+                            data-testid="month-entry"
+                            onClick={() => c.onOpenEntry(r)}
+                            aria-label={`Read journal entry: ${r.data.title}`}
+                            className="truncate rounded-full border border-primary bg-card px-2 text-left text-[11px] leading-5 text-foreground hover:bg-secondary focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                          >
+                            {r.data.title}
+                          </button>
+                        ))}
+                      </span>
+                    )}
+                    </div>
                   </td>
                 )
               })}
@@ -312,7 +337,7 @@ function TimeGrid({ days, c, minWidth }: { days: Date[]; c: Common; minWidth: nu
                         key={r.recordId}
                         type="button"
                         data-testid="journal-marker"
-                        onClick={() => c.onSelect(d)}
+                        onClick={() => c.onOpenEntry(r)}
                         aria-label={`Journal: ${r.data.title}, ${clock(r.createdAt)}`}
                         style={{ top: (min / 60) * HOUR_PX }}
                         className="absolute right-0.5 z-20 max-w-[85%] truncate rounded-full border border-primary bg-card px-2 py-0.5 text-[11px] text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"

@@ -5,7 +5,7 @@
 
 import { PageHeader } from '@/components/PageHeader'
 import { useState } from 'react'
-import { Plus } from 'lucide-react'
+import { Plus, Trash2 } from 'lucide-react'
 import { Button, ConfirmModal } from '@/components/ui'
 import { BunnyThread } from '@/components/BunnyThread'
 import { JournalButton } from '@/components/JournalButton'
@@ -20,6 +20,7 @@ export default function MessagesPage() {
   return (
     <div className="w-full">
       <PageHeader
+        compact
         title="Chat"
         action={
           <Button variant="outline" className="rounded-full bg-card" onClick={() => chat.newConversation()}>
@@ -30,49 +31,54 @@ export default function MessagesPage() {
       >
         Talk to the bunny. Your conversations are saved here unless you choose not to.
       </PageHeader>
-      <div className="mx-auto w-full max-w-6xl px-5 py-8 sm:px-8">
-      <div className="grid items-start gap-6 md:grid-cols-[15rem_1fr]">
-        <nav aria-label="Conversations" className="md:max-h-[70vh] md:overflow-y-auto">
-          {!chat.conversationsReady && <p className="text-sm text-muted-foreground">Loading…</p>}
-          {chat.conversationsReady && chat.conversations.length === 0 && (
-            <p data-testid="messages-empty" className="rounded-xl bg-secondary p-4 text-sm text-foreground">
-              No saved conversations yet. Say something to the bunny and it will show up here.
-            </p>
-          )}
-          <ul className="max-h-48 space-y-2 overflow-y-auto md:max-h-none" data-testid="conversation-list">
-            {chat.conversations.map((c) => {
-              const active = c.recordId === chat.conversationId
-              return (
-                <li key={c.recordId} className="flex items-stretch gap-1">
-                  <button
-                    type="button"
-                    data-testid="conversation-item"
-                    aria-current={active ? 'true' : undefined}
-                    onClick={() => {
-                      chat.open(c.recordId)
-                    }}
-                    className={cn(
-                      'min-w-0 flex-1 rounded-xl border px-3 py-2 text-left hover:bg-secondary focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
-                      active ? 'border-primary bg-secondary' : 'border-border bg-card',
-                    )}
-                  >
-                    <span className="block truncate text-sm font-semibold text-foreground">{c.data.title || 'Conversation'}</span>
-                    <span className="block text-xs text-muted-foreground">{formatCheckinDate(new Date(c.data.lastMessageAt).toISOString())}</span>
-                  </button>
-                  <Button variant="ghost" size="sm" onClick={() => setDeleting(c.recordId)} aria-label={`Delete conversation: ${c.data.title || 'Conversation'}`}>
-                    Delete
-                  </Button>
-                </li>
-              )
-            })}
-          </ul>
-        </nav>
+      <div className="mx-auto w-full max-w-6xl px-5 py-6 sm:px-8">
+        <div className="grid items-start gap-5 md:grid-cols-[16rem_1fr]">
+          <nav aria-label="Conversations" className="md:max-h-[calc(100vh-15rem)] md:overflow-y-auto">
+            {!chat.conversationsReady && <p className="text-sm text-muted-foreground">Loading…</p>}
+            {chat.conversationsReady && chat.conversations.length === 0 && (
+              <p data-testid="messages-empty" className="rounded-2xl bg-secondary p-4 text-sm text-foreground">
+                No saved conversations yet. Say something to the bunny and it will show up here.
+              </p>
+            )}
+            <ul className="flex max-h-44 gap-2 overflow-x-auto md:max-h-none md:flex-col md:overflow-x-visible" data-testid="conversation-list">
+              {chat.conversations.map((c) => {
+                const active = c.recordId === chat.conversationId
+                return (
+                  <li key={c.recordId} className="group relative min-w-[13rem] md:min-w-0">
+                    <button
+                      type="button"
+                      data-testid="conversation-item"
+                      aria-current={active ? 'true' : undefined}
+                      onClick={() => {
+                        chat.open(c.recordId)
+                      }}
+                      className={cn(
+                        'w-full rounded-2xl border px-4 py-3 pr-11 text-left transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+                        active ? 'border-primary bg-secondary' : 'border-border bg-card',
+                      )}
+                    >
+                      <span className="block truncate text-base font-semibold text-foreground">{c.data.title || 'Conversation'}</span>
+                      <span className="block text-xs text-muted-foreground">{formatCheckinDate(new Date(c.data.lastMessageAt).toISOString())}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDeleting(c.recordId)}
+                      aria-label={`Delete conversation: ${c.data.title || 'Conversation'}`}
+                      className="absolute right-2 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground hover:bg-card hover:text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                    >
+                      <Trash2 aria-hidden className="h-4 w-4" />
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          </nav>
 
-        <div className="flex min-h-[calc(100vh-16rem)] flex-col justify-end rounded-3xl border border-border bg-card p-4 shadow-[var(--shadow-card)] sm:p-6">
-          <BunnyThread />
-          <JournalButton className="mt-4 flex flex-wrap items-center border-t border-border pt-3" />
+          <div className="flex h-[calc(100vh-15rem)] min-h-[30rem] flex-col rounded-3xl border border-border bg-card p-4 shadow-[var(--shadow-card)] sm:p-6">
+            <BunnyThread />
+            <JournalButton className="mt-3 flex flex-wrap items-center border-t border-border pt-3" />
+          </div>
         </div>
-      </div>
 
       <ConfirmModal
         open={deleting !== null}

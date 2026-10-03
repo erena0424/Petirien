@@ -19,6 +19,7 @@ import { Instructions } from '@/components/checkin/Instructions'
 import { PickCard } from '@/components/checkin/PickCard'
 import { WatchPanel, type Helpful } from '@/components/checkin/WatchPanel'
 import { Bunny } from '@/components/Bunny'
+import { Blob } from '@/components/Sparkle'
 import { CompanionSays } from '@/components/CompanionSays'
 import { SupportCard } from '@/components/SupportCard'
 import type { CheckinInput, Pick, RecommendResponse, VideoRef } from '../../../contract'
@@ -165,20 +166,25 @@ export default function CheckinPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 py-8">
+    <div className={stage.kind === 'form' ? 'w-full' : 'mx-auto w-full max-w-2xl px-4 py-8'}>
       {stage.kind === 'form' && (
         <>
-          <div className="mb-8 flex items-center gap-4">
-            <Bunny className="w-28 shrink-0 sm:w-40" />
-            <div>
-              <h1 ref={heading} className="text-3xl font-bold tracking-tight text-[color:var(--color-ink)]">
-                Let&apos;s do something little
-              </h1>
-              <p className="mt-1 text-base leading-relaxed text-muted-foreground">
-                Two taps is enough. I&apos;ll find something small that fits.
-              </p>
+          <header className="w-full bg-secondary/70">
+            <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-6 px-5 py-8 sm:px-8 sm:py-10">
+              <div className="min-w-0">
+                <h1 ref={heading} className="text-3xl font-bold leading-tight tracking-tight text-[color:var(--color-ink)] sm:text-4xl">
+                  Let&apos;s do something little
+                </h1>
+                <p className="mt-2 max-w-xl text-lg leading-relaxed text-muted-foreground">Two taps is enough. I&apos;ll find something small that fits.</p>
+              </div>
+              <div className="relative hidden h-40 w-40 shrink-0 items-center justify-center sm:flex" aria-hidden>
+                <Blob className="absolute inset-0" />
+                <Bunny className="relative w-32" />
+              </div>
             </div>
-          </div>
+          </header>
+          <div className="mx-auto w-full max-w-3xl px-5 py-8 sm:px-8">
+          <div className="rounded-3xl border border-border bg-card p-6 shadow-[var(--shadow-card)] sm:p-8">
           <CheckinForm
             values={values}
             onChange={(next) => {
@@ -189,6 +195,8 @@ export default function CheckinPage() {
             onSubmit={submit}
             submitting={false}
           />
+          </div>
+          </div>
         </>
       )}
 
