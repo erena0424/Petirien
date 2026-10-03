@@ -44,6 +44,8 @@ test('the bunny floats on every page except Messages, and never covers the suppo
   await page.goto('/preferences')
   const toggle = page.getByTestId('floating-toggle')
   await expect(toggle).toBeVisible()
+  await expect(page.getByTestId('bunny-words')).toHaveCount(0) // it starts folded: just the bunny
+  await toggle.click()
   await expect(page.getByTestId('bunny-words')).toContainText(/Say something/)
 
   // Sizes: three, and bigger really is bigger.

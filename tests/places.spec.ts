@@ -231,7 +231,7 @@ test('without location, the card asks first and nothing is sent until you agree'
   await toIdeas(page)
   const ask = page.getByTestId('places-ask')
   await expect(ask).toContainText('Share your location')
-  await expect(ask).toContainText('not saved')
+  await expect(ask).toContainText('remembered on this device only')
   await expect(page.getByRole('group', { name: 'Kind of place' })).toHaveCount(0)
   expect(calls).toHaveLength(0)
 })
@@ -291,16 +291,21 @@ test('Home shows one place, asks for location first, rotates kinds by day, and d
   expect(calls[0]).toMatchObject({ q: 'park', ll: '@40.75,-73.98,15z' })
   await expect(page.getByTestId('home-place').getByRole('button', { name: 'Other places to visit' })).toHaveCount(0) // Home stays light
 
-  // A reload right away does not quietly pay again: it offers the button instead.
-  await page.evaluate(() => localStorage.setItem('petirien.placesAutoAt', String(Date.now())))
+  // The rounded location is now remembered on this device, so a reload shows the place at once, from this tab's cache, with no new paid search.
   await page.reload()
-  const show = page.getByTestId('home-place').getByRole('button', { name: 'Show places near me' })
-  await expect(show).toBeVisible()
+  await expect(page.getByTestId('home-place').getByTestId('place-line')).toHaveText(/^Take a walk to /)
   await page.waitForTimeout(500)
   expect(calls).toHaveLength(1)
-  await show.click()
+  expect(await page.evaluate(() => localStorage.getItem('petirien.location'))).toBe('{"lat":40.75,"lng":-73.98}')
+  // Updating the location to the same spot reuses the cache; forgetting it goes back to asking.
+  await page.getByTestId('home-place').getByTestId('update-location').click()
   await expect(page.getByTestId('home-place').getByTestId('place-line')).toHaveText(/^Take a walk to /)
-  expect(calls).toHaveLength(2)
+  expect(calls).toHaveLength(1)
+  await page.getByTestId('home-place').getByTestId('forget-location').click()
+  await expect(page.getByTestId('home-place').getByTestId('places-ask')).toBeVisible()
+  expect(await page.evaluate(() => localStorage.getItem('petirien.location'))).toBeNull()
+  await page.getByTestId('home-place').getByRole('button', { name: 'Share my location' }).click()
+  await expect(page.getByTestId('home-place').getByTestId('place-line')).toHaveText(/^Take a walk to /)
 
   // The next days, Home shows a different kind of place: a café, then a library.
   for (const [day, lead, q] of [[5, 'Spend quality time at', 'cafe'], [6, 'Browse and sit quietly at', 'library']] as const) {
