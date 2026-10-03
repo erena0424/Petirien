@@ -6,6 +6,7 @@
 import { Link } from 'react-router-dom'
 import { Bunny } from '../components/Bunny'
 import { Blob, Cloud, MapSketch, Sparkle, Star } from '../components/Sparkle'
+import { ControlSection, FaqSection, FinalCta, JournalSection } from '../components/LandingSections'
 import { thumbnailFor } from '../preview/preview'
 import { Seo } from '../components/Seo'
 import { DISPLAY_NAME } from '../constants'
@@ -89,7 +90,9 @@ export default function Landing() {
           ))}
         </ol>
 
-        <section aria-labelledby="next-step-heading" data-testid="landing-next-step" className="mt-16 w-full max-w-6xl text-left">
+        <JournalSection />
+
+        <section aria-labelledby="next-step-heading" data-testid="landing-next-step" className="mt-20 w-full max-w-6xl text-left">
           <h2 id="next-step-heading" className="text-3xl font-bold text-foreground">
             And when you want a small next step
           </h2>
@@ -126,7 +129,11 @@ export default function Landing() {
           </div>
         </section>
 
-        <p className="mt-10 max-w-sm text-xs text-muted-foreground">
+        <ControlSection />
+        <FaqSection />
+        <FinalCta />
+
+        <p className="mt-8 max-w-sm text-xs text-muted-foreground">
           {DISPLAY_NAME} offers everyday emotional support and gentle ideas. It is not therapy or medical advice.{' '}
           <Link to="/privacy" className="underline underline-offset-4">
             Privacy
