@@ -77,7 +77,7 @@ export default function Navigation() {
       >
         <div className="mx-auto max-w-6xl rounded-3xl border border-[color:var(--color-nav-border,var(--color-border))] bg-[var(--color-nav,var(--color-background))] shadow-[0_2px_10px_rgba(48,36,61,0.08)] md:rounded-full">
         <div className="flex h-12 items-center gap-4 px-4">
-          <Link to="/home" className="font-display text-xl font-semibold text-[color:var(--color-nav-foreground,var(--color-foreground))]">
+          <Link to="/home" className="font-display text-2xl font-semibold text-primary">
             {DISPLAY_NAME}
           </Link>
 
