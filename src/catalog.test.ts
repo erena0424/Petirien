@@ -4,6 +4,12 @@ import { CATALOG, GOALS, SETTINGS, CATEGORIES } from './catalog'
 const FORBIDDEN = /diagnos|treat|cure|therap|clinical|prescrib|medical device/i
 
 describe('catalog integrity', () => {
+  it('writes steps and tips that read correctly with no video (the preview and "no screen" show them alone)', () => {
+    for (const a of CATALOG) {
+      for (const line of [...a.steps, a.tip ?? '']) expect(line, a.id).not.toMatch(/\bthe video\b|\bpress play\b|\bthis video\b/i)
+    }
+  })
+
   it('has unique ids', () => {
     const ids = CATALOG.map((a) => a.id)
     expect(new Set(ids).size).toBe(ids.length)
