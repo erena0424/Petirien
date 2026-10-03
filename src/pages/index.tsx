@@ -5,7 +5,8 @@
 
 import { Link } from 'react-router-dom'
 import { Bunny } from '../components/Bunny'
-import { Blob, Cloud, Sparkle, Star } from '../components/Sparkle'
+import { Blob, Cloud, MapSketch, Sparkle, Star } from '../components/Sparkle'
+import { thumbnailFor } from '../preview/preview'
 import { Seo } from '../components/Seo'
 import { DISPLAY_NAME } from '../constants'
 import { seo } from '../seo'
@@ -87,6 +88,43 @@ export default function Landing() {
             </li>
           ))}
         </ol>
+
+        <section aria-labelledby="next-step-heading" data-testid="landing-next-step" className="mt-16 w-full max-w-6xl text-left">
+          <h2 id="next-step-heading" className="text-3xl font-bold text-foreground">
+            And when you want a small next step
+          </h2>
+          <p className="mt-2 max-w-2xl text-lg text-muted-foreground">
+            Tell me your energy and how much time you have, and I&apos;ll suggest a few things that fit, so you don&apos;t have to search through endless options.
+          </p>
+          <div className="mt-6 grid gap-5 md:grid-cols-3">
+            <div className="overflow-hidden rounded-3xl border border-border bg-card shadow-[var(--shadow-card)]">
+              <img src={thumbnailFor('bMZ1mI1g1rM')} alt="" loading="lazy" className="aspect-video w-full bg-muted object-cover" />
+              <div className="p-5">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Guided video</p>
+                <h3 className="mt-1 text-xl font-semibold text-foreground">Chair yoga</h3>
+                <p className="mt-2 text-base text-muted-foreground">Slow, seated movements you can do in regular clothes. Go as gently as you like.</p>
+              </div>
+            </div>
+            <div className="overflow-hidden rounded-3xl border border-border bg-card shadow-[var(--shadow-card)]">
+              <MapSketch className="aspect-video w-full" />
+              <div className="p-5">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">A change of scenery</p>
+                <h3 className="mt-1 text-xl font-semibold text-foreground">A park or café nearby</h3>
+                <p className="mt-2 text-base text-muted-foreground">Share your location and I&apos;ll suggest a real place close by for a little time away.</p>
+              </div>
+            </div>
+            <div className="rounded-3xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Idea</p>
+              <h3 className="mt-1 text-xl font-semibold text-foreground">Box breathing</h3>
+              <p className="mt-2 text-base text-muted-foreground">A steady in-hold-out-hold rhythm, led by a voice, that gives your mind one simple thing to follow.</p>
+            </div>
+          </div>
+          <div className="mt-6 text-center md:text-left">
+            <Link to="/home?try=1" className="inline-flex min-h-12 items-center rounded-full border-2 border-input bg-card px-8 text-base font-semibold text-foreground hover:bg-secondary">
+              See ideas that fit you
+            </Link>
+          </div>
+        </section>
 
         <p className="mt-10 max-w-sm text-xs text-muted-foreground">
           {DISPLAY_NAME} offers everyday emotional support and gentle ideas. It is not therapy or medical advice.{' '}
