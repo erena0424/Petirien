@@ -30,7 +30,7 @@ export function PlansCard({ plans }: Props) {
   if (isLoaded && !isSignedIn) {
     return (
       <section data-testid="plans" aria-labelledby="plans-heading">
-        <h2 id="plans-heading" className="text-lg font-bold text-foreground">
+        <h2 id="plans-heading" className="text-3xl font-bold text-foreground">
           Coming up in your day
         </h2>
         <p className="mt-2 text-sm text-muted-foreground">Sign in to see what&apos;s coming up on your calendar and to reflect on it with the bunny.</p>
@@ -57,7 +57,7 @@ export function PlansCard({ plans }: Props) {
   return (
     <section data-testid="plans" aria-labelledby="plans-heading">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 id="plans-heading" className="text-lg font-bold text-foreground">
+        <h2 id="plans-heading" className="text-3xl font-bold text-foreground">
           Coming up in your day
         </h2>
         <div className="flex gap-2">
@@ -156,7 +156,7 @@ export function PlansCard({ plans }: Props) {
             const status = statusOf(p, now)
             const done = status === 'done'
             return (
-              <li key={p.id} data-testid="plan" className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-border bg-card px-4 py-3 shadow-[var(--shadow-card)]">
+              <li key={p.id} data-testid="plan" className="flex flex-wrap items-center justify-between gap-2 rounded-3xl border border-border bg-card px-5 py-4 shadow-[var(--shadow-card)]">
                 <span className="min-w-0">
                   <span className="block truncate text-base font-semibold text-foreground">{p.title}</span>
                   <span className="block text-sm text-muted-foreground">

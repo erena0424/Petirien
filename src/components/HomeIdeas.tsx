@@ -21,8 +21,8 @@ export function HomeIdeas() {
   if (state.kind === 'error') return null // Home still has its written suggestion; nothing to apologise for here
   if (state.kind === 'signedOut') return <GenericIdeas />
   return (
-    <section aria-labelledby="ideas-heading" data-testid="home-ideas" className="mt-10">
-      <h2 id="ideas-heading" className="text-lg font-bold text-foreground">
+    <section aria-labelledby="ideas-heading" data-testid="home-ideas" className="mt-14 first:mt-0">
+      <h2 id="ideas-heading" className="text-3xl font-bold text-foreground">
         Ideas for right now
       </h2>
       {state.kind === 'loading' ? (
@@ -30,7 +30,7 @@ export function HomeIdeas() {
           Finding a couple of things for you…
         </p>
       ) : (
-        <ul className="mt-3 space-y-4">
+        <ul className="mt-4 grid gap-5 md:grid-cols-2">
           {state.ideas.map((idea) => (
             <IdeaCard
               key={idea.activityId}
@@ -58,11 +58,11 @@ function GenericIdeas() {
   const ideas: HomeIdea[] = chooseHomeActivities(new Date()).map((a) => ({ activityId: a.id, activityTitle: a.title, video: null, reason: a.blurb }))
   if (ideas.length === 0) return null
   return (
-    <section aria-labelledby="ideas-heading" data-testid="home-ideas" className="mt-10">
-      <h2 id="ideas-heading" className="text-lg font-bold text-foreground">
+    <section aria-labelledby="ideas-heading" data-testid="home-ideas" className="mt-14 first:mt-0">
+      <h2 id="ideas-heading" className="text-3xl font-bold text-foreground">
         Ideas for right now
       </h2>
-      <ul className="mt-3 space-y-4">
+      <ul className="mt-4 grid gap-5 md:grid-cols-2">
         {ideas.map((idea) => (
           <IdeaCard key={idea.activityId} idea={idea} saved={false} canSave={false} onToggleSave={() => undefined} />
         ))}
@@ -85,16 +85,16 @@ function IdeaCard({ idea, saved, canSave, onToggleSave }: { idea: HomeIdea; save
   }
 
   return (
-    <li data-testid="home-idea" className="overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-card)]">
+    <li data-testid="home-idea" className="overflow-hidden rounded-3xl border border-border bg-card shadow-[var(--shadow-card)]">
       <div className="flex gap-4 p-4">
         {v && (
           <img src={v.thumbnail} alt="" loading="lazy" data-testid="home-idea-thumb" className="h-16 w-28 shrink-0 rounded-lg bg-muted object-cover sm:h-20 sm:w-36" />
         )}
         <div className="min-w-0 flex-1">
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{idea.activityTitle}</p>
-          <h3 className="mt-1 text-base font-semibold leading-snug text-foreground">{v ? v.title : idea.activityTitle}</h3>
+          <h3 className="mt-1 text-xl font-semibold leading-snug text-foreground">{v ? v.title : idea.activityTitle}</h3>
           {v && <p className="mt-1 text-xs text-muted-foreground">{[length, v.channel].filter(Boolean).join(' · ')}</p>}
-          <p className="mt-2 text-sm leading-relaxed text-foreground">{idea.reason}</p>
+          <p className="mt-2 text-base leading-relaxed text-foreground">{idea.reason}</p>
         </div>
       </div>
       {v && playing && !blocked && (

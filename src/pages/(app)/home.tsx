@@ -41,7 +41,7 @@ const primary =
   'inline-flex min-h-12 items-center rounded-xl bg-primary px-6 text-base font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50'
 const secondary =
   'inline-flex min-h-12 items-center rounded-xl border border-input bg-card px-6 text-base font-semibold text-foreground hover:bg-secondary focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50'
-const card = 'rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]'
+const card = 'rounded-3xl border border-border bg-card p-5 shadow-[var(--shadow-card)]'
 
 export default function HomePage() {
   const now = new Date()
@@ -78,36 +78,42 @@ export default function HomePage() {
   if (isLoaded && !isSignedIn) return <PublicHome />
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 py-8">
+    <div className="w-full">
       <h1 className="sr-only">Home</h1>
-      <ResumePreview />
-      <HomeHero suggestions={suggestionsFor([...plans.calendarPlans, ...plans.typed], now)} />
-
-      <div className="mt-10">
-        <PlansCard plans={plans} />
+      <div className="mx-auto w-full max-w-6xl px-5 sm:px-8 pb-14 pt-14">
+        <ResumePreview />
+        <HomeHero suggestions={suggestionsFor([...plans.calendarPlans, ...plans.typed], now)} />
       </div>
 
-      <HomeIdeas />
+      <div className="bg-secondary/70 py-14">
+        <div className="mx-auto w-full max-w-6xl px-5 sm:px-8">
+          <PlansCard plans={plans} />
+          <HomeIdeas />
+        </div>
+      </div>
 
-      <HomePlace />
+      <div className="mx-auto w-full max-w-6xl px-5 sm:px-8 py-14">
+        <HomePlace />
 
       {forNow && (
-        <section className={`${card} mt-10`} aria-labelledby="now-heading" data-testid="for-now">
+        <section className={`${card} mt-14`} aria-labelledby="now-heading" data-testid="for-now">
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">For {PART_LABEL[partOfDay(now)]}</p>
-          <h2 id="now-heading" className="mt-1 text-lg font-bold text-foreground">
+          <h2 id="now-heading" className="mt-1 text-2xl font-bold text-foreground">
             {forNow.title}
           </h2>
-          <p className="mt-1 text-sm leading-relaxed text-foreground">{forNow.blurb}</p>
+          <p className="mt-1 text-base leading-relaxed text-foreground">{forNow.blurb}</p>
           <div className="mt-2">
             <Instructions activityId={forNow.id} />
           </div>
           <SaveForNow activityId={forNow.id} title={forNow.title} />
         </section>
       )}
+      </div>
 
-      <section className="mt-10" aria-labelledby="saved-heading">
+      <div className="bg-secondary/70 py-14">
+      <section className="mx-auto w-full max-w-6xl px-5 sm:px-8" aria-labelledby="saved-heading">
         <div className="flex items-baseline justify-between">
-          <h2 id="saved-heading" className="text-lg font-bold text-foreground">
+          <h2 id="saved-heading" className="text-3xl font-bold text-foreground">
             From your saved
           </h2>
           {savedItems.length > 0 && (
@@ -117,22 +123,22 @@ export default function HomePage() {
           )}
         </div>
         {savedItems.length === 0 ? (
-          <p data-testid="home-saved-empty" className="mt-2 text-sm text-muted-foreground">
+          <p data-testid="home-saved-empty" className="mt-2 text-base text-muted-foreground">
             Nothing saved yet. When an idea looks good, tap Save and it will show up here.
           </p>
         ) : (
-          <ul className="mt-3 space-y-2" data-testid="home-saved">
+          <ul className="mt-4 grid gap-3 md:grid-cols-2" data-testid="home-saved">
             {ordered.map(({ item, fits }) => (
               <li key={item.id}>
                 <Link
                   to="/saved"
-                  className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card px-4 py-3 hover:bg-secondary"
+                  className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card px-4 py-3 hover:bg-secondary"
                 >
                   {item.thumbnail && (
                     <img src={item.thumbnail} alt="" loading="lazy" data-testid="home-saved-thumb" className="h-14 w-24 shrink-0 rounded-lg bg-muted object-cover" />
                   )}
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-semibold text-foreground">{item.title}</span>
+                    <span className="block truncate text-base font-semibold text-foreground">{item.title}</span>
                     <span className="block text-xs text-muted-foreground">
                       {item.kind === 'video' ? 'Video' : 'Idea'}
                       {getActivity(item.activityId ?? '')?.title && item.kind === 'video' ? ` · ${getActivity(item.activityId ?? '')!.title}` : ''}
@@ -145,10 +151,11 @@ export default function HomePage() {
           </ul>
         )}
       </section>
+      </div>
 
-      <section className="mt-10" aria-labelledby="calendar-heading">
+      <section className="mx-auto w-full max-w-6xl px-5 sm:px-8 py-14" aria-labelledby="calendar-heading">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 id="calendar-heading" className="text-lg font-bold text-foreground">
+          <h2 id="calendar-heading" className="text-3xl font-bold text-foreground">
             Taking care of yourself
           </h2>
           {cheer && (

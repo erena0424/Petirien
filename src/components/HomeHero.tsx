@@ -4,6 +4,7 @@ import { useBunnyChat } from '@/lib/bunny-chat'
 import { GREETING, partOfDay } from '@/lib/for-now'
 import type { Suggestion } from '../plans/plan'
 import { Bunny } from './Bunny'
+import { Blob, Cloud, Sparkle, Star } from './Sparkle'
 
 /**
  * The top of Home: the big bunny, a greeting, and one simple invitation. It is the focal point of the page.
@@ -15,13 +16,19 @@ export function HomeHero({ suggestions = [] }: { suggestions?: Suggestion[] }) {
   const greeting = GREETING[partOfDay(new Date())]
 
   return (
-    <section aria-label="Welcome" data-testid="home-hero" className="flex flex-col items-center gap-6 text-center sm:flex-row sm:items-center sm:text-left">
-      <Bunny className="w-56 shrink-0 sm:w-72" />
+    <section aria-label="Welcome" data-testid="home-hero" className="flex flex-col items-center gap-8 text-center md:flex-row md:items-center md:gap-14 md:text-left">
+      <div className="relative flex shrink-0 items-center justify-center">
+        <Blob className="absolute h-60 w-60 sm:h-80 sm:w-80" />
+        <Bunny className="relative w-48 sm:w-64" />
+        <Cloud className="absolute -top-2 right-0 w-20 sm:-right-4 sm:w-28" />
+        <Star className="absolute bottom-6 left-0 w-9 sm:-left-2 sm:w-12" />
+        <Sparkle className="absolute left-6 top-4 w-6 sm:left-8 sm:top-6 sm:w-8" />
+      </div>
       <div className="min-w-0 flex-1">
-        <p data-testid="home-greeting" className="text-base text-muted-foreground">
+        <p data-testid="home-greeting" className="text-lg font-medium text-muted-foreground">
           {greeting}
         </p>
-        <h2 className="mt-1 text-3xl font-bold leading-tight tracking-tight text-foreground">What&apos;s on your mind?</h2>
+        <h2 className="mt-2 text-4xl font-bold leading-[1.1] tracking-tight text-[color:var(--color-ink)] sm:text-5xl lg:text-6xl">What&apos;s on your mind?</h2>
         {chat.latest && (
           <p data-testid="home-latest" className="mt-4 rounded-2xl bg-accent px-5 py-3 text-left text-lg leading-relaxed text-foreground">
             {chat.latest}
@@ -42,14 +49,14 @@ export function HomeHero({ suggestions = [] }: { suggestions?: Suggestion[] }) {
             ))}
           </div>
         )}
-        <div className="mt-5 flex flex-wrap justify-center gap-3 sm:justify-start">
-          <Button className="min-h-12 rounded-xl px-6 text-base font-semibold" onClick={chat.requestFocus} data-testid="home-talk">
+        <div className="mt-7 flex flex-wrap justify-center gap-3 md:justify-start">
+          <Button className="min-h-14 rounded-full px-9 text-lg font-semibold" onClick={chat.requestFocus} data-testid="home-talk">
             Talk to the bunny
           </Button>
           <Link
             to="/checkin"
             data-testid="do-something"
-            className="inline-flex min-h-12 items-center rounded-xl border border-input bg-card px-6 text-base font-semibold text-foreground hover:bg-secondary focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            className="inline-flex min-h-14 items-center rounded-full border-2 border-input bg-card px-9 text-lg font-semibold text-foreground hover:bg-secondary focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
           >
             Do something little for yourself
           </Link>
