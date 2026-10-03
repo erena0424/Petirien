@@ -1,3 +1,4 @@
+import { JournalButton } from './JournalButton'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Minus, Plus, Send, X } from 'lucide-react'
@@ -343,6 +344,7 @@ function Floating() {
               </Link>
             </div>
           )}
+          {isSignedIn && <JournalButton className="rounded-xl bg-card/90 p-1" />}
           <p style={phone ? undefined : { textShadow: HALO }} className="text-xs text-foreground">The bunny is an AI, not a person or a therapist.</p>
         </section>
       )}
@@ -525,6 +527,7 @@ function Floating() {
                     Open the whole conversation
                   </Link>
                 </div>
+                {isSignedIn && <JournalButton className="rounded-xl bg-card/90 p-1" />}
                 <p style={{ textShadow: HALO }} className="text-xs text-foreground">
                   The bunny is an AI, not a person or a therapist.
                 </p>

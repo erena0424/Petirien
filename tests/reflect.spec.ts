@@ -178,7 +178,7 @@ test('starting a new conversation keeps the old one, and asks for notes about th
   await expect(eli.page.getByTestId('conversation-item')).toHaveCount(1, { timeout: 15_000 })
 
   // Asking for notes right now sends the open conversation's id with force (the person asked).
-  await eli.page.getByRole('button', { name: 'Write notes about this now' }).click()
+  await eli.page.getByRole('button', { name: 'Turn this conversation into journal' }).click()
   await expect(eli.page.getByTestId('notes-written')).toBeVisible()
   expect(seen.notes[0]).toMatchObject({ force: true })
   expect(typeof seen.notes[0].conversationId).toBe('string')

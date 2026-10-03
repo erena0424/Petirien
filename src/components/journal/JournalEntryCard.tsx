@@ -1,3 +1,4 @@
+import { proseOf } from '../../journal/prose'
 import { Button } from '@/components/ui'
 import { formatCheckinDate } from '@/lib/format'
 import type { JournalRow } from '@/lib/use-journal'
@@ -90,11 +91,9 @@ export function JournalEntryCard({ record: r, onEdit, onDelete, compact, onOpen 
           Delete
         </Button>
       </div>
-      <ul className="font-hand mt-3 list-disc space-y-1.5 pl-5 text-base text-foreground">
-        {(r.data.notes ?? []).map((n) => (
-          <li key={n}>{n}</li>
-        ))}
-      </ul>
+      <p data-testid="journal-prose" className="font-hand mt-3 text-base leading-relaxed text-foreground">
+        {proseOf(r.data.notes)}
+      </p>
       {(r.data.feelings ?? []).length > 0 && (
         <ul className="mt-3 flex flex-wrap gap-2" aria-label="Feelings">
           {(r.data.feelings ?? []).map((f) => (

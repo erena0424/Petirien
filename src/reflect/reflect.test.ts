@@ -230,7 +230,7 @@ describe('guards', () => {
   it('writes the journal in the persons voice, short and meaningful, and says so in the prompt', () => {
     const { system } = buildSummaryPrompt([user('hi')])
     expect(system).toMatch(/in the person's own voice/)
-    expect(system).toMatch(/first-person bullet/)
+    expect(system).toMatch(/first-person sentences/)
     expect(system).toMatch(/Never write "You told me"/)
     expect(system).toMatch(/do not need to cover everything/)
     expect(system).toMatch(/skip greetings, filler/)

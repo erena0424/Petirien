@@ -4,10 +4,10 @@
  */
 
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
 import { Plus } from 'lucide-react'
 import { Button, ConfirmModal } from '@/components/ui'
 import { BunnyThread } from '@/components/BunnyThread'
+import { JournalButton } from '@/components/JournalButton'
 import { useBunnyChat } from '@/lib/bunny-chat'
 import { formatCheckinDate } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -15,14 +15,6 @@ import { cn } from '@/lib/utils'
 export default function MessagesPage() {
   const chat = useBunnyChat()
   const [deleting, setDeleting] = useState<string | null>(null)
-  const [noteStatus, setNoteStatus] = useState<'idle' | 'writing' | 'done' | 'none'>('idle')
-
-  const canWriteNotes = !!chat.conversationId && chat.thread.some((m) => m.role === 'user')
-
-  async function writeNotes() {
-    setNoteStatus('writing')
-    setNoteStatus((await chat.writeNotesNow()) ? 'done' : 'none')
-  }
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-6">
@@ -34,7 +26,6 @@ export default function MessagesPage() {
         <Button
           variant="outline"
           onClick={() => {
-            setNoteStatus('idle')
             chat.newConversation()
           }}
         >
@@ -61,7 +52,6 @@ export default function MessagesPage() {
                     data-testid="conversation-item"
                     aria-current={active ? 'true' : undefined}
                     onClick={() => {
-                      setNoteStatus('idle')
                       chat.open(c.recordId)
                     }}
                     className={cn(
@@ -83,20 +73,7 @@ export default function MessagesPage() {
 
         <div className="flex min-h-[calc(100vh-16rem)] flex-col justify-end rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-card)] sm:p-6">
           <BunnyThread />
-          {canWriteNotes && (
-            <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-border pt-3 text-sm">
-              <Button variant="outline" size="sm" onClick={() => void writeNotes()} disabled={noteStatus === 'writing' || chat.sending}>
-                {noteStatus === 'writing' ? 'Writing notes…' : 'Write notes about this now'}
-              </Button>
-              {noteStatus === 'done' && (
-                <span data-testid="notes-written" className="text-foreground">
-                  Added to your <Link to="/journal" className="font-medium text-primary underline underline-offset-4">Journal</Link>.
-                </span>
-              )}
-              {noteStatus === 'none' && <span className="text-muted-foreground">Nothing new to write up yet.</span>}
-              <span className="text-xs text-muted-foreground">The bunny also writes notes by itself after a while.</span>
-            </div>
-          )}
+          <JournalButton className="mt-4 flex flex-wrap items-center border-t border-border pt-3" />
         </div>
       </div>
 

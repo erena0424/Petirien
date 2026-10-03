@@ -10,7 +10,7 @@ export interface ChatMessage {
 /** What the bunny writes after a chat. Stored as a journal entry only if the person saves it. */
 export interface JournalDraft {
   title: string
-  /** The person's own journal bullets, in first person and as close to their own words as makes sense. */
+  /** The person's own journal sentences, in first person and as close to their own words as makes sense. Shown together as one passage. */
   notes: string[]
   /** Up to three plain feeling words the person said or clearly implied. */
   feelings: string[]

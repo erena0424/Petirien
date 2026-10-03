@@ -130,7 +130,7 @@ export default function Privacy() {
             <strong>Places near you (optional).</strong> On the &ldquo;Visit a place nearby&rdquo; idea you are asked to share your
             location, and can then choose a kind of place (park, caf&eacute;, library, garden). Your browser asks first. If you say yes,
             the location is rounded to about a kilometre and sent, with the kind of place, to Google Maps through DeepSpace to find
-            a few places close by. It is used once, shown only to you, and not saved. If you say no, nothing is sent and the idea is
+            a few places close by. The rounded location is remembered in this browser only, never on our servers, so places can show every time; you can update or forget it any time under the places, and clearing your browser data removes it. The places found are kept only for that browser tab, for a few hours. They are shown only to you. If you say no, nothing is sent and the idea is
             simply taking a walk. You do not need to be signed in for this; the app looks up a visitor&apos;s places itself,
             with the same rounded location and nothing saved, and may pause it for the day if many people use it.
           </p>

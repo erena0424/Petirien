@@ -88,7 +88,7 @@ export function BunnyThread() {
 
         {atLimit ? (
           <p className="text-sm text-foreground">
-            This conversation is getting long. Start a new one whenever you like; the bunny will write notes about this one.
+            This conversation is getting long. Start a new one whenever you like; the bunny will turn this one into a journal entry.
           </p>
         ) : (
           <form

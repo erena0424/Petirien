@@ -3,6 +3,7 @@ import { MapPin, ThumbsDown, ThumbsUp } from 'lucide-react'
 import { useAuthStatus } from 'deepspace'
 import { Button } from '@/components/ui'
 import { MapSketch } from './Sparkle'
+import { loadLocation } from '../places/saved-location'
 import { usePlaceFeedback } from '@/lib/use-place-feedback'
 import { usePlaces } from '@/lib/use-places'
 import { cn } from '@/lib/utils'
@@ -102,7 +103,7 @@ export function PlaceSuggestions({ kinds: kindsProp, autoEveryMs, showOthers = t
   // Today's pair (something outside, somewhere to sit) unless told otherwise; it changes from day to day.
   const kinds = kindsProp ?? suggestedKinds(dayOfYear(new Date()))
   const { isSignedIn } = useAuthStatus()
-  const { state, find, findSuggested } = usePlaces(isSignedIn)
+  const { state, find, findSuggested, forget } = usePlaces(isSignedIn)
   const { ratings, rate, ready } = usePlaceFeedback()
   const [permission, setPermission] = useState<'granted' | 'other'>('other')
   const [othersOpen, setOthersOpen] = useState(false)
@@ -115,6 +116,11 @@ export function PlaceSuggestions({ kinds: kindsProp, autoEveryMs, showOthers = t
   useEffect(() => {
     if (asked.current) return
     asked.current = true
+    // A remembered location means places show every time, with no prompt and no button to press.
+    if (loadLocation()) {
+      void findSuggested(kinds)
+      return
+    }
     const perms = typeof navigator !== 'undefined' ? navigator.permissions : undefined
     void perms
       ?.query({ name: 'geolocation' as PermissionName })
@@ -149,7 +155,7 @@ export function PlaceSuggestions({ kinds: kindsProp, autoEveryMs, showOthers = t
             </div>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Your browser will ask first. Your location is rounded to about a kilometre, used once to look for places, and not saved.
+            Your browser will ask first. Your location is rounded to about a kilometre and remembered on this device only, so places can show every time. You can update or forget it any time.
           </p>
           <Button type="button" className="mt-3 min-h-11 rounded-full px-6" onClick={() => void findSuggested(kinds)}>
             {permission === 'granted' ? 'Show places near me' : 'Share my location'}
@@ -220,6 +226,18 @@ export function PlaceSuggestions({ kinds: kindsProp, autoEveryMs, showOthers = t
             )
           })()}
         </div>
+      )}
+
+      {(state.kind === 'suggested' || state.kind === 'results') && (
+        <p className="mt-3 flex flex-wrap items-center gap-x-4 text-sm text-muted-foreground" data-testid="location-controls">
+          <span>Using the location saved on this device (rounded to about a kilometre).</span>
+          <button type="button" disabled={busy} data-testid="update-location" className="min-h-10 font-medium text-primary underline-offset-4 hover:underline" onClick={() => void findSuggested(kinds, { fresh: true })}>
+            Update my location
+          </button>
+          <button type="button" data-testid="forget-location" className="min-h-10 font-medium text-primary underline-offset-4 hover:underline" onClick={forget}>
+            Forget it
+          </button>
+        </p>
       )}
 
       {lastNo && (

@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
 import { integration } from 'deepspace'
+import { clearLocation, loadLocation, readPlacesCache, saveLocation, writePlacesCache } from '../places/saved-location'
 import { PLACE_KINDS, isKind, llParam, parsePlaces, roundOrigin, validOrigin, type Origin, type Place, type PlaceKindId } from '../places/places'
 
 export type PlacesState =
@@ -60,7 +61,7 @@ async function searchPublic(kindId: PlaceKindId, rounded: Origin): Promise<unkno
 /** One search for one kind of place, from the cache when we already have it. Billed to the person, or for a signed-out visitor to the capped public endpoint. */
 async function search(kindId: PlaceKindId, rounded: Origin, signedIn: boolean): Promise<Place[]> {
   const key = `${kindId}|${rounded.lat}|${rounded.lng}`
-  const hit = cache.get(key)
+  const hit = cache.get(key) ?? readPlacesCache(key)
   if (hit) return hit
   let data: unknown
   if (signedIn) {
@@ -73,6 +74,7 @@ async function search(kindId: PlaceKindId, rounded: Origin, signedIn: boolean): 
   }
   const places = parsePlaces(data, rounded)
   cache.set(key, places)
+  writePlacesCache(key, places)
   return places
 }
 
@@ -112,8 +114,13 @@ export function usePlaces(signedIn = true) {
       setState({ kind: 'unavailable' })
       return null
     }
-    return roundOrigin(origin)
+    const rounded = roundOrigin(origin)
+    saveLocation(rounded) // remembered on this device only, so places can show every time
+    return rounded
   }, [])
+
+  /** The remembered location (no prompt), or a fresh one when `fresh` or nothing is remembered. */
+  const origin = useCallback(async (fresh: boolean): Promise<Origin | null> => (fresh ? null : loadLocation()) ?? (await locate()), [locate])
 
   const exclusive = useCallback(async (work: () => Promise<void>) => {
     if (busy.current) return
@@ -126,36 +133,42 @@ export function usePlaces(signedIn = true) {
   }, [])
 
   const findSuggested = useCallback(
-    (kinds: PlaceKindId[]) =>
+    (kinds: PlaceKindId[], opts: { fresh?: boolean } = {}) =>
       exclusive(async () => {
-        const origin = await locate()
-        if (!origin) return
+        const here = await origin(!!opts.fresh)
+        if (!here) return
         setState({ kind: 'searching' })
         try {
-          const lists = await Promise.all(kinds.map((k) => search(k, origin, signedInRef.current)))
-          setState({ kind: 'suggested', byKind: Object.fromEntries(kinds.map((k, i) => [k, lists[i]!])), origin })
+          const lists = await Promise.all(kinds.map((k) => search(k, here, signedInRef.current)))
+          setState({ kind: 'suggested', byKind: Object.fromEntries(kinds.map((k, i) => [k, lists[i]!])), origin: here })
         } catch (e) {
           setState(failure(e))
         }
       }),
-    [exclusive, locate],
+    [exclusive, origin],
   )
 
   const find = useCallback(
     (kindId: PlaceKindId) =>
       exclusive(async () => {
         if (!isKind(kindId)) return
-        const origin = await locate()
-        if (!origin) return
+        const here = await origin(false)
+        if (!here) return
         setState({ kind: 'searching' })
         try {
-          setState({ kind: 'results', places: await search(kindId, origin, signedInRef.current), origin, type: kindId })
+          setState({ kind: 'results', places: await search(kindId, here, signedInRef.current), origin: here, type: kindId })
         } catch (e) {
           setState(failure(e))
         }
       }),
-    [exclusive, locate],
+    [exclusive, origin],
   )
 
-  return { state, find, findSuggested }
+  /** Forget the remembered location and go back to asking. */
+  const forget = useCallback(() => {
+    clearLocation()
+    setState({ kind: 'idle' })
+  }, [])
+
+  return { state, find, findSuggested, forget }
 }
