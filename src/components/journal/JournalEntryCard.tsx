@@ -44,13 +44,13 @@ export function JournalEntryCard({ record: r, onEdit, onDelete, compact, onOpen 
 
   if (reflection) {
     return (
-      <li data-testid="journal-reflection" className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
+      <li data-testid="journal-reflection" className="rounded-3xl border border-border bg-card p-6 shadow-[var(--shadow-card)]">
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               Reflection{r.data.eventStart ? ` · ${formatCheckinDate(r.data.eventStart)}` : ''}
             </p>
-            <h2 className="mt-1 text-lg font-bold leading-snug text-foreground">{r.data.title}</h2>
+            <h2 className="mt-1 text-xl font-bold leading-snug text-foreground">{r.data.title}</h2>
           </div>
           <div className="flex shrink-0 gap-1">
             <Button
@@ -78,14 +78,14 @@ export function JournalEntryCard({ record: r, onEdit, onDelete, compact, onOpen 
   }
 
   return (
-    <li data-testid="journal-entry" className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
+    <li data-testid="journal-entry" className="rounded-3xl border border-border bg-card p-6 shadow-[var(--shadow-card)]">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-xs font-medium text-muted-foreground">
             {formatCheckinDate(r.createdAt)}
             {r.data.eventTitle ? ` · About ${r.data.eventTitle}` : ''}
           </p>
-          <h2 className="mt-1 text-lg font-bold leading-snug text-foreground">{r.data.title}</h2>
+          <h2 className="mt-1 text-xl font-bold leading-snug text-foreground">{r.data.title}</h2>
         </div>
         <Button variant="ghost" size="sm" onClick={() => onDelete(r.recordId)} aria-label={`Delete entry: ${r.data.title}`}>
           Delete

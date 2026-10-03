@@ -3,6 +3,7 @@
  * and a way to delete everything. All private to the signed-in person.
  */
 
+import { PageHeader } from '@/components/PageHeader'
 import { useEffect, useRef, useState } from 'react'
 import { useMutations, useQuery } from 'deepspace'
 import { Button, ConfirmModal } from '@/components/ui'
@@ -50,11 +51,11 @@ export default function PreferencesPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 py-8">
-      <h1 className="text-2xl font-bold tracking-tight text-foreground">Preferences</h1>
-      <p className="mt-2 text-base text-muted-foreground">
+    <div className="w-full">
+      <PageHeader title="Preferences">
         Tell me what suits you, and I&apos;ll offer fewer things that don&apos;t.
-      </p>
+      </PageHeader>
+      <div className="mx-auto w-full max-w-6xl px-5 py-10 sm:px-8 [&>*]:max-w-3xl">
 
       {status === 'loading' && (
         <p role="status" className="py-12 text-center text-muted-foreground">
@@ -63,7 +64,7 @@ export default function PreferencesPage() {
       )}
 
       {status === 'error' && (
-        <div role="alert" className="mt-6 rounded-2xl border border-border bg-card p-5">
+        <div role="alert" className="mt-6 rounded-3xl border border-border bg-card p-5">
           <p className="font-medium text-foreground">We couldn&apos;t load your preferences.</p>
           <p className="mt-1 text-sm text-muted-foreground">Check your connection and reload the page.</p>
         </div>
@@ -141,6 +142,7 @@ export default function PreferencesPage() {
 
       <RatedPlaces />
       <DeleteEverything />
+      </div>
     </div>
   )
 }
@@ -164,7 +166,7 @@ function RatedPlaces() {
   if (feedback.status !== 'ready' || feedback.records.length === 0) return null
   return (
     <section className="mt-10" aria-labelledby="places-heading" data-testid="rated-places">
-      <h2 id="places-heading" className="text-lg font-semibold text-foreground">
+      <h2 id="places-heading" className="text-xl font-bold text-foreground">
         Places you rated
       </h2>
       <p className="mt-1 text-sm text-muted-foreground">
@@ -246,7 +248,7 @@ function DeleteEverything() {
 
   return (
     <section className="mt-14 border-t border-border pt-8" aria-labelledby="delete-heading">
-      <h2 id="delete-heading" className="text-lg font-semibold text-foreground">
+      <h2 id="delete-heading" className="text-xl font-bold text-foreground">
         Delete my data
       </h2>
       <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
@@ -337,7 +339,7 @@ function BunnyStyleSettings({
 
   return (
     <section className="mt-14 border-t border-border pt-8" aria-labelledby="style-heading" data-testid="bunny-style">
-      <h2 id="style-heading" className="text-lg font-semibold text-foreground">
+      <h2 id="style-heading" className="text-xl font-bold text-foreground">
         How the bunny talks with you
       </h2>
       <p className="mt-2 text-sm leading-relaxed text-muted-foreground">

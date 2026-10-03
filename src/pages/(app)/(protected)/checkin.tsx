@@ -171,7 +171,7 @@ export default function CheckinPage() {
           <div className="mb-8 flex items-center gap-4">
             <Bunny className="w-28 shrink-0 sm:w-40" />
             <div>
-              <h1 ref={heading} className="text-2xl font-bold tracking-tight text-foreground">
+              <h1 ref={heading} className="text-3xl font-bold tracking-tight text-[color:var(--color-ink)]">
                 Let&apos;s do something little
               </h1>
               <p className="mt-1 text-base leading-relaxed text-muted-foreground">
@@ -335,7 +335,7 @@ function Result(p: ResultProps) {
         </p>
         <ul className="space-y-3">
           {res.activities.map((a) => (
-            <li key={a.activityId} className="rounded-2xl border border-border bg-card p-4">
+            <li key={a.activityId} className="rounded-3xl border border-border bg-card p-4">
               <h2 className="text-base font-semibold text-foreground">{a.title}</h2>
               <p className="mt-1 text-sm text-muted-foreground">{a.blurb}</p>
               <div className="mt-2">

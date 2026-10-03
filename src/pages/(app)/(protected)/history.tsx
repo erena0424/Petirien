@@ -3,6 +3,7 @@
  * collections are owner-only and nobody else, including the app owner, can read them.
  */
 
+import { PageHeader } from '@/components/PageHeader'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useMutations, useQuery } from 'deepspace'
@@ -53,11 +54,11 @@ export default function HistoryPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 py-8">
-      <h1 className="text-2xl font-bold tracking-tight text-foreground">Your check-ins</h1>
-      <p className="mt-2 text-base text-muted-foreground">
+    <div className="w-full">
+      <PageHeader title="Your check-ins">
         Only you can see these. Delete any you don&apos;t want to keep.
-      </p>
+      </PageHeader>
+      <div className="mx-auto w-full max-w-6xl px-5 py-10 sm:px-8 [&>*]:max-w-4xl">
 
       <div className="mt-8">
         {checkins.status === 'loading' && (
@@ -67,7 +68,7 @@ export default function HistoryPage() {
         )}
 
         {checkins.status === 'error' && (
-          <div role="alert" className="rounded-2xl border border-border bg-card p-5">
+          <div role="alert" className="rounded-3xl border border-border bg-card p-5">
             <p className="font-medium text-foreground">We couldn&apos;t load your check-ins.</p>
             <p className="mt-1 text-sm text-muted-foreground">Check your connection and reload the page.</p>
           </div>
@@ -101,10 +102,10 @@ export default function HistoryPage() {
                 <li
                   key={c.recordId}
                   data-testid="history-item"
-                  className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]"
+                  className="rounded-3xl border border-border bg-card p-5 shadow-[var(--shadow-card)]"
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <h2 className="text-base font-semibold text-foreground">{formatCheckinDate(c.createdAt)}</h2>
+                    <h2 className="text-lg font-semibold text-foreground">{formatCheckinDate(c.createdAt)}</h2>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -166,6 +167,7 @@ export default function HistoryPage() {
         description="This removes the check-in, your note, and the ideas I suggested. It can't be undone."
         confirmText="Delete"
       />
+      </div>
     </div>
   )
 }

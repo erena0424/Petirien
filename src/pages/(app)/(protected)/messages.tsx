@@ -3,6 +3,7 @@
  * on the side; a chat marked "Don't save this chat" never appears here.
  */
 
+import { PageHeader } from '@/components/PageHeader'
 import { useState } from 'react'
 import { Plus } from 'lucide-react'
 import { Button, ConfirmModal } from '@/components/ui'
@@ -17,24 +18,20 @@ export default function MessagesPage() {
   const [deleting, setDeleting] = useState<string | null>(null)
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-4 py-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Chat</h1>
-          <p className="mt-1 text-base text-muted-foreground">Talk to the bunny. Your conversations are saved here unless you choose not to.</p>
-        </div>
-        <Button
-          variant="outline"
-          onClick={() => {
-            chat.newConversation()
-          }}
-        >
-          <Plus aria-hidden className="h-4 w-4" />
-          New conversation
-        </Button>
-      </div>
-
-      <div className="mt-6 grid items-start gap-6 md:grid-cols-[15rem_1fr]">
+    <div className="w-full">
+      <PageHeader
+        title="Chat"
+        action={
+          <Button variant="outline" className="rounded-full bg-card" onClick={() => chat.newConversation()}>
+            <Plus aria-hidden className="h-4 w-4" />
+            New conversation
+          </Button>
+        }
+      >
+        Talk to the bunny. Your conversations are saved here unless you choose not to.
+      </PageHeader>
+      <div className="mx-auto w-full max-w-6xl px-5 py-8 sm:px-8">
+      <div className="grid items-start gap-6 md:grid-cols-[15rem_1fr]">
         <nav aria-label="Conversations" className="md:max-h-[70vh] md:overflow-y-auto">
           {!chat.conversationsReady && <p className="text-sm text-muted-foreground">Loading…</p>}
           {chat.conversationsReady && chat.conversations.length === 0 && (
@@ -71,7 +68,7 @@ export default function MessagesPage() {
           </ul>
         </nav>
 
-        <div className="flex min-h-[calc(100vh-16rem)] flex-col justify-end rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-card)] sm:p-6">
+        <div className="flex min-h-[calc(100vh-16rem)] flex-col justify-end rounded-3xl border border-border bg-card p-4 shadow-[var(--shadow-card)] sm:p-6">
           <BunnyThread />
           <JournalButton className="mt-4 flex flex-wrap items-center border-t border-border pt-3" />
         </div>
@@ -89,6 +86,7 @@ export default function MessagesPage() {
         description="This removes the messages. Any notes the bunny wrote about it stay in your Journal; you can delete them there."
         confirmText="Delete"
       />
+      </div>
     </div>
   )
 }

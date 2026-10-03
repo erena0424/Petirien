@@ -4,6 +4,7 @@
  * including entries that had nothing to do with a calendar event. Private to the signed-in person.
  */
 
+import { PageHeader } from '@/components/PageHeader'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
@@ -39,7 +40,7 @@ function savedView(): View {
 function CalendarBar({ state, onLoad }: { state: ReturnType<typeof useCalendarRange>['state']; onLoad: () => void }) {
   if (state.kind === 'ready') return null
   return (
-    <div data-testid="calendar-bar" className="mt-3 rounded-2xl bg-accent px-4 py-3 text-sm text-foreground">
+    <div data-testid="calendar-bar" className="mt-3 rounded-3xl bg-accent px-4 py-3 text-sm text-foreground">
       {state.kind === 'idle' && (
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p>See your Google Calendar here, so you can reflect on any event with the bunny, even ones you haven&apos;t written about.</p>
@@ -121,12 +122,12 @@ export default function JournalPage() {
   const common = { byDay, checkins, events: calendar.events, reflected, anchor, onSelect: select, onOpenEvent: setOpenEvent, onEdit: setEditing, onDelete: setDeleting }
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 py-8">
-      <h1 className="text-2xl font-bold tracking-tight text-foreground">Journal</h1>
-      <p className="mt-2 text-base text-muted-foreground">
+    <div className="w-full">
+      <PageHeader title="Journal">
         The bunny&apos;s notes from when you talked, and your own reflections on your plans, on the day they belong to. Only you can see them. Only notes
         are kept for chats, never the chat itself.
-      </p>
+      </PageHeader>
+      <div className="mx-auto w-full max-w-6xl px-5 py-10 sm:px-8">
 
       <div className="mt-8">
         {journal.status === 'loading' && (
@@ -136,7 +137,7 @@ export default function JournalPage() {
         )}
 
         {journal.status === 'error' && (
-          <div role="alert" className="rounded-2xl border border-border bg-card p-5">
+          <div role="alert" className="rounded-3xl border border-border bg-card p-5">
             <p className="font-medium text-foreground">We couldn&apos;t load your journal.</p>
             <p className="mt-1 text-sm text-muted-foreground">Check your connection and reload the page.</p>
           </div>
@@ -236,6 +237,7 @@ export default function JournalPage() {
         description="This removes the entry. It can't be undone."
         confirmText="Delete"
       />
+      </div>
     </div>
   )
 }

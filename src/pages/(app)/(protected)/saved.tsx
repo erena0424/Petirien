@@ -4,10 +4,12 @@
  * (or withheld) to stay inside YouTube's 30-day rule; see lib/saved.ts.
  */
 
+import { PageHeader } from '@/components/PageHeader'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button, ConfirmModal, Textarea } from '@/components/ui'
 import { Bunny } from '@/components/Bunny'
+import { Blob } from '@/components/Sparkle'
 import { ChoiceGroup } from '@/components/ChoiceGroup'
 import { Instructions } from '@/components/checkin/Instructions'
 import { YouTubePlayer } from '@/components/YouTubePlayer'
@@ -64,11 +66,11 @@ export default function SavedPage() {
   const anyWithheld = saved.records.some((r) => displayMeta(r.data).withheld)
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 py-8">
-      <h1 className="text-2xl font-bold tracking-tight text-foreground">Saved</h1>
-      <p className="mt-2 text-base text-muted-foreground">
+    <div className="w-full">
+      <PageHeader title="Saved">
         Videos and ideas you liked, ready whenever you are. No check-in needed.
-      </p>
+      </PageHeader>
+      <div className="mx-auto w-full max-w-6xl px-5 py-10 sm:px-8">
 
       <div className="mt-8">
         {status === 'loading' && (
@@ -86,14 +88,14 @@ export default function SavedPage() {
 
         {status === 'ready' && items.length === 0 && (
           <div data-testid="saved-empty" className="flex flex-col items-center py-12 text-center">
-            <Bunny className="w-48 sm:w-60" />
-            <p className="mt-4 text-lg font-semibold text-foreground">Nothing saved yet</p>
+            <div className="relative flex h-60 w-60 items-center justify-center sm:h-72 sm:w-72"><Blob className="absolute inset-0" /><Bunny className="relative w-40 sm:w-52" /></div>
+            <p className="mt-6 text-2xl font-bold text-foreground">Nothing saved yet</p>
             <p className="mt-1 max-w-xs text-muted-foreground">
               When an idea or a video looks good, tap Save and it will wait for you here.
             </p>
             <Link
               to="/checkin"
-              className="mt-6 inline-flex min-h-11 items-center rounded-xl bg-primary px-5 font-semibold text-primary-foreground hover:bg-primary/90"
+              className="mt-6 inline-flex min-h-12 items-center rounded-full bg-primary px-7 text-base font-semibold text-primary-foreground hover:bg-primary/90"
             >
               Check in
             </Link>
@@ -122,7 +124,7 @@ export default function SavedPage() {
               </p>
             )}
 
-            <ul className="space-y-4" data-testid="saved-list">
+            <ul className="grid gap-5 md:grid-cols-2" data-testid="saved-list">
               {visible.map((i) =>
                 i.kind === 'video' ? (
                   <SavedCard
@@ -163,6 +165,7 @@ export default function SavedPage() {
         description="It will be removed from what you saved, along with your note."
         confirmText="Remove"
       />
+      </div>
     </div>
   )
 }
@@ -185,11 +188,11 @@ function SavedIdeaCard({
   const [note, setNote] = useState(initialNote)
   if (!activity) return null
   return (
-    <li data-testid="saved-idea" className="overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-card)]">
+    <li data-testid="saved-idea" className="overflow-hidden rounded-3xl border border-border bg-card shadow-[var(--shadow-card)]">
       <div className="p-4">
         <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Idea</p>
-        <h2 className="mt-1 text-base font-semibold leading-snug text-foreground">{activity.title}</h2>
-        <p className="mt-2 text-sm leading-relaxed text-foreground">{activity.blurb}</p>
+        <h2 className="mt-1 text-xl font-semibold leading-snug text-foreground">{activity.title}</h2>
+        <p className="mt-2 text-base leading-relaxed text-foreground">{activity.blurb}</p>
       </div>
       <div className="px-4 pb-2">
         <Instructions activityId={activity.id} />
@@ -241,16 +244,14 @@ function SavedCard({ recordId, data, onRemove, onNote, onAvailability }: CardPro
   }
 
   return (
-    <li data-testid="saved-item" className="overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-card)]">
-      <div className="flex gap-4 p-4">
-        {meta.thumbnail && (
-          <img src={meta.thumbnail} alt="" loading="lazy" className="h-14 w-24 shrink-0 rounded-lg bg-muted object-cover sm:h-20 sm:w-36" />
-        )}
+    <li data-testid="saved-item" className="overflow-hidden rounded-3xl border border-border bg-card shadow-[var(--shadow-card)]">
+      {meta.thumbnail && <img src={meta.thumbnail} alt="" loading="lazy" className="aspect-video w-full bg-muted object-cover" />}
+      <div className="p-5">
         <div className="min-w-0 flex-1">
           {activity && (
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{activity.title}</p>
           )}
-          <h2 className="mt-1 text-base font-semibold leading-snug text-foreground">{meta.title}</h2>
+          <h2 className="mt-1 text-xl font-semibold leading-snug text-foreground">{meta.title}</h2>
           {(length || meta.channel) && (
             <p className="mt-1 text-xs text-muted-foreground">{[length, meta.channel].filter(Boolean).join(' · ')}</p>
           )}
