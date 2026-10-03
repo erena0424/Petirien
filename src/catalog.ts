@@ -43,8 +43,10 @@ export interface Activity {
   blurb: string
   /**
    * True when a video genuinely helps (someone guiding a meditation, or
-   * demonstrating a stretch or a craft). False for things the written steps
-   * cover on their own, which are offered without a video.
+   * demonstrating a stretch or a craft): such an activity may be paired with
+   * a real video found by search. False for things the written steps cover on
+   * their own. Either way the written steps must read correctly without a
+   * video, because the signed-out preview and the "no screen" option show them alone.
    */
   video: boolean
   /** What you need before starting. Hand-written. */
@@ -78,7 +80,7 @@ export const CATALOG: Activity[] = [
       'Sit comfortably and let your shoulders drop.',
       'Breathe in slowly through your nose for a count of four.',
       'Hold gently for four, breathe out for four, hold for four.',
-      'Repeat for a few minutes, or follow the video.',
+      'Repeat for a few minutes, or follow along with a guided video if you like.',
     ],
     tip: 'If holding your breath feels uncomfortable, skip the holds and just breathe slowly. Stop if anything hurts or you feel dizzy.',
     searchQuery: '5 minute box breathing guided',
@@ -164,7 +166,7 @@ export const CATALOG: Activity[] = [
     needs: 'Headphones or speakers',
     steps: [
       'Get comfortable, lying down or in a chair.',
-      'Press play and keep the volume low.',
+      'Put on some quiet sounds and keep the volume low.',
       'Close your eyes, or look out the window.',
       'Let the sound fill the time. There\'s nothing to do.',
     ],
@@ -253,7 +255,7 @@ export const CATALOG: Activity[] = [
     needs: 'A sturdy chair',
     steps: [
       'Sit near the front edge with both feet on the floor.',
-      'Follow the video\'s slow movements for your arms, back, and legs.',
+      'Move slowly through your arms, back, and legs, following a guide if you have one.',
       'Breathe steadily and go only as far as is comfortable.',
       'Finish with a few slow breaths.',
     ],
@@ -275,7 +277,7 @@ export const CATALOG: Activity[] = [
     needs: 'A mat or a soft floor',
     steps: [
       'Clear a little floor space.',
-      'Follow the video\'s slow, easy poses.',
+      'Follow slow, easy poses at your own pace, with a guide if you have one.',
       'Use a pillow or folded blanket if something feels strained.',
       'Finish by resting for a minute.',
     ],
@@ -385,7 +387,7 @@ export const CATALOG: Activity[] = [
     video: true,
     needs: 'A little space',
     steps: [
-      'Put on a song you like, or follow the video.',
+      'Put on a song you like, or follow along with a video.',
       'Shake out your hands, then your arms, then your shoulders.',
       'Let your legs and the rest of you join in.',
       'Finish with one big breath out.',
@@ -409,8 +411,8 @@ export const CATALOG: Activity[] = [
     needs: 'Paper and any pen',
     steps: [
       'Grab some paper and a pen.',
-      'Watch the first shapes, then copy them at your own speed.',
-      'Pause the video whenever you want to catch up.',
+      'Start with the first shapes, then copy them at your own speed.',
+      'Pause whenever you want to catch up.',
       'Keep your doodles, or don\'t.',
     ],
     tip: 'There\'s no wrong line.',
@@ -431,11 +433,11 @@ export const CATALOG: Activity[] = [
     needs: 'Watercolors or a paint set, a brush, paper, and a cup of water',
     steps: [
       'Set out your paints, brush, paper, and water.',
-      'Follow the video one step at a time, pausing as needed.',
+      'Follow along one step at a time, pausing as needed.',
       'Let each layer dry a little before adding the next.',
       'Step back and look when you\'re done.',
     ],
-    tip: 'It\'s okay if yours looks different from the video.',
+    tip: 'It\'s okay if yours looks different from the example.',
     searchQuery: 'easy watercolor painting for beginners relaxing',
   },
   {
@@ -453,7 +455,7 @@ export const CATALOG: Activity[] = [
     needs: 'Paper or a notes app',
     steps: [
       'Get something to write with.',
-      'Pick one prompt from the video that catches your eye.',
+      'Pick one prompt that catches your eye.',
       'Write for a few minutes without editing yourself.',
       'Stop whenever you like. You don\'t have to finish.',
     ],
@@ -475,7 +477,7 @@ export const CATALOG: Activity[] = [
     needs: 'A square sheet of paper',
     steps: [
       'Cut or fold a sheet of paper into a square.',
-      'Follow the video, pausing at each fold.',
+      'Follow a beginner tutorial, pausing at each fold.',
       'Press each crease firmly.',
       'Keep your finished shape somewhere you\'ll see it.',
     ],
