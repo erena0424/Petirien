@@ -46,7 +46,7 @@ export function ResumePreview() {
   if (!savedTitle && !choice) return null
   const query = choice ? `?minutes=${choice.minutes}&energy=${choice.energy}` : ''
   return (
-    <section aria-label="Welcome back" data-testid="resume" className="mb-8 rounded-2xl bg-accent p-4">
+    <section aria-label="Welcome back" data-testid="resume" className="mb-16 rounded-3xl bg-accent p-5">
       {savedTitle && (
         <p data-testid="resume-saved" role="status" className="text-base font-semibold text-foreground">
           Saved: {savedTitle}. You&apos;ll find it under <Link to="/saved" className="text-primary underline underline-offset-4">Saved</Link>.
