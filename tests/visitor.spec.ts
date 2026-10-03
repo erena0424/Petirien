@@ -122,7 +122,7 @@ test.describe('someone who has not signed in', () => {
     await page.getByTestId('sample-idea').first().getByRole('button', { name: /How to do it/ }).click()
     await expect(page.getByTestId('sample-idea').first()).toContainText("You'll need:")
     // The invitation to sign in comes after the value, in the words of the plan.
-    await expect(page.getByTestId('preview-signin')).toContainText('Save this and keep your reflections in one place.')
+    await expect(page.getByTestId('preview-signin')).toContainText('Talk it through, and keep it as a journal.')
   })
 
   test('"Find something to do" asks only energy and time, tailors the samples, and can be skipped', async ({ page }) => {

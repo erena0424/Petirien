@@ -11,9 +11,9 @@ import { DISPLAY_NAME } from '../constants'
 import { seo } from '../seo'
 
 const STEPS = [
-  { n: '1', title: 'Tell me how you feel', text: 'Your mood, your energy, and how much time you have.' },
-  { n: '2', title: 'I find a few things', text: 'A guided video, somewhere nearby to go, or a simple idea.' },
-  { n: '3', title: 'Pick one, or save it', text: 'No endless scrolling. Save what you like for later.' },
+  { n: '1', title: 'Just talk', text: "Say what's on your mind, big or small. The bunny listens and talks back, so there's no blank page." },
+  { n: '2', title: 'It becomes a journal', text: 'After you chat, I write it up in your own words, as a short entry you can read and keep.' },
+  { n: '3', title: 'Find a small next step', text: 'Whenever you want one, I can suggest a guided video, somewhere nearby to go, or a simple idea.' },
 ]
 
 export default function Landing() {
@@ -26,11 +26,10 @@ export default function Landing() {
         <div className="relative mt-6 flex w-full max-w-6xl flex-col items-center gap-8 md:mt-10 md:flex-row md:justify-between md:text-left">
           <div className="max-w-2xl">
             <h1 className="text-5xl font-semibold leading-[1.08] tracking-tight text-[color:var(--color-ink)] sm:text-6xl">
-              A little support for whatever{' '}
-              today feels like.
+              Journaling that feels like talking.
             </h1>
             <p className="mt-6 text-xl leading-relaxed text-muted-foreground">
-              Tell me how you&apos;re feeling and how much energy you have. I&apos;ll find an activity, a guided video, or somewhere nearby to go, without you searching through endless options.
+              Some people find it easier to talk things through than to write them down. Tell the bunny about your day and it talks back. Then I turn the conversation into a journal entry in your own words, so you keep a journal without having to write one.
             </p>
             <div className="mt-7 flex flex-wrap justify-center gap-3 md:justify-start">
               <Link
@@ -58,6 +57,26 @@ export default function Landing() {
             <Sparkle className="absolute left-6 top-4 w-6 sm:left-10 sm:top-6" />
           </div>
         </div>
+
+        <section aria-label="An example" data-testid="landing-example" className="mt-14 w-full max-w-6xl text-left">
+          <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">An example</p>
+          <div className="mt-3 grid gap-5 md:grid-cols-2">
+            <div className="rounded-3xl bg-secondary p-6">
+              <p className="text-sm font-semibold text-muted-foreground">You talk with the bunny</p>
+              <p className="ml-auto mt-3 w-fit max-w-[85%] rounded-2xl rounded-br-md bg-card px-4 py-3 text-lg text-foreground">Work was a lot today and I feel wiped out.</p>
+              <p className="mt-3 w-fit max-w-[85%] rounded-2xl rounded-bl-md bg-primary px-4 py-3 text-lg text-primary-foreground">That sounds draining. What felt like the heaviest part?</p>
+              <p className="ml-auto mt-3 w-fit max-w-[85%] rounded-2xl rounded-br-md bg-card px-4 py-3 text-lg text-foreground">The meeting that ran long. I just wanted to go home.</p>
+            </div>
+            <div className="rounded-3xl border border-border bg-card p-6 shadow-[var(--shadow-card)]">
+              <p className="text-sm font-semibold text-muted-foreground">And it becomes your journal entry</p>
+              <h2 className="mt-2 text-xl font-bold text-foreground">A long day at work</h2>
+              <p className="font-hand mt-2 text-lg leading-relaxed text-foreground">
+                Work was a lot today and I feel wiped out. The meeting that ran long was the heaviest part. I just wanted to go home.
+              </p>
+              <p className="mt-3 text-sm text-muted-foreground">An invented example. Entries are written from what you said, and you can read and delete them any time.</p>
+            </div>
+          </div>
+        </section>
 
         <ol className="mt-16 grid w-full max-w-6xl gap-4 text-left sm:grid-cols-3" aria-label="How it works">
           {STEPS.map((s) => (

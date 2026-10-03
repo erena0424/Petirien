@@ -25,7 +25,7 @@ declare const __DEEPSPACE_SITE_ORIGIN__: string | undefined
 
 export const seo = {
   title: `${DISPLAY_NAME} | Everyday emotional support`,
-  description: `${DISPLAY_NAME} helps you check in and find a few gentle, manageable ideas that fit your energy and time. Not therapy or medical advice.`,
+  description: `${DISPLAY_NAME} is journaling that feels like talking: chat with a friendly bunny and it turns the conversation into a journal entry in your own words. It can also suggest a small next step. Not therapy or medical advice.`,
   /** Public origin for canonical URLs, og:url, and the sitemap — no trailing
    *  slash. Replace with the custom domain once one is attached, e.g.
    *  'https://www.example.com'. */
