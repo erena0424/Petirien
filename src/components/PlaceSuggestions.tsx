@@ -8,7 +8,7 @@ import { usePlaceFeedback } from '@/lib/use-place-feedback'
 import { usePlaces } from '@/lib/use-places'
 import { cn } from '@/lib/utils'
 import { dayOfYear } from '@/lib/for-now'
-import { NIGHT_FALLBACK, applyPlaceFeedback, closedCount, isLateNight, kindsFor, formatDistance, pickPlace, prefersMiles, suggestedKinds, suggestionLine, type Place, type PlaceKindId } from '../places/places'
+import { NIGHT_FALLBACK, openLine, applyPlaceFeedback, closedCount, isLateNight, kindsFor, formatDistance, pickPlace, prefersMiles, suggestedKinds, suggestionLine, type Place, type PlaceKindId } from '../places/places'
 
 const AUTO_KEY = 'petirien.placesAutoAt'
 
@@ -67,7 +67,7 @@ function PlaceRow({ kind, place, miles, onRate, rating }: { kind: PlaceKindId; p
             {suggestionLine(kind, place.name)}
           </p>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            {[place.type, formatDistance(place.distanceKm, miles), place.rating !== null ? `${place.rating.toFixed(1)} stars` : '', place.openState].filter(Boolean).join(' · ')}
+            {[place.type, formatDistance(place.distanceKm, miles), place.rating !== null ? `${place.rating.toFixed(1)} stars` : '', openLine(place, new Date())].filter(Boolean).join(' · ')}
           </p>
           {place.address && <p className="text-sm text-muted-foreground">{place.address}</p>}
           <a

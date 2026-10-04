@@ -42,7 +42,7 @@ class SearchFailed extends Error {
 }
 
 /** The signed-out path: our own capped endpoint (the app pays, a fixed kind and a rounded location only). */
-async function searchPublic(kindId: PlaceKindId, rounded: Origin): Promise<unknown> {
+async function searchPublic(kindId: PlaceKindId, rounded: Origin): Promise<{ data: unknown; fetchedAt: number }> {
   let res: Response
   try {
     res = await fetch('/api/public/places', {
@@ -53,9 +53,9 @@ async function searchPublic(kindId: PlaceKindId, rounded: Origin): Promise<unkno
   } catch {
     throw new SearchFailed(false)
   }
-  const body = (await res.json().catch(() => null)) as { success?: boolean; data?: unknown } | null
+  const body = (await res.json().catch(() => null)) as { success?: boolean; data?: unknown; fetchedAt?: unknown } | null
   if (!res.ok || !body?.success) throw new SearchFailed(false, res.status === 429)
-  return body.data
+  return { data: body.data, fetchedAt: typeof body.fetchedAt === 'number' ? body.fetchedAt : Date.now() }
 }
 
 /** One search for one kind of place, from the cache when we already have it. Billed to the person, or for a signed-out visitor to the capped public endpoint. */
@@ -64,15 +64,18 @@ async function search(kindId: PlaceKindId, rounded: Origin, signedIn: boolean): 
   const hit = cache.get(key) ?? readPlacesCache(key)
   if (hit) return hit
   let data: unknown
+  let fetchedAt = Date.now()
   if (signedIn) {
     const q = PLACE_KINDS.find((k) => k.id === kindId)!.q
     const res = await integration.post<Record<string, unknown>>('serpapi/places-search', { q, type: 'search', ll: llParam(rounded), hl: 'en' })
     if (!res.success) throw new SearchFailed(res.code === 'insufficient_credits' || res.status === 402)
     data = res.data
   } else {
-    data = await searchPublic(kindId, rounded)
+    const found = await searchPublic(kindId, rounded)
+    data = found.data
+    fetchedAt = found.fetchedAt
   }
-  const places = parsePlaces(data, rounded)
+  const places = parsePlaces(data, rounded, undefined, fetchedAt)
   cache.set(key, places)
   writePlacesCache(key, places)
   return places

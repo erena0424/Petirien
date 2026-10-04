@@ -4,6 +4,8 @@
  * here stores it. Search words come from a fixed list, never from the person or a model.
  */
 
+import { clockText, openAt, parseHours, type WeeklyHours } from './hours'
+
 export const PLACE_KINDS = [
   { id: 'park', label: 'Park', q: 'park' },
   { id: 'cafe', label: 'Café', q: 'cafe' },
@@ -25,7 +27,12 @@ export interface Place {
   type: string
   address: string
   rating: number | null
+  /** Google's one-line "Open · Closes 3 PM": true only at the moment of the search, so it is a fallback. */
   openState: string
+  /** The weekly opening hours, when Google gave them. Open or closed is worked out from these at the time it is shown. */
+  hours: WeeklyHours | null
+  /** When the places were looked up (milliseconds), to know how old `openState` is. */
+  fetchedAt: number
   /** A small photo of the place from Google, or null. Only ever a link on a known Google or SerpApi image host. */
   thumbnail: string | null
   /** Straight-line kilometres from the rounded origin. */
@@ -89,7 +96,7 @@ export function mapsUrl(name: string, placeId: string): string {
  * The few places worth showing: the nearest ones within walking range, with a name and a location.
  * The service's own order is a relevance order, not a distance one, so the sort is ours.
  */
-export function parsePlaces(data: unknown, origin: Origin, max = MAX_PLACES): Place[] {
+export function parsePlaces(data: unknown, origin: Origin, max = MAX_PLACES, fetchedAt = Date.now()): Place[] {
   const list = data && typeof data === 'object' && Array.isArray((data as { local_results?: unknown }).local_results) ? ((data as { local_results: unknown[] }).local_results) : []
   const out: Place[] = []
   const seen = new Set<string>()
@@ -112,6 +119,8 @@ export function parsePlaces(data: unknown, origin: Origin, max = MAX_PLACES): Pl
       address: str(r.address, 120),
       rating: typeof r.rating === 'number' && r.rating >= 0 && r.rating <= 5 ? r.rating : null,
       openState: str(r.open_state, 60),
+      hours: parseHours(r.operating_hours),
+      fetchedAt,
       thumbnail: safeThumbnail(r.thumbnail) ?? safeThumbnail(r.serpapi_thumbnail),
       distanceKm: km,
       mapsUrl: mapsUrl(name, placeId),
@@ -167,7 +176,7 @@ export function daysUntilBack(info: RatingInfo | undefined, now: number): number
  * Everything keeps its order (nearest first). Pure: no search, so a thumbs-down shows the next place straight away.
  */
 export function applyPlaceFeedback(places: Place[], ratings: Ratings, now = Date.now()): Place[] {
-  return places.filter((p) => !isHidden(ratings.get(p.id), now) && openStatus(p.openState) !== 'closed')
+  return places.filter((p) => !isHidden(ratings.get(p.id), now) && placeStatus(p, new Date(now)) !== 'closed')
 }
 
 /**
@@ -187,7 +196,35 @@ export function openStatus(openState: string): OpenStatus {
 }
 
 /** How many of these places look closed right now. */
-export const closedCount = (places: Place[]) => places.filter((p) => openStatus(p.openState) === 'closed').length
+export const closedCount = (places: Place[], now = new Date()) => places.filter((p) => placeStatus(p, now) === 'closed').length
+
+/** The one-line snapshot only counts for this long after the search. */
+export const SNAPSHOT_FRESH_MS = 90 * 60 * 1000
+
+/**
+ * Whether a place is open now. Weekly hours decide when there are some (by the clock at the time of asking, so a place
+ * found hours ago is still judged fairly). Without them, Google's one-line snapshot is used only if it is recent;
+ * otherwise we do not know, and an unknown place is still offered.
+ */
+export function placeStatus(p: Place, now: Date): OpenStatus {
+  if (p.hours) {
+    const s = openAt(p.hours, now).status
+    if (s !== 'unknown') return s
+  }
+  const age = now.getTime() - (p.fetchedAt ?? 0)
+  return age >= 0 && age <= SNAPSHOT_FRESH_MS ? openStatus(p.openState) : 'unknown'
+}
+
+/** What to say about a place's hours, or nothing when it is not known: "Open until 3 PM", "Closes soon · 3 PM". */
+export function openLine(p: Place, now: Date): string {
+  if (p.hours) {
+    const s = openAt(p.hours, now)
+    if (s.status === 'open' && s.closesAt !== undefined) return s.closesAt - (now.getHours() * 60 + now.getMinutes()) > 20 * 60 ? 'Open 24 hours' : `Open until ${clockText(s.closesAt)}`
+    if (s.status === 'closing-soon' && s.closesAt !== undefined) return `Closes soon · ${clockText(s.closesAt)}`
+  }
+  const age = now.getTime() - (p.fetchedAt ?? 0)
+  return age >= 0 && age <= SNAPSHOT_FRESH_MS ? p.openState : ''
+}
 
 /** Late evening and night, by the person's own clock: 9 PM to 6 AM. No walk to a park is suggested then. */
 export function isLateNight(now: Date): boolean {

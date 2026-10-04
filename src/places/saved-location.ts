@@ -8,8 +8,8 @@ import { roundOrigin, validOrigin, type Origin, type Place } from './places'
 
 const KEY = 'petirien.location'
 const CACHE_KEY = 'petirien.placesCache'
-/** Searches for the same place and kind are reused this long, within the tab. Short, because the hours line (open or closed) is a snapshot. */
-export const PLACES_CACHE_MS = 90 * 60 * 1000
+/** Searches for the same place and kind are reused this long, within the tab. Open or closed is worked out from the stored weekly hours when shown, so this can be long. */
+export const PLACES_CACHE_MS = 6 * 60 * 60 * 1000
 
 export function loadLocation(storage: Pick<Storage, 'getItem'> | undefined = safe(() => localStorage)): Origin | null {
   try {

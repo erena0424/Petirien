@@ -65,7 +65,8 @@ test.describe('the landing page, signed out', () => {
     await expect(page.getByRole('button', { name: 'Continue with Google' })).toBeVisible() // DeepSpace's sign-in window
     // There is no separate sign-up: the window says that a new person's account is made the first time.
     await expect(page.getByRole('heading', { name: 'Sign in or sign up' })).toBeVisible()
-    await expect(page.getByText("If you're new, your account is created the first time.")).toBeVisible()
+    await expect(page.getByText(/your account is created the first time/)).toBeVisible()
+    await expect(page.getByText(/Email sign-in only works for accounts that already exist/)).toBeVisible()
     await expect(page.getByRole('button', { name: 'Continue with GitHub' })).toBeVisible()
   })
 

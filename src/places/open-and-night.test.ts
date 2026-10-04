@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { NIGHT_FALLBACK, PLACE_KINDS, applyPlaceFeedback, closedCount, homeKind, isLateNight, kindsFor, openStatus, parsePlaces, pickPlace, suggestedKinds } from './places'
+import { NIGHT_FALLBACK, PLACE_KINDS, SNAPSHOT_FRESH_MS, applyPlaceFeedback, closedCount, homeKind, isLateNight, kindsFor, openLine, openStatus, parsePlaces, pickPlace, placeStatus, suggestedKinds } from './places'
 import { EMPTY_FORM, optionsSummary, toInput } from '../components/checkin/CheckinForm'
 
 const origin = { lat: 40.7536, lng: -73.9832 }
@@ -79,5 +79,38 @@ describe('check-in at night', () => {
     expect(toInput({ ...v, place: 'out' }, true)).toMatchObject({ place: 'out' })
     expect(toInput(v, false)).not.toHaveProperty('place')
     expect(toInput(v)).not.toHaveProperty('place')
+  })
+})
+
+describe('open or closed is worked out from the weekly hours, at the time it is shown', () => {
+  const N = '\u202f'
+  const everyDay = (h: string) => Object.fromEntries(['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'].map((d) => [d, h]))
+  // The one-line snapshot says "Open", as it did when the search ran at noon; the hours say it closes at 3 PM.
+  const found = parsePlaces({ local_results: [{ ...raw('Lunch Cafe', 'Open · Closes 3\u202fPM'), operating_hours: everyDay(`8${N}AM–3${N}PM`) }] }, origin, 3, new Date(2026, 0, 4, 12, 0).getTime())[0]!
+  it('keeps the weekly hours with the place', () => {
+    expect(found.hours).not.toBeNull()
+    expect(found.hours![0]).toEqual([[480, 900]])
+  })
+  it('is open at noon, and the same place found earlier is closed in the evening (the hours win over the old snapshot)', () => {
+    expect(placeStatus(found, new Date(2026, 0, 4, 12, 0))).toBe('open')
+    expect(placeStatus(found, new Date(2026, 0, 4, 19, 0))).toBe('closed')
+    expect(applyPlaceFeedback([found], new Map(), new Date(2026, 0, 4, 19, 0).getTime())).toEqual([])
+    expect(applyPlaceFeedback([found], new Map(), new Date(2026, 0, 4, 12, 0).getTime())).toHaveLength(1)
+  })
+  it('says when it closes', () => {
+    expect(openLine(found, new Date(2026, 0, 4, 12, 0))).toBe('Open until 3 PM')
+    expect(openLine(found, new Date(2026, 0, 4, 14, 30))).toBe('Closes soon · 3 PM')
+    expect(openLine(found, new Date(2026, 0, 4, 19, 0))).toBe('')
+  })
+  it('without weekly hours, trusts the one-line snapshot only while it is fresh', () => {
+    const plain = parsePlaces({ local_results: [raw('Snap Cafe', 'Closed ⋅ Opens 8 AM')] }, origin, 3, 1_000_000)[0]!
+    expect(plain.hours).toBeNull()
+    expect(placeStatus(plain, new Date(1_000_000 + 60_000))).toBe('closed')
+    expect(placeStatus(plain, new Date(1_000_000 + SNAPSHOT_FRESH_MS + 1))).toBe('unknown') // too old to say
+    expect(openLine(plain, new Date(1_000_000 + SNAPSHOT_FRESH_MS + 1))).toBe('')
+  })
+  it('does not break on places stored by an older version of the app (no hours, no time)', () => {
+    const old = { ...found, hours: undefined, fetchedAt: undefined } as never
+    expect(placeStatus(old, new Date(2026, 0, 4, 12, 0))).toBe('unknown')
   })
 })

@@ -138,3 +138,20 @@ test('a person who chooses "Go outside" late at night is listened to', async ({ 
   await expect.poll(() => bodies.length).toBeGreaterThan(0)
   expect(bodies[0]).toMatchObject({ place: 'out' })
 })
+
+test('open or closed follows the weekly hours and the clock now, not the line Google gave at the time of the search', async ({ users }) => {
+  const [dana] = await users(['Dana'])
+  const page = dana.page
+  const N = '\u202f'
+  const everyDay = (h: string) => Object.fromEntries(['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'].map((d) => [d, h]))
+  // Both say "Open" in the one-line snapshot, but by their hours only one is open at 10 PM.
+  const early = { ...place('Early Bird Cafe', 40.7537, 'Open · Closes 3 PM', 'Cafe'), operating_hours: everyDay(`8${N}AM–3${N}PM`) }
+  const late = { ...place('Night Owl Cafe', 40.7545, 'Open · Closes 1 AM', 'Cafe'), operating_hours: everyDay(`8${N}AM–1${N}AM`) }
+  await setup(page, tenPm(), { cafe: { local_results: [early, late] }, library: { local_results: [] } })
+  await page.goto('/home')
+  const section = page.getByTestId('home-place')
+  await expect(section.getByTestId('place-line')).toHaveCount(1)
+  await expect(section.getByTestId('place-line')).toContainText('Night Owl Cafe')
+  await expect(section).toContainText('Open until 1 AM') // the line is worked out from the hours too
+  await expect(section).not.toContainText('Early Bird Cafe')
+})

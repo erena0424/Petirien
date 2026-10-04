@@ -109,7 +109,7 @@ describe('suggestionLine', () => {
 const NOW = Date.parse('2026-10-02T12:00:00Z')
 const DAY = 86_400_000
 const rate = (entries: [string, Rating, number?][]): Ratings => new Map(entries.map(([id, rating, at]) => [id, { rating, at: at ?? NOW }]))
-const mkPlace = (id: string): Place => ({ id, name: id, type: 'Park', address: '', rating: 4, openState: '', thumbnail: null, distanceKm: 1, mapsUrl: 'https://www.google.com/maps/search/?api=1&query=x' })
+const mkPlace = (id: string): Place => ({ id, name: id, type: 'Park', address: '', rating: 4, openState: '', hours: null, fetchedAt: 0, thumbnail: null, distanceKm: 1, mapsUrl: 'https://www.google.com/maps/search/?api=1&query=x' })
 
 describe('"not right now" is not forever', () => {
   it('sits out for a while, then comes back; "never" stays hidden', () => {

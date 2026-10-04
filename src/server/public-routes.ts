@@ -33,7 +33,7 @@ export function registerPublicRoutes(app: Hono<AppContext>): void {
     const cached = await tools.query<Row>('searchCache', { where: { query: key }, limit: 1 })
     const hit = cached.success ? cached.data.records[0] : undefined
     const hitData = hit?.data as Row | undefined
-    if (hitData && isFresh(hitData.fetchedAt, Date.now())) return c.json({ success: true, data: hitData.results })
+    if (hitData && isFresh(hitData.fetchedAt, Date.now())) return c.json({ success: true, data: hitData.results, fetchedAt: hitData.fetchedAt })
 
     const day = publicDay(new Date())
     const usage = await tools.query<Row>('usage', { where: { userId: PUBLIC_USAGE_ID, day }, limit: 1 })
@@ -54,8 +54,9 @@ export function registerPublicRoutes(app: Hono<AppContext>): void {
       return c.json({ success: false, code: 'search_failed', error: 'Search failed' }, 502)
     }
     const results = payload.data
-    if (hit) await tools.update('searchCache', hit.recordId as string, { results, fetchedAt: Date.now() })
-    else await tools.create('searchCache', { query: key, results, fetchedAt: Date.now() })
-    return c.json({ success: true, data: results })
+    const fetchedAt = Date.now()
+    if (hit) await tools.update('searchCache', hit.recordId as string, { results, fetchedAt })
+    else await tools.create('searchCache', { query: key, results, fetchedAt })
+    return c.json({ success: true, data: results, fetchedAt })
   })
 }
