@@ -12,6 +12,13 @@ describe('an event typed by hand', () => {
     expect(new Date(row.end)).toEqual(new Date(2026, 9, 9, 15, 30))
     expect(row.allDay).toBe(0)
   })
+  it('with an end time lasts until then, and an end before the start is refused', () => {
+    const row = newMyPlan('Workshop', '2026-10-09', '09:00', now, '11:30')!
+    expect(new Date(row.end)).toEqual(new Date(2026, 9, 9, 11, 30))
+    expect(newMyPlan('x', '2026-10-09', '09:00', now, '08:00')).toBeNull()
+    expect(newMyPlan('x', '2026-10-09', '09:00', now, '09:00')).toBeNull()
+    expect(newMyPlan('x', '2026-10-09', '09:00', now, 'later')).toBeNull()
+  })
   it('with no time is all day; with no date it is today', () => {
     const row = newMyPlan('Dentist', '', '', now)!
     expect(new Date(row.start)).toEqual(new Date(2026, 9, 4))

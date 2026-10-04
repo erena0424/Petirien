@@ -145,6 +145,14 @@ test('on Home, a plan for today is saved with its date, survives a reload, and c
   await tuck(page)
   await page.goto('/home')
   await fold(page)
+  // Home shows at most four coming plans, so start clean: an earlier failed run may have left some behind.
+  await page.waitForTimeout(2500)
+  for (let i = 0; i < 12; i++) {
+    const left = page.getByRole('button', { name: /^Remove: / })
+    if ((await left.count()) === 0) break
+    await left.first().click()
+    await page.waitForTimeout(600)
+  }
   await page.getByRole('button', { name: 'Share a plan' }).click()
   await page.getByLabel('What is it?').fill(TODAY)
   await page.getByRole('button', { name: 'Add', exact: true }).click()

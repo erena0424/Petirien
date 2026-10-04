@@ -5,7 +5,7 @@
  */
 
 import { PageHeader } from '@/components/PageHeader'
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { ConfirmModal, Button } from '@/components/ui'
@@ -25,6 +25,7 @@ import { useMyPlans } from '@/lib/use-my-plans'
 import type { Plan } from '../../../plans/plan'
 import { reflectedIds } from '../../../journal/layout'
 import { cn } from '@/lib/utils'
+import { hhmm } from '../../../journal/slots'
 import { VIEWS, dayKey, groupByDay, isView, rangeLabel, shift, startOfDay, type View } from '../../../journal/calendar'
 
 const VIEW_KEY = 'petirien.journalView'
@@ -89,7 +90,10 @@ export default function JournalPage() {
   const [view, setViewState] = useState<View>(savedView)
   const [openEvent, setOpenEvent] = useState<Plan | null>(null)
   const [openEntryId, setOpenEntryId] = useState<string | null>(null)
-  const [adding, setAdding] = useState(false)
+  // An event being added: where it starts, from a click or drag on the calendar (or empty, for typing it in).
+  const [draft, setDraft] = useState<{ date: string; time: string; endTime: string } | null>(null)
+  const lastDraft = useRef({ date: '', time: '', endTime: '' })
+  if (draft) lastDraft.current = draft
   const mine = useMyPlans()
   const chat = useBunnyChat()
   const [anchor, setAnchor] = useState(() => startOfDay(new Date()))
@@ -135,6 +139,7 @@ export default function JournalPage() {
     onSelect: select,
     onOpenEvent: setOpenEvent,
     onOpenEntry: (r: JournalRecord) => setOpenEntryId(r.recordId),
+    onCreate: (s: { date: Date; startMin: number; endMin: number }) => setDraft({ date: dayKey(s.date), time: hhmm(s.startMin), endTime: hhmm(s.endMin) }),
     onEdit: setEditing,
     onDelete: setDeleting,
   }
@@ -182,9 +187,12 @@ export default function JournalPage() {
                 ))}
               </div>
 
-              <Button variant="outline" className="min-h-10 rounded-full" onClick={() => setAdding(true)} data-testid="add-event">
-                Add an event
-              </Button>
+              <p className="max-w-xs text-sm text-muted-foreground" data-testid="add-event-hint">
+                {view === 'week' || view === 'day' ? 'Click or drag on the calendar to add an event.' : 'Open a day, then click or drag on the calendar to add an event.'}{' '}
+                <button type="button" data-testid="add-event" className="font-medium text-primary underline-offset-4 hover:underline" onClick={() => setDraft({ date: dayKey(anchor), time: '', endTime: '' })}>
+                  Or type one in.
+                </button>
+              </p>
 
               {view !== 'list' && (
                 <div className="flex items-center gap-1">
@@ -247,7 +255,7 @@ export default function JournalPage() {
         onReflect={(p) => void chat.startAbout(p)}
         onRemove={(p) => mine.remove(p.id)}
       />
-      <AddEventDialog open={adding} onClose={() => setAdding(false)} defaultDate={dayKey(anchor)} onAdd={mine.add} />
+      <AddEventDialog open={draft !== null} onClose={() => setDraft(null)} defaultDate={lastDraft.current.date} defaultTime={lastDraft.current.time} defaultEndTime={lastDraft.current.endTime} onAdd={mine.add} />
       <EntryDialog
         record={openEntry}
         onClose={() => setOpenEntryId(null)}

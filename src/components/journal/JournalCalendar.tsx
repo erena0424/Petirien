@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui'
@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 import type { Plan } from '../../plans/plan'
 import { addDays, dayKey, fullDate, monthGrid, sameDay, weekDays, type View } from '../../journal/calendar'
 import { chartRange } from '../../journal/mood'
+import { clickSlot, clockLabel, dragSlot, minuteAt } from '../../journal/slots'
 import { HOUR_PX, MINUTES_PER_DAY, allDayOn, blockBox, eventsOn, layoutDay, timeRange } from '../../journal/layout'
 import { JournalEntryCard, type JournalRecord } from './JournalEntryCard'
 import type { ReflectOn } from '../ReflectionDialog'
@@ -34,6 +35,8 @@ interface Common {
   onOpenEvent: (p: Plan) => void
   /** Open one journal entry to read it, from its title on the calendar. */
   onOpenEntry: (r: JournalRecord) => void
+  /** Add an event where the person clicked or dragged on the time grid. */
+  onCreate: (slot: { date: Date; startMin: number; endMin: number }) => void
   onEdit: (plan: ReflectOn) => void
   onDelete: (recordId: string) => void
 }
@@ -66,7 +69,7 @@ function EventRow({ plan, reflected, onOpen }: { plan: Plan; reflected: boolean;
 }
 
 /** What is on the calendar for the day chosen, then the journal for the whole stretch on screen (month, week or day). */
-export function DayAgenda({ byDay, events, reflected, anchor, view, onOpenEvent, onEdit, onDelete }: Omit<Common, 'onSelect' | 'onOpenEntry'> & { view: View }) {
+export function DayAgenda({ byDay, events, reflected, anchor, view, onOpenEvent, onEdit, onDelete }: Omit<Common, 'onSelect' | 'onOpenEntry' | 'onCreate'> & { view: View }) {
   const planned = eventsOn(events, anchor)
   const { from, to } = chartRange(view, anchor, new Date())
   // Every entry whose day falls in the range, newest day first and newest first within a day: like the List tab, for these days.
@@ -221,6 +224,50 @@ function TimeGrid({ days, c, minWidth }: { days: Date[]; c: Common; minWidth: nu
   const today = new Date()
   const now = today.getHours() * 60 + today.getMinutes()
   const firstKey = dayKey(days[0]!)
+  // Click or drag on an empty part of a day to add an event there, like a paper diary or Google Calendar. A touch screen
+  // taps (a drag would scroll); a mouse can also drag out how long it lasts.
+  const [sel, setSel] = useState<{ key: string; a: number; b: number } | null>(null)
+  const drag = useRef<{ key: string; a: number } | null>(null)
+  const dragged = useRef(false)
+  const minuteOf = (e: React.PointerEvent<HTMLDivElement> | React.MouseEvent<HTMLDivElement>) => minuteAt(e.clientY - e.currentTarget.getBoundingClientRect().top, HOUR_PX)
+  const onButton = (e: { target: EventTarget }) => !!(e.target as HTMLElement).closest('button')
+  const slotHandlers = (d: Date) => ({
+    onPointerDown: (e: React.PointerEvent<HTMLDivElement>) => {
+      if (e.pointerType === 'touch' || e.button !== 0 || onButton(e)) return
+      const min = minuteOf(e)
+      drag.current = { key: dayKey(d), a: min }
+      dragged.current = false
+      e.currentTarget.setPointerCapture(e.pointerId)
+      setSel({ key: dayKey(d), a: min, b: min })
+    },
+    onPointerMove: (e: React.PointerEvent<HTMLDivElement>) => {
+      if (drag.current) setSel({ key: drag.current.key, a: drag.current.a, b: minuteOf(e) })
+    },
+    onPointerUp: (e: React.PointerEvent<HTMLDivElement>) => {
+      const dr = drag.current
+      drag.current = null
+      if (!dr) return
+      const slot = dragSlot(dr.a, minuteOf(e))
+      setSel(null)
+      if (slot) {
+        dragged.current = true // the click that follows a drag is not a second request
+        c.onCreate({ date: d, startMin: slot.start, endMin: slot.end })
+      }
+    },
+    onPointerCancel: () => {
+      drag.current = null
+      setSel(null)
+    },
+    onClick: (e: React.MouseEvent<HTMLDivElement>) => {
+      if (dragged.current) {
+        dragged.current = false
+        return
+      }
+      if (onButton(e)) return
+      const slot = clickSlot(minuteOf(e))
+      c.onCreate({ date: d, startMin: slot.start, endMin: slot.end })
+    },
+  })
 
   // Start the view at the first thing of the day (or 7 AM), not at midnight.
   useEffect(() => {
@@ -281,7 +328,30 @@ function TimeGrid({ days, c, minWidth }: { days: Date[]; c: Common; minWidth: nu
               const blocks = layoutDay(c.events, d)
               const written = (c.byDay.get(dayKey(d)) ?? []).filter((r) => !r.data.eventId || !c.events.some((p) => p.id === r.data.eventId))
               return (
-                <div key={dayKey(d)} data-testid="time-column" data-date={dayKey(d)} className="relative min-w-0 border-l border-border" style={{ height: 24 * HOUR_PX }}>
+                <div
+                  key={dayKey(d)}
+                  data-testid="time-column"
+                  data-date={dayKey(d)}
+                  className="relative min-w-0 cursor-cell touch-pan-y select-none border-l border-border"
+                  style={{ height: 24 * HOUR_PX }}
+                  {...slotHandlers(d)}
+                >
+                  {sel && sel.key === dayKey(d) && (
+                    (() => {
+                      const slot = dragSlot(sel.a, sel.b)
+                      if (!slot) return null
+                      return (
+                        <div
+                          aria-hidden
+                          data-testid="slot-preview"
+                          className="pointer-events-none absolute inset-x-0.5 z-30 rounded-md border border-primary bg-primary/20 px-1 text-[11px] font-medium text-foreground"
+                          style={{ top: (slot.start / 60) * HOUR_PX, height: ((slot.end - slot.start) / 60) * HOUR_PX }}
+                        >
+                          {clockLabel(slot.start)} – {clockLabel(slot.end)}
+                        </div>
+                      )
+                    })()
+                  )}
                   {Array.from({ length: 24 }, (_, h) => (
                     <div key={h} aria-hidden className="absolute inset-x-0 border-t border-border/70" style={{ top: h * HOUR_PX }} />
                   ))}

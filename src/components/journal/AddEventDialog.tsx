@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Button, Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui'
 
 const field =
@@ -12,33 +12,42 @@ export function AddEventDialog({
   open,
   onClose,
   defaultDate,
+  defaultTime = '',
+  defaultEndTime = '',
   onAdd,
 }: {
   open: boolean
   onClose: () => void
   /** "YYYY-MM-DD" the date starts on (the day being looked at). */
   defaultDate: string
+  /** "HH:MM" from a click or drag on the calendar, or empty. */
+  defaultTime?: string
+  defaultEndTime?: string
   /** True when what was typed is usable and is being saved. */
-  onAdd: (title: string, date: string, time: string) => boolean
+  onAdd: (title: string, date: string, time: string, endTime: string) => boolean
 }) {
   const [title, setTitle] = useState('')
   const [date, setDate] = useState(defaultDate)
-  const [time, setTime] = useState('')
+  const [time, setTime] = useState(defaultTime)
+  const [endTime, setEndTime] = useState(defaultEndTime)
   const [error, setError] = useState('')
+  const titleRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (open) {
       setTitle('')
       setDate(defaultDate)
-      setTime('')
+      setTime(defaultTime)
+      setEndTime(defaultEndTime)
       setError('')
+      setTimeout(() => titleRef.current?.focus(), 50)
     }
-  }, [open, defaultDate])
+  }, [open, defaultDate, defaultTime, defaultEndTime])
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
-    if (onAdd(title, date, time)) onClose()
-    else setError('Add what it is and a date, and a time like 14:30 if you like.')
+    if (onAdd(title, date, time, endTime)) onClose()
+    else setError('Add what it is and a date, a time like 14:30 if you like, and an end that comes after the start.')
   }
 
   return (
@@ -49,7 +58,7 @@ export function AddEventDialog({
         <form onSubmit={submit} className="space-y-3" aria-label="Add an event">
           <label className="block text-sm font-medium text-foreground">
             What is it?
-            <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={80} className={field} />
+            <input ref={titleRef} value={title} onChange={(e) => setTitle(e.target.value)} maxLength={80} className={field} />
           </label>
           <div className="flex flex-wrap gap-3">
             <label className="min-w-0 flex-1 text-sm font-medium text-foreground">
@@ -59,6 +68,10 @@ export function AddEventDialog({
             <label className="text-sm font-medium text-foreground">
               Time (optional)
               <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className={field} />
+            </label>
+            <label className="text-sm font-medium text-foreground">
+              Until (optional)
+              <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className={field} />
             </label>
           </div>
           {error && (

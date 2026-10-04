@@ -32,9 +32,10 @@ function day(s: string): Date | null {
 
 /**
  * What to store for an event typed by hand. `date` is "YYYY-MM-DD" (empty means today) and `time` is "HH:MM" or empty
- * for an all-day event. A timed event lasts an hour. Null when something is not usable.
+ * for an all-day event. A timed event lasts an hour unless `endTime` ('HH:MM', later the same day) says otherwise.
+ * Null when something is not usable.
  */
-export function newMyPlan(title: string, date: string, time: string, now: Date): MyPlanRow | null {
+export function newMyPlan(title: string, date: string, time: string, now: Date, endTime = ''): MyPlanRow | null {
   if (!title.trim()) return null
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   const d = date.trim() ? day(date) : today
@@ -50,7 +51,15 @@ export function newMyPlan(title: string, date: string, time: string, now: Date):
   const min = Number(m[2])
   if (h > 23 || min > 59) return null
   const start = new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, min)
-  return { title: clean, start: start.toISOString(), end: new Date(start.getTime() + HOUR).toISOString(), allDay: 0 }
+  let end = new Date(start.getTime() + HOUR)
+  const e = endTime.trim()
+  if (e) {
+    const em = /^(\d{1,2}):(\d{2})$/.exec(e)
+    if (!em || Number(em[1]) > 23 || Number(em[2]) > 59) return null
+    end = new Date(d.getFullYear(), d.getMonth(), d.getDate(), Number(em[1]), Number(em[2]))
+    if (end <= start) return null
+  }
+  return { title: clean, start: start.toISOString(), end: end.toISOString(), allDay: 0 }
 }
 
 /** A stored row as a Plan the calendar and Home understand, or null if it is not readable. */

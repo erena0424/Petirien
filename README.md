@@ -20,7 +20,7 @@ Built on [DeepSpace](https://deep.space) for the AI-native GTM engineer build ex
   questions), which you can see and edit in Preferences.
 - **Plans and reflection:** connect your own Google Calendar and see today and tomorrow on Home. "Reflect on this" starts a
   conversation with the bunny about any plan, coming or past, without assuming how you feel about it.
-- **Your own events:** add an event (a name, a date and an optional time) on Home or in the Journal. It is saved to your account, shown on your Journal calendar (and on Home when it is today or tomorrow), and you can talk about it with the bunny like a Google event, so the calendar works without connecting Google.
+- **Your own events:** click or drag on the Journal's Week or Day calendar to add an event right where you point (a drag sets how long it lasts, like Google Calendar), or type one in on Home or in the Journal. It is saved to your account, shown on your Journal calendar (and on Home when it is today or tomorrow), and you can talk about it with the bunny like a Google event, so the calendar works without connecting Google.
 - **Journal:** a calendar (Month, Week, Day, List) with your calendar's events at their times, the bunny's notes written in
   your own voice, and a mood and energy chart. Events you have not written about are there too, so you can reflect on any
   of them later.
