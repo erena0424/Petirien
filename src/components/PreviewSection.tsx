@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Play } from 'lucide-react'
-import { AuthOverlay } from 'deepspace'
+import { SignInWindow } from './SignInWindow'
 import { Button } from '@/components/ui'
 import { ENERGY, label } from '@/lib/labels'
 import { TIME_CHOICES } from '@/lib/free-time'
@@ -89,7 +89,7 @@ export function PreviewSection({ asking, onClose }: { asking: boolean; onClose: 
         ))}
       </ul>
 
-      {signIn && <AuthOverlay onClose={() => setSignIn(false)} />}
+      {signIn && <SignInWindow onClose={() => setSignIn(false)} />}
     </section>
   )
 }

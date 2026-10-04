@@ -76,6 +76,7 @@ test.describe('someone who has not signed in', () => {
 
   test('Somewhere to go falls back to taking a walk when location is declined, and says so kindly when the daily limit is reached', async ({ page }) => {
     await tuck(page)
+    await page.clock.setFixedTime(new Date(2026, 0, 4, 12, 0)) // by day: late at night the card suggests something indoors instead
     await page.goto('/home')
     await page.addInitScript(() => {
       Object.defineProperty(navigator, 'geolocation', {

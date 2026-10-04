@@ -63,6 +63,10 @@ test.describe('the landing page, signed out', () => {
     await page.getByTestId('landing-signin').click()
     await expect(page).toHaveURL(/\/home\?signin=1$/)
     await expect(page.getByRole('button', { name: 'Continue with Google' })).toBeVisible() // DeepSpace's sign-in window
+    // There is no separate sign-up: the window says that a new person's account is made the first time.
+    await expect(page.getByRole('heading', { name: 'Sign in or sign up' })).toBeVisible()
+    await expect(page.getByText("If you're new, your account is created the first time.")).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Continue with GitHub' })).toBeVisible()
   })
 
   test('phone width: the whole landing page fits without scrolling sideways', async ({ page }) => {

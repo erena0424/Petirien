@@ -15,7 +15,8 @@
 
 import { useState } from 'react'
 import { Link, Outlet } from 'react-router-dom'
-import { AuthGate, AuthOverlay } from 'deepspace'
+import { AuthGate } from 'deepspace'
+import { SignInWindow } from '../../../components/SignInWindow'
 import { Button } from '@/components/ui'
 
 export default function ProtectedLayout() {
@@ -47,7 +48,7 @@ function SignedOutPanel() {
         </Link>
       </div>
 
-      {showAuthModal && <AuthOverlay onClose={() => setShowAuthModal(false)} />}
+      {showAuthModal && <SignInWindow onClose={() => setShowAuthModal(false)} />}
     </div>
   )
 }

@@ -8,7 +8,7 @@ import { usePlaceFeedback } from '@/lib/use-place-feedback'
 import { usePlaces } from '@/lib/use-places'
 import { cn } from '@/lib/utils'
 import { dayOfYear } from '@/lib/for-now'
-import { PLACE_KINDS, applyPlaceFeedback, formatDistance, pickPlace, prefersMiles, suggestedKinds, suggestionLine, type Place, type PlaceKindId } from '../places/places'
+import { NIGHT_FALLBACK, applyPlaceFeedback, closedCount, isLateNight, kindsFor, formatDistance, pickPlace, prefersMiles, suggestedKinds, suggestionLine, type Place, type PlaceKindId } from '../places/places'
 
 const AUTO_KEY = 'petirien.placesAutoAt'
 
@@ -101,7 +101,8 @@ function PlaceRow({ kind, place, miles, onRate, rating }: { kind: PlaceKindId; p
  */
 export function PlaceSuggestions({ kinds: kindsProp, autoEveryMs, showOthers = true, fallback }: Props) {
   // Today's pair (something outside, somewhere to sit) unless told otherwise; it changes from day to day.
-  const kinds = kindsProp ?? suggestedKinds(dayOfYear(new Date()))
+  const night = isLateNight(new Date())
+  const kinds = kindsProp ?? suggestedKinds(dayOfYear(new Date()), night)
   const { isSignedIn } = useAuthStatus()
   const { state, find, findSuggested, forget } = usePlaces(isSignedIn)
   const { ratings, rate, ready } = usePlaceFeedback()
@@ -169,7 +170,7 @@ export function PlaceSuggestions({ kinds: kindsProp, autoEveryMs, showOthers = t
         {(state.kind === 'denied' || state.kind === 'unavailable') && (
           <p data-testid={state.kind === 'denied' ? 'places-denied' : 'places-unavailable'} className="text-sm text-foreground">
             {state.kind === 'denied' ? "No problem, I won't use your location. " : "I couldn't get your location just now. "}
-            {fallback ?? 'How about just taking a walk? Pick any direction you like, and head back whenever you are ready.'}
+            {night ? NIGHT_FALLBACK : (fallback ?? 'How about just taking a walk? Pick any direction you like, and head back whenever you are ready.')}
           </p>
         )}
         {(state.kind === 'denied' || state.kind === 'unavailable' || state.kind === 'error') && (
@@ -179,11 +180,16 @@ export function PlaceSuggestions({ kinds: kindsProp, autoEveryMs, showOthers = t
         )}
         {state.kind === 'error' && (
           <p data-testid="places-error" className="text-sm text-foreground">
-            {state.message} {fallback ?? 'How about just taking a walk?'}
+            {state.message} {night ? NIGHT_FALLBACK : (fallback ?? 'How about just taking a walk?')}
           </p>
         )}
       </div>
 
+      {night && (state.kind === 'suggested' || state.kind === 'results') && (
+        <p data-testid="night-note" className="mb-2 text-sm text-muted-foreground">
+          It&apos;s late, so I&apos;m only suggesting places that are indoors and open.
+        </p>
+      )}
       {state.kind === 'suggested' && (
         <>
           {(() => {
@@ -193,7 +199,11 @@ export function PlaceSuggestions({ kinds: kindsProp, autoEveryMs, showOthers = t
               .filter((r): r is { kind: PlaceKindId; place: Place } => !!r.place)
             return rows.length === 0 ? (
               <p data-testid="places-empty" className="text-sm text-foreground">
-                I didn&apos;t find anything new within an easy walk. Try another kind below, or just walk anywhere you like.
+                {Object.values(state.byKind).some((l) => closedCount(l ?? []) > 0)
+                  ? night
+                    ? `The places near you look closed right now. ${NIGHT_FALLBACK}`
+                    : 'The places near you look closed right now. Try again a little later, or pick another kind below.'
+                  : "I didn't find anything new within an easy walk. Try another kind below, or just walk anywhere you like."}
               </p>
             ) : (
               <div>
@@ -280,7 +290,7 @@ export function PlaceSuggestions({ kinds: kindsProp, autoEveryMs, showOthers = t
           </button>
           {othersOpen && (
             <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="Kind of place">
-              {PLACE_KINDS.map((k) => (
+              {kindsFor(night).map((k) => (
                 <Button
                   key={k.id}
                   type="button"

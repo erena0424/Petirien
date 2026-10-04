@@ -2,7 +2,8 @@ import { JournalButton } from './JournalButton'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Minus, Plus, Send, X } from 'lucide-react'
-import { AuthOverlay, useAuthStatus } from 'deepspace'
+import { useAuthStatus } from 'deepspace'
+import { SignInWindow } from './SignInWindow'
 import { Button } from '@/components/ui'
 import { useBunnyChat } from '@/lib/bunny-chat'
 import {
@@ -539,7 +540,7 @@ function Floating() {
           Press Enter to hide or show the chat. Use the arrow keys to move the bunny.
         </span>
       </div>
-      {signIn && <AuthOverlay onClose={() => setSignIn(false)} />}
+      {signIn && <SignInWindow onClose={() => setSignIn(false)} />}
     </div>
   )
 }

@@ -85,6 +85,12 @@ async function fillAndSubmit(page: Page) {
   await page.getByRole('button', { name: 'Show me a few ideas' }).click()
 }
 
+/** Check-ins behave differently late at night (no outdoors), so these tests pin the clock to a noon, whatever time the run happens. */
+async function tuckDay(page: Page) {
+  await tuck(page)
+  await page.clock.setFixedTime(new Date(2026, 0, 4, 12, 0))
+}
+
 test.beforeEach(async ({ users }, testInfo) => {
   testInfo.annotations.push({ type: 'note', description: 'uses a mocked recommend action' })
   void users
@@ -92,7 +98,7 @@ test.beforeEach(async ({ users }, testInfo) => {
 
 test('form needs mood and energy, shows the privacy note, then returns ideas', async ({ users }) => {
   const [a] = await users(1)
-  await tuck(a.page)
+  await tuckDay(a.page)
   const bodies = await mockRecommend(a.page, () => okResponse())
   await a.page.goto('/checkin')
 
@@ -116,7 +122,7 @@ test('form needs mood and energy, shows the privacy note, then returns ideas', a
 
 test('watch, finish, give feedback', async ({ users }) => {
   const [a] = await users(1)
-  await tuck(a.page)
+  await tuckDay(a.page)
   await fakeYouTube(a.page)
   await mockRecommend(a.page, () => okResponse())
   await a.page.goto('/checkin')
@@ -140,7 +146,7 @@ test('watch, finish, give feedback', async ({ users }) => {
 
 test('embedding blocked and removed videos fall back inline', async ({ users }) => {
   const [a] = await users(1)
-  await tuck(a.page)
+  await tuckDay(a.page)
   await fakeYouTube(a.page)
   await mockRecommend(a.page, () => okResponse())
   await a.page.goto('/checkin')
@@ -162,7 +168,7 @@ test('embedding blocked and removed videos fall back inline', async ({ users }) 
 
 test('"none fit" retries with exclusions and the same check-in, then stops after two', async ({ users }) => {
   const [a] = await users(1)
-  await tuck(a.page)
+  await tuckDay(a.page)
   const bodies = await mockRecommend(a.page, () => okResponse('chk_7'))
   await a.page.goto('/checkin')
   await fillAndSubmit(a.page)
@@ -180,7 +186,7 @@ test('"none fit" retries with exclusions and the same check-in, then stops after
 
 test('crisis response shows support resources and no ideas', async ({ users }) => {
   const [a] = await users(1)
-  await tuck(a.page)
+  await tuckDay(a.page)
   await mockRecommend(a.page, () => ({ status: 'support', checkinId: 'chk_1' }))
   await a.page.goto('/checkin')
   await fillAndSubmit(a.page)
@@ -196,7 +202,7 @@ test('crisis response shows support resources and no ideas', async ({ users }) =
 
 test('support is reachable from the footer on any screen', async ({ users }) => {
   const [a] = await users(1)
-  await tuck(a.page)
+  await tuckDay(a.page)
   await a.page.goto('/home')
   await a.page.getByTestId('footer-support').click()
   await expect(a.page.getByTestId('support-card')).toBeVisible()
@@ -208,7 +214,7 @@ test('support is reachable from the footer on any screen', async ({ users }) => 
 
 test('other statuses render calmly and recover locally', async ({ users }) => {
   const [a] = await users(1)
-  await tuck(a.page)
+  await tuckDay(a.page)
   const statuses = [
     { status: 'no_video', checkinId: 'c', reply: 'Here are a few options.', activities: [{ activityId: 'box-breathing', title: 'Box breathing', blurb: 'A steady rhythm.' }] },
     { status: 'error', message: 'Something went wrong on our side.' },
@@ -237,7 +243,7 @@ test('other statuses render calmly and recover locally', async ({ users }) => {
 
 test('each idea expands into hand-written instructions, also while watching and without videos', async ({ users }) => {
   const [a] = await users(1)
-  await tuck(a.page)
+  await tuckDay(a.page)
   await fakeYouTube(a.page)
   await mockRecommend(a.page, (n) =>
     n === 1
@@ -274,7 +280,7 @@ test('each idea expands into hand-written instructions, also while watching and 
 
 test('"No screen" asks for ideas only; plain ideas have steps, feedback, and no Watch button', async ({ users }) => {
   const [a] = await users(1)
-  await tuck(a.page)
+  await tuckDay(a.page)
   const idea = (n: number, id: string, title: string) => ({
     suggestionId: `sug_${n}`, activityId: id, activityTitle: title, video: null,
     reason: 'A short written exercise.', rank: n,
@@ -302,7 +308,7 @@ test('"No screen" asks for ideas only; plain ideas have steps, feedback, and no 
 
 test('"Videos are fine" is sent as video; the default sends nothing', async ({ users }) => {
   const [a] = await users(1)
-  await tuck(a.page)
+  await tuckDay(a.page)
   const bodies = await mockRecommend(a.page, () => okResponse())
   await a.page.goto('/checkin')
   await a.page.getByRole('button', { name: /More options/ }).click()
@@ -314,7 +320,7 @@ test('"Videos are fine" is sent as video; the default sends nothing', async ({ u
 
 test('the default asks for videos where they help and does not send a screen value', async ({ users }) => {
   const [a] = await users(1)
-  await tuck(a.page)
+  await tuckDay(a.page)
   const bodies = await mockRecommend(a.page, () => okResponse())
   await a.page.goto('/checkin')
   await fillAndSubmit(a.page)
@@ -325,7 +331,7 @@ test('the default asks for videos where they help and does not send a screen val
 
 test('"Inside or outside?" is under More options, starts on Not sure, and is sent only when chosen', async ({ users }) => {
   const [a] = await users(1)
-  await tuck(a.page)
+  await tuckDay(a.page)
   const bodies = await mockRecommend(a.page, () => okResponse())
   await a.page.goto('/checkin')
   await expect(a.page.getByTestId('options-summary')).toContainText('inside or outside')
@@ -333,7 +339,7 @@ test('"Inside or outside?" is under More options, starts on Not sure, and is sen
   const group = a.page.getByRole('group', { name: 'Inside or outside?' })
   await expect(group).toBeVisible()
   await expect(group).toContainText('Outside can suggest a walk to a place nearby')
-  await expect(group).toContainText("isn't saved")
+  await expect(group).toContainText('remembered on this device only')
   await expect(group.getByLabel('Not sure')).toBeChecked()
   await group.getByText('Go outside', { exact: true }).click()
   await expect(a.page.getByTestId('options-summary')).toContainText('going outside')
@@ -346,7 +352,7 @@ test('"Inside or outside?" is under More options, starts on Not sure, and is sen
 
 test('phone width: no horizontal scroll on form, results, and support', async ({ users }) => {
   const [a] = await users(1)
-  await tuck(a.page)
+  await tuckDay(a.page)
   await a.page.setViewportSize({ width: 375, height: 700 })
   await mockRecommend(a.page, () => okResponse())
   const overflow = () => a.page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
@@ -363,7 +369,7 @@ test('phone width: no horizontal scroll on form, results, and support', async ({
 
 test('every suggestion, video or idea, has a good and a not-for-me button that says what it will do', async ({ users }) => {
   const [a] = await users(1)
-  await tuck(a.page)
+  await tuckDay(a.page)
   await mockRecommend(a.page, () => okResponse())
   await a.page.goto('/checkin')
   await fillAndSubmit(a.page)
@@ -386,7 +392,7 @@ test('every suggestion, video or idea, has a good and a not-for-me button that s
 
 test('the first time a video is marked not for me, it asks once whether they would rather skip screens, and never again', async ({ users }) => {
   const [a] = await users(1)
-  await tuck(a.page)
+  await tuckDay(a.page)
   await a.page.addInitScript(() => {
     if (sessionStorage.getItem('askedReset')) return
     sessionStorage.setItem('askedReset', '1')

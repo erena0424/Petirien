@@ -1,9 +1,9 @@
 import { useRef, useState } from 'react'
-import { AuthOverlay } from 'deepspace'
+import { SignInWindow } from './SignInWindow'
 import { Button } from '@/components/ui'
 import { GREETING, partOfDay } from '@/lib/for-now'
 import { dayOfYear } from '@/lib/for-now'
-import { homeKind } from '../places/places'
+import { homeKind, isLateNight } from '../places/places'
 import { Bunny } from './Bunny'
 import { Blob, Cloud, Sparkle, Star } from './Sparkle'
 import { PlaceSuggestions } from './PlaceSuggestions'
@@ -77,10 +77,10 @@ export function PublicHome() {
           A change of scenery
         </h2>
         <div className="mt-4 rounded-3xl border border-border bg-card p-6 shadow-[var(--shadow-card)]">
-          <PlaceSuggestions kinds={[homeKind(dayOfYear(new Date()))]} autoEveryMs={30 * 60_000} showOthers={false} fallback="Even a few minutes outside can help. Pick any direction you like." />
+          <PlaceSuggestions kinds={[homeKind(dayOfYear(new Date()), isLateNight(new Date()))]} autoEveryMs={30 * 60_000} showOthers={false} fallback="Even a few minutes outside can help. Pick any direction you like." />
         </div>
       </section>
-      {signIn && <AuthOverlay onClose={() => setSignIn(false)} />}
+      {signIn && <SignInWindow onClose={() => setSignIn(false)} />}
     </div>
   )
 }

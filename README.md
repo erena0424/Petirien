@@ -24,7 +24,7 @@ Built on [DeepSpace](https://deep.space) for the AI-native GTM engineer build ex
   your own voice, and a mood and energy chart. Events you have not written about are there too, so you can reflect on any
   of them later.
 - **Places near you:** concrete suggestions ("Take a walk to ...", "Spend quality time at ...") from Google Maps, using your
-  location only if you allow it (rounded to about a kilometre and remembered in your browser only, with Update and Forget buttons). A place can be marked good, not right now (it sits out for two weeks), or never.
+  location only if you allow it (rounded to about a kilometre and remembered in your browser only, with Update and Forget buttons). A place can be marked good, not right now (it sits out for two weeks), or never. A place that looks closed (from Google's hours line) is never suggested, and from 9 PM to 6 AM nothing outdoors is: Home looks only for a café or library, "Not sure" on a check-in is sent as inside, and the card says why.
 - **Home:** (signed out: sample suggestions and a place to go) two video ideas for right now (no history needed), a place to go, your plans, and what you saved.
 - **Saved, History, Preferences, Privacy:** save videos and ideas, review check-ins, set what to avoid, and delete
   everything in one step.

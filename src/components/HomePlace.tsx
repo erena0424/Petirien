@@ -1,5 +1,5 @@
 import { dayOfYear } from '@/lib/for-now'
-import { homeKind } from '../places/places'
+import { homeKind, isLateNight } from '../places/places'
 import { PlaceSuggestions } from './PlaceSuggestions'
 
 /**
@@ -13,7 +13,7 @@ export function HomePlace() {
         A change of scenery
       </h2>
       <div className="mt-3 rounded-3xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
-        <PlaceSuggestions kinds={[homeKind(dayOfYear(new Date()))]} autoEveryMs={30 * 60_000} showOthers={false} fallback="Even a few minutes outside can help. Pick any direction you like." />
+        <PlaceSuggestions kinds={[homeKind(dayOfYear(new Date()), isLateNight(new Date()))]} autoEveryMs={30 * 60_000} showOthers={false} fallback="Even a few minutes outside can help. Pick any direction you like." />
       </div>
     </section>
   )

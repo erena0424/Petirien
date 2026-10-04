@@ -3,14 +3,15 @@
  *
  * This is the one paid call that is not billed to the person: it is billed to the app owner, so it is boxed in.
  * The request is a fixed kind of place and a location rounded to about a kilometre (nothing free-form),
- * results are shared and kept for a day, and a daily limit for all anonymous visitors together stops the spend.
+ * results are shared and kept for a few hours, and a daily limit for all anonymous visitors together stops the spend.
  */
 
 import { PLACE_KINDS, isKind, roundOrigin, validOrigin, type Origin, type PlaceKindId } from '../places/places'
 
 /** Fresh Maps searches per day for all signed-out visitors together (about $0.03 each). */
 export const PUBLIC_DAILY_CAP = 60
-export const PUBLIC_CACHE_TTL_MS = 24 * 60 * 60 * 1000
+/** Short, because each place's hours line (open or closed) is a snapshot from when it was looked up. */
+export const PUBLIC_CACHE_TTL_MS = 3 * 60 * 60 * 1000
 /** The usage row the anonymous searches are counted on. Not a real user id. */
 export const PUBLIC_USAGE_ID = 'public-places'
 

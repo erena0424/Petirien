@@ -167,7 +167,32 @@ export function daysUntilBack(info: RatingInfo | undefined, now: number): number
  * Everything keeps its order (nearest first). Pure: no search, so a thumbs-down shows the next place straight away.
  */
 export function applyPlaceFeedback(places: Place[], ratings: Ratings, now = Date.now()): Place[] {
-  return places.filter((p) => !isHidden(ratings.get(p.id), now))
+  return places.filter((p) => !isHidden(ratings.get(p.id), now) && openStatus(p.openState) !== 'closed')
+}
+
+/**
+ * Whether a place looks open, from the hours line Google Maps gives ("Open ⋅ Closes 9 PM", "Closed ⋅ Opens 8 AM Mon",
+ * "Open 24 hours", "Closes soon ⋅ 5 PM", "Temporarily closed"). Many parks have no line at all: that is 'unknown', and
+ * unknown places are still offered (a closed one is never offered). The line is a snapshot from when the places were
+ * looked up, which is why looked-up places are only kept for a short while.
+ */
+export type OpenStatus = 'open' | 'closing-soon' | 'closed' | 'unknown'
+export function openStatus(openState: string): OpenStatus {
+  const t = openState.trim().toLowerCase()
+  if (!t) return 'unknown'
+  if (t.startsWith('closed') || t.startsWith('opens soon') || t.includes('temporarily closed') || t.includes('permanently closed')) return 'closed'
+  if (t.startsWith('closes soon')) return 'closing-soon'
+  if (t.startsWith('open')) return 'open'
+  return 'unknown'
+}
+
+/** How many of these places look closed right now. */
+export const closedCount = (places: Place[]) => places.filter((p) => openStatus(p.openState) === 'closed').length
+
+/** Late evening and night, by the person's own clock: 9 PM to 6 AM. No walk to a park is suggested then. */
+export function isLateNight(now: Date): boolean {
+  const h = now.getHours()
+  return h >= 21 || h < 6
 }
 
 /** How often a favorite is the suggestion when there is something new to try as well: one visit in this many. */
@@ -213,11 +238,20 @@ const OUTDOOR: PlaceKindId[] = ['park', 'garden']
 const INDOOR: PlaceKindId[] = ['cafe', 'library']
 
 /** The two kinds of place to suggest on a given day (the check-in card): one outside and one inside, changing by day. */
-export function suggestedKinds(day: number): PlaceKindId[] {
+export function suggestedKinds(day: number, night = false): PlaceKindId[] {
+  // At night, no park or garden: two indoor places (they may well be closed, and then none is offered).
+  if (night) return [INDOOR[day % INDOOR.length]!, INDOOR[(day + 1) % INDOOR.length]!]
   return [OUTDOOR[day % OUTDOOR.length]!, INDOOR[Math.floor(day / 2) % INDOOR.length]!]
 }
 
+/** The kinds of place offered under "Other places to visit": no parks or gardens late at night. */
+export const kindsFor = (night: boolean) => PLACE_KINDS.filter((k) => !(night && OUTDOOR.includes(k.id)))
+
 /** The one kind of place for Home on a given day, cycling through all of them. */
-export function homeKind(day: number): PlaceKindId {
+export function homeKind(day: number, night = false): PlaceKindId {
+  if (night) return INDOOR[day % INDOOR.length]!
   return PLACE_KINDS[day % PLACE_KINDS.length]!.id
 }
+
+/** Said instead of "just take a walk" when it is late. */
+export const NIGHT_FALLBACK = "It's late, so something quiet indoors might suit tonight. Maybe a stretch, a warm drink, or a few minutes by a window."

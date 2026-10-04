@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { AuthOverlay } from 'deepspace'
+import { SignInWindow } from './SignInWindow'
 import { Button } from '@/components/ui'
 import { Bunny } from './Bunny'
 
@@ -17,7 +17,7 @@ export function SignInInvite() {
           Sign in
         </Button>
       </div>
-      {signIn && <AuthOverlay onClose={() => setSignIn(false)} />}
+      {signIn && <SignInWindow onClose={() => setSignIn(false)} />}
     </div>
   )
 }

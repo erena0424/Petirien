@@ -1,6 +1,6 @@
 /**
  * Top nav — minimal placeholder bar wired to the app's mechanisms:
- * nav.ts-driven links (with role/dev filtering), sign-in via <AuthOverlay>,
+ * nav.ts-driven links (with role/dev filtering), sign-in via <SignInWindow>,
  * and sign-out. Restyle or rebuild it freely; keep the data-testid hooks
  * (`app-navigation`, `nav-sign-in-button`, `nav-user-name`, `nav-user-email`)
  * — the shipped tests rely on them. `nav-user-email` is the one that carries
@@ -10,7 +10,8 @@
 
 import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { AuthOverlay, useAuthProfileReady, signOut } from 'deepspace'
+import { useAuthProfileReady, signOut } from 'deepspace'
+import { SignInWindow } from './SignInWindow'
 import { ChevronDown, LogOut, Menu, X } from 'lucide-react'
 import { DISPLAY_NAME } from '../constants'
 import type { Role } from '../constants'
@@ -166,7 +167,7 @@ export default function Navigation() {
         </div>
       </nav>
 
-      {showAuthModal && <AuthOverlay onClose={() => setShowAuthModal(false)} />}
+      {showAuthModal && <SignInWindow onClose={() => setShowAuthModal(false)} />}
     </>
   )
 }

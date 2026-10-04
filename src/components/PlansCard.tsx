@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { CalendarDays, RefreshCw } from 'lucide-react'
-import { AuthOverlay, useAuthStatus } from 'deepspace'
+import { useAuthStatus } from 'deepspace'
+import { SignInWindow } from './SignInWindow'
 import { Button } from '@/components/ui'
 import { useBunnyChat } from '@/lib/bunny-chat'
 import type { usePlans } from '@/lib/use-plans'
@@ -37,7 +38,7 @@ export function PlansCard({ plans }: Props) {
         <Button variant="outline" className="mt-2 min-h-11" onClick={() => setSignIn(true)}>
           Sign in
         </Button>
-        {signIn && <AuthOverlay onClose={() => setSignIn(false)} />}
+        {signIn && <SignInWindow onClose={() => setSignIn(false)} />}
       </section>
     )
   }

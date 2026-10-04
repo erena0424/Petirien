@@ -6,6 +6,7 @@ import type { CheckinInput } from '../../contract'
 import { ENERGY, GOAL_LABELS, MOOD } from '@/lib/labels'
 import type { ScreenMode } from '@/lib/preferences'
 import { cn } from '@/lib/utils'
+import { isLateNight } from '../../places/places'
 import { ChoiceGroup } from '../ChoiceGroup'
 import { CalendarFit } from './CalendarFit'
 
@@ -33,7 +34,8 @@ const GOALS = [
   { value: '', label: 'Not sure' },
 ] as const
 
-export function toInput(v: FormValues): CheckinInput | null {
+/** `night`: late evening by the person's clock. If they left inside or outside on Not sure, it is sent as inside (no walk outdoors at night); a choice they made is kept. */
+export function toInput(v: FormValues, night = false): CheckinInput | null {
   if (v.mood === null || v.energy === null || v.minutes === null) return null
   const note = v.note.trim()
   return {
@@ -43,7 +45,7 @@ export function toInput(v: FormValues): CheckinInput | null {
     ...(v.goal ? { goal: v.goal } : {}),
     ...(note ? { note } : {}),
     ...(v.screen !== 'auto' ? { screen: v.screen } : {}),
-    ...(v.place !== 'auto' ? { place: v.place } : {}),
+    ...(v.place !== 'auto' ? { place: v.place } : night ? { place: 'in' as const } : {}),
   }
 }
 
@@ -67,9 +69,9 @@ export const PLACE_CHOICES: { value: PlaceMode; label: string }[] = [
 ]
 
 /** One line describing what will be used if the person leaves "More options" alone. */
-export function optionsSummary(v: FormValues): string {
+export function optionsSummary(v: FormValues, night = false): string {
   const screen = { auto: 'a mix of videos and ideas', video: 'videos', none: 'no screen' }[v.screen]
-  const place = { auto: 'inside or outside', in: 'staying in', out: 'going outside' }[v.place]
+  const place = { auto: night ? 'staying in (it\'s late)' : 'inside or outside', in: 'staying in', out: 'going outside' }[v.place]
   return [`${v.minutes ?? 10} min`, v.goal ? GOAL_LABELS[v.goal]?.toLowerCase() : 'any kind of help', screen, place].join(' · ')
 }
 
@@ -86,7 +88,8 @@ interface Props {
  * more than they want to.
  */
 export function CheckinForm({ values, onChange, onSubmit, submitting }: Props) {
-  const input = toInput(values)
+  const night = isLateNight(new Date())
+  const input = toInput(values, night)
   const [more, setMore] = useState(false)
   const set = <K extends keyof FormValues>(k: K, v: FormValues[K]) => onChange({ ...values, [k]: v })
   // The calendar answer arrives later; apply it to what the form holds then, not to what it held when the button was pressed.
@@ -115,7 +118,7 @@ export function CheckinForm({ values, onChange, onSubmit, submitting }: Props) {
           <span>
             <span className="block text-sm font-semibold text-foreground">More options</span>
             <span data-testid="options-summary" className="block text-sm text-muted-foreground">
-              {optionsSummary(values)}
+              {optionsSummary(values, night)}
             </span>
           </span>
           <ChevronDown aria-hidden className={cn('h-4 w-4 shrink-0 text-muted-foreground transition-transform', more && 'rotate-180')} />
@@ -140,7 +143,7 @@ export function CheckinForm({ values, onChange, onSubmit, submitting }: Props) {
           />
           <ChoiceGroup<PlaceMode>
             legend="Inside or outside?"
-            hint="Outside can suggest a walk to a place nearby. Your location is only used if you allow it, and it isn't saved."
+            hint="Outside can suggest a walk to a place nearby. Your location is only used if you allow it, and it's remembered on this device only. Late at night I suggest staying in."
             value={values.place}
             onChange={(v) => set('place', v)}
             options={PLACE_CHOICES}
