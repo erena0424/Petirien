@@ -29,6 +29,17 @@ Built on [DeepSpace](https://deep.space) for the AI-native GTM engineer build ex
 - **Saved, History, Preferences, Privacy:** save videos and ideas, review check-ins, set what to avoid, and delete
   everything in one step.
 
+## How this was built with AI agents
+
+I directed Claude Code and wrote down the rules it worked under, so the process is reviewable, not just the result.
+
+- **Rules:** [`CLAUDE.md`](CLAUDE.md) is the standing instruction set: what the app is and is not, words it may never use, and hard rules (crisis handling is a fixed card, never improvised by the model; the model may only choose among videos we retrieved; secrets only through DeepSpace; no real user text in tests or logs; identity only from the verified token). It also lists what only I do: sign in, deploy, push, spend beyond a cap, send anything to anyone.
+- **Plan and roles:** [`docs/PLAN.md`](docs/PLAN.md) is the day-1 plan with each platform fact labelled verified or assumed. [`.claude/agents/`](.claude/agents) defines three roles (tech lead, frontend, backend) with what each owns and when to stop and ask.
+- **Workflow:** [`docs/WORKFLOW.md`](docs/WORKFLOW.md) sets the loop for each slice: brief, build, check, review, log, then I verify it myself. [`docs/slices/`](docs/slices) holds the briefs, each ending with "what these checks do not prove".
+- **Record:** [`docs/agent-log.md`](docs/agent-log.md) logs every round: what the agent did, what I checked or corrected, status as built-and-verified, built-but-unverified or not built, and every paid test call. It includes the agent's own mistakes (a wrong response shape that cost about $0.20, an edit made while a test run was in progress) next to my corrections (first-person journal entries instead of "you said", a calmer look, suggestions that must visibly change from Drained to Lots).
+- **Checks the agent had to leave behind:** unit tests and browser tests with every paid call mocked, and the paid-usage counters compared before and after each full run (they must not change).
+- **In practice:** the tech-lead role was the default session, and the log records the work under that session. The frontend and backend roles are defined but, per the log, were not run as separate parallel agents.
+
 ## DeepSpace integrations used
 
 | Integration | Used for |
