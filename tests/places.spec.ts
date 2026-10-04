@@ -228,6 +228,7 @@ test('without location, the card asks first and nothing is sent until you agree'
   const [eli] = await users(['Eli'])
   const page = eli.page
   const calls = await mockMaps(page)
+  await fixDay(page)
   await toIdeas(page)
   const ask = page.getByTestId('places-ask')
   await expect(ask).toContainText('Share your location')
@@ -242,6 +243,7 @@ test('saying no to location sends nothing and becomes "take a walk"; failures st
   const calls: any[] = []
   let mode: 'credits' | 'empty' = 'credits'
   await tuck(page)
+  await fixDay(page) // by day: late at night the card suggests something indoors instead of a walk
   await page.route('**/api/integrations/serpapi/places-search', (route) => {
     calls.push(route.request().postDataJSON())
     if (mode === 'credits') return route.fulfill({ status: 402, contentType: 'application/json', body: JSON.stringify({ success: false, error: 'Not enough credits', code: 'insufficient_credits' }) })
