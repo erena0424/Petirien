@@ -15,7 +15,7 @@ import type { Env } from '../../worker'
 import type { VideoRef } from '../contract'
 import { normalizeVideo } from '../recommend/video'
 import { videoDetails as ytDetails } from '../server/youtube-api'
-import { integrationSource, withHelper } from '../server/youtube-source'
+import { ownKeySource } from '../server/youtube-source'
 import { needsRefresh, type SavedData } from '../lib/saved'
 
 export const MAX_PER_CALL = 5
@@ -82,8 +82,7 @@ export async function refreshStale(deps: RefreshDeps, now: number): Promise<Refr
 }
 
 export function createRefreshDeps(userId: string, tools: ActionTools, env?: { YOUTUBE_API_KEY?: string }): RefreshDeps {
-  const key = env?.YOUTUBE_API_KEY || undefined
-  const youtube = withHelper(integrationSource(tools), key ? { search: async () => null, details: (ids) => ytDetails(key, ids) } : undefined)
+  const youtube = ownKeySource(env?.YOUTUBE_API_KEY || undefined, { search: async () => null, details: ytDetails })
   return {
     async listSaved() {
       // Server actions run with RBAC off: scope to the caller explicitly.

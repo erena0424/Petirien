@@ -57,10 +57,11 @@ async function mockMaps(page: Page) {
     route.fulfill({ status: 200, contentType: 'image/gif', body: Buffer.from('R0lGODlhAQABAIAAAAUEBAAAACwAAAAAAQABAAACAkQBADs=', 'base64') }),
   ) // first: a route registered later wins, so this test's own Maps route must come after the default one
   const calls: any[] = []
-  await page.route('**/api/integrations/serpapi/places-search', (route) => {
+  // Everyone's place searches go through the app's own capped route (the app owner pays); the kind is sent, not a search phrase.
+  await page.route('**/api/public/places', (route) => {
     const body = route.request().postDataJSON()
-    calls.push(body)
-    return route.fulfill(ok(BY_Q[body.q] ?? { local_results: [] }))
+    calls.push({ q: body.kind, ll: `@${body.lat},${body.lng},15z` })
+    return route.fulfill(ok(BY_Q[body.kind] ?? { local_results: [] }))
   })
   return calls
 }
@@ -130,7 +131,7 @@ test('the card is video, then a concrete place to walk to and one to spend time 
   // Only a rounded location and fixed kinds went out: one search for the park, one for the café.
   expect(calls.map((c) => c.q).sort()).toEqual(['cafe', 'park'])
   for (const c of calls) {
-    expect(c).toMatchObject({ type: 'search', ll: '@40.75,-73.98,15z', hl: 'en' })
+    expect(c).toMatchObject({ ll: '@40.75,-73.98,15z' })
     expect(JSON.stringify(c)).not.toMatch(/40\.7536|73\.9832/)
   }
 
@@ -241,12 +242,13 @@ test('saying no to location sends nothing and becomes "take a walk"; failures st
   const [eli] = await users(['Eli'])
   const page = eli.page
   const calls: any[] = []
-  let mode: 'credits' | 'empty' = 'credits'
+  let mode: 'limit' | 'empty' = 'limit'
   await tuck(page)
   await fixDay(page) // by day: late at night the card suggests something indoors instead of a walk
-  await page.route('**/api/integrations/serpapi/places-search', (route) => {
-    calls.push(route.request().postDataJSON())
-    if (mode === 'credits') return route.fulfill({ status: 402, contentType: 'application/json', body: JSON.stringify({ success: false, error: 'Not enough credits', code: 'insufficient_credits' }) })
+  await page.route('**/api/public/places', (route) => {
+    const body = route.request().postDataJSON()
+    calls.push({ q: body.kind, ll: `@${body.lat},${body.lng},15z` })
+    if (mode === 'limit') return route.fulfill({ status: 429, contentType: 'application/json', body: JSON.stringify({ success: false, code: 'daily_limit' }) })
     return route.fulfill(ok({ local_results: [] }))
   })
   await toIdeas(page)
@@ -256,11 +258,11 @@ test('saying no to location sends nothing and becomes "take a walk"; failures st
   await expect(page.getByTestId('places-denied')).toContainText('taking a walk')
   expect(calls).toHaveLength(0)
 
-  // With permission, a refused payment is explained, and an empty result is gentle.
+  // With permission, the daily limit is explained kindly, and an empty result is gentle.
   await page.context().grantPermissions(['geolocation'])
   await page.context().setGeolocation({ latitude: 40.75, longitude: -73.98 })
   await page.getByRole('button', { name: 'Try again' }).click()
-  await expect(page.getByTestId('places-error')).toContainText('out of credits')
+  await expect(page.getByTestId('places-error')).toContainText('resting my map')
   await expect(page.getByTestId('places-error')).toContainText('taking a walk')
   mode = 'empty'
   await page.getByRole('button', { name: 'Try again' }).click()

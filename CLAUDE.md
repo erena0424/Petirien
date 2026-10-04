@@ -72,6 +72,7 @@ Unclear whether something is outward-facing or spends money → ask first.
 - Records are envelopes: fields under `record.data`. Disable writes until `useMutations().ready`.
 - Keep the scaffold's `users` schema; extend, don't rename.
 - Paid calls need: sign-in required, per-user daily cap, caching, disabled button while in flight.
+  - **Decided exception 3 (2026-10-04, Elena's decision):** videos come only from the app's own Google key (`YOUTUBE_API_KEY`); the DeepSpace `youtube/*` integration is not used (it was billed to each person), and with no key or no quota the app shows plain ideas and cached videos. All place searches, signed in or not, use the capped owner-paid route (`/api/public/places`).
   - **Decided exception 2 (2026-10-04, Elena's decision):** Anthropic calls are owner-billed (`src/integrations.ts`, `developer`) so a new account needs no credits to try the app. Still bounded: sign-in is required, per-account daily limits stay, and `src/server/model-cap.ts` caps the whole app at 600 model calls a day (about $0.60). No quiet fallback to the person's own credits: if the cap, the owner's token or the owner's credits fail, the bunny says it is resting. Calendar, YouTube and Maps stay user-billed.
   - **One decided exception (2026-10-02, Elena's request, so signed-out reviewers see Somewhere to go):** `POST /api/public/places` (`src/server/public-routes.ts`) is billed to the app owner. Fixed kinds only, location rounded server-side, shared 24 h cache, global cap of 60 fresh searches/day (about $2). Nothing else may be anonymous-paid.
 

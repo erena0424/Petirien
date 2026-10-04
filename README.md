@@ -44,13 +44,13 @@ I directed Claude Code and wrote down the rules it worked under, so the process 
 
 | Integration | Used for |
 | --- | --- |
-| `youtube/search-videos`, `youtube/get-video-details` | Finding videos. Fixed search phrases per activity, never the person's words. |
+| YouTube (Google's YouTube Data API with the app's own key, stored as a DeepSpace secret) | Finding videos. Fixed search phrases per activity, never the person's words. Not a DeepSpace integration: the DeepSpace one was billed to each person, so it is no longer used. |
 | `anthropic/chat-completion` | The bunny's replies, the check-in interpretation and ranking, and the journal notes. |
 | `google/calendar-list-events` | Reading the person's own calendar (they connect it themselves). Only start and end times and names are read. |
 | `serpapi/places-search` | Nearby places, from a location rounded to about a kilometre. |
 
 Also DeepSpace platform features: auth, the Records database with per-user permissions, and server actions. Paid
-integrations that act on a person's own account (Google Calendar) or cost the most (YouTube and Maps searches) are billed to the signed-in person. The AI calls (the bunny, check-in interpretation, journal entries) cost about a tenth of a cent each, so the app owner pays for them, which means nobody needs DeepSpace credits to try the app. They are bounded by per-account daily limits (80 chat messages, 25 check-ins) and an app-wide limit of 600 model calls a day, after which the bunny says it is resting. Visitors who have not signed in can also see "Somewhere to go":
+integrations that act on a person's own account (Google Calendar) are billed to the signed-in person. The AI calls (the bunny, check-in interpretation, journal entries) cost about a tenth of a cent each, so the app owner pays for them, which means nobody needs DeepSpace credits to try the app. They are bounded by per-account daily limits (80 chat messages, 25 check-ins) and an app-wide limit of 600 model calls a day, after which the bunny says it is resting. Place searches for everyone, signed in or not, go through the app's own capped route, paid by the app owner:
 it goes through `/api/public/places`, billed to the app owner, and boxed in (fixed kinds of place, a location rounded to
 about a kilometre, results shared and kept for a day, and 60 fresh searches a day for all visitors together, about $2). An optional Google API key
 (a DeepSpace secret) only backs YouTube up and checks which videos can be embedded.

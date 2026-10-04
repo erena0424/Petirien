@@ -14,7 +14,7 @@ import { recommend as runPipeline, parseCheckinInput, type Deps, type UserContex
 import { homeIdeas } from '../recommend/home'
 import { extractText } from '../recommend/parse'
 import { searchVideos as ytSearch, videoDetails as ytDetails } from '../server/youtube-api'
-import { integrationSource, withHelper, type VideoSource } from '../server/youtube-source'
+import { ownKeySource } from '../server/youtube-source'
 
 const LLM_MODEL = 'claude-haiku-4-5'
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000
@@ -40,12 +40,10 @@ export function createDeps(
   tools: ActionTools,
   env?: { YOUTUBE_API_KEY?: string; OWNER_USER_ID?: string },
 ): Deps {
-  const key = env?.YOUTUBE_API_KEY || undefined
-  // DeepSpace's integration is the main source; the app's own Google key only backs it up and checks embeddability.
-  const helper: VideoSource | undefined = key ? { search: (q) => ytSearch(key, q), details: (ids) => ytDetails(key, ids) } : undefined
+  // The app's own Google key is the only video source (no DeepSpace integration, so no visitor needs credits).
   const used: VideoSourceUsed[] = []
   const note = (s: VideoSourceUsed) => void used.push(s)
-  const youtube = withHelper(integrationSource(tools, note), helper, note)
+  const youtube = ownKeySource(env?.YOUTUBE_API_KEY || undefined, { search: ytSearch, details: ytDetails }, note)
   return {
     now: () => new Date(),
     sources: () => used,

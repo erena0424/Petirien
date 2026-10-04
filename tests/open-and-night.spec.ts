@@ -34,10 +34,10 @@ async function setup(page: Page, now: Date, answers: Record<string, unknown>) {
   await page.context().grantPermissions(['geolocation'])
   await page.context().setGeolocation({ latitude: 40.753612, longitude: -73.983244 })
   const calls: any[] = []
-  await page.route('**/api/integrations/serpapi/places-search', (route) => {
+  await page.route('**/api/public/places', (route) => {
     const body = route.request().postDataJSON()
-    calls.push(body)
-    return route.fulfill(ok(answers[body.q] ?? { local_results: [] }))
+    calls.push({ q: body.kind })
+    return route.fulfill(ok(answers[body.kind] ?? { local_results: [] }))
   })
   return calls
 }

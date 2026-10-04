@@ -1,7 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
-import { integration } from 'deepspace'
 import { clearLocation, loadLocation, readPlacesCache, saveLocation, writePlacesCache } from '../places/saved-location'
-import { PLACE_KINDS, isKind, llParam, parsePlaces, roundOrigin, validOrigin, type Origin, type Place, type PlaceKindId } from '../places/places'
+import { isKind, parsePlaces, roundOrigin, validOrigin, type Origin, type Place, type PlaceKindId } from '../places/places'
 
 export type PlacesState =
   | { kind: 'idle' }
@@ -33,8 +32,7 @@ function position(): Promise<Origin> {
 
 class SearchFailed extends Error {
   constructor(
-    readonly credits: boolean,
-    /** The shared daily allowance for signed-out visitors is used up. */
+    /** The shared daily allowance for place searches is used up. */
     readonly limit = false,
   ) {
     super('search_failed')
@@ -51,31 +49,19 @@ async function searchPublic(kindId: PlaceKindId, rounded: Origin): Promise<{ dat
       body: JSON.stringify({ kind: kindId, lat: rounded.lat, lng: rounded.lng }),
     })
   } catch {
-    throw new SearchFailed(false)
+    throw new SearchFailed()
   }
   const body = (await res.json().catch(() => null)) as { success?: boolean; data?: unknown; fetchedAt?: unknown } | null
-  if (!res.ok || !body?.success) throw new SearchFailed(false, res.status === 429)
+  if (!res.ok || !body?.success) throw new SearchFailed(res.status === 429)
   return { data: body.data, fetchedAt: typeof body.fetchedAt === 'number' ? body.fetchedAt : Date.now() }
 }
 
-/** One search for one kind of place, from the cache when we already have it. Billed to the person, or for a signed-out visitor to the capped public endpoint. */
-async function search(kindId: PlaceKindId, rounded: Origin, signedIn: boolean): Promise<Place[]> {
+async function search(kindId: PlaceKindId, rounded: Origin): Promise<Place[]> {
   const key = `${kindId}|${rounded.lat}|${rounded.lng}`
   const hit = cache.get(key) ?? readPlacesCache(key)
   if (hit) return hit
-  let data: unknown
-  let fetchedAt = Date.now()
-  if (signedIn) {
-    const q = PLACE_KINDS.find((k) => k.id === kindId)!.q
-    const res = await integration.post<Record<string, unknown>>('serpapi/places-search', { q, type: 'search', ll: llParam(rounded), hl: 'en' })
-    if (!res.success) throw new SearchFailed(res.code === 'insufficient_credits' || res.status === 402)
-    data = res.data
-  } else {
-    const found = await searchPublic(kindId, rounded)
-    data = found.data
-    fetchedAt = found.fetchedAt
-  }
-  const places = parsePlaces(data, rounded, undefined, fetchedAt)
+  const found = await searchPublic(kindId, rounded)
+  const places = parsePlaces(found.data, rounded, undefined, found.fetchedAt)
   cache.set(key, places)
   writePlacesCache(key, places)
   return places
@@ -83,25 +69,18 @@ async function search(kindId: PlaceKindId, rounded: Origin, signedIn: boolean): 
 
 const failure = (e: unknown): PlacesState => ({
   kind: 'error',
-  message:
-    e instanceof SearchFailed && e.credits
-      ? "Your account is out of credits for this, so I can't look for places right now."
-      : e instanceof SearchFailed && e.limit
-        ? "I've looked up a lot of places today, so I'm resting my map. Sign in and I can still look for you."
-        : "I couldn't look for places just now.",
+  message: e instanceof SearchFailed && e.limit ? "I've looked up a lot of places today, so I'm resting my map. Please try again tomorrow." : "I couldn't look for places just now.",
 })
 
 /**
  * Finds places near the person: asks the browser for their location, rounds it to about a kilometre, and searches
- * Google Maps through DeepSpace. Billed to the person. Nothing is stored. `findSuggested` looks for the concrete
+ * Google Maps through the app's own capped route (paid by the app owner, shared for a day). Only the rounded location is kept, on this device. `findSuggested` looks for the concrete
  * suggestions (a park to walk to, a café to spend time at); `find` looks for one other kind.
  */
-export function usePlaces(signedIn = true) {
+export function usePlaces() {
   const [state, setState] = useState<PlacesState>({ kind: 'idle' })
   // One request at a time: pressing twice, or a page that mounts twice, must not pay twice.
   const busy = useRef(false)
-  const signedInRef = useRef(signedIn)
-  signedInRef.current = signedIn
 
   /** Gets the rounded location, or sets the state that explains why not. */
   const locate = useCallback(async (): Promise<Origin | null> => {
@@ -142,7 +121,7 @@ export function usePlaces(signedIn = true) {
         if (!here) return
         setState({ kind: 'searching' })
         try {
-          const lists = await Promise.all(kinds.map((k) => search(k, here, signedInRef.current)))
+          const lists = await Promise.all(kinds.map((k) => search(k, here)))
           setState({ kind: 'suggested', byKind: Object.fromEntries(kinds.map((k, i) => [k, lists[i]!])), origin: here })
         } catch (e) {
           setState(failure(e))
@@ -159,7 +138,7 @@ export function usePlaces(signedIn = true) {
         if (!here) return
         setState({ kind: 'searching' })
         try {
-          setState({ kind: 'results', places: await search(kindId, here, signedInRef.current), origin: here, type: kindId })
+          setState({ kind: 'results', places: await search(kindId, here), origin: here, type: kindId })
         } catch (e) {
           setState(failure(e))
         }
