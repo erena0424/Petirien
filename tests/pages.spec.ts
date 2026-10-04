@@ -110,6 +110,27 @@ test.describe('the public places route refuses anything that is not a fixed kind
   })
 })
 
+test.describe('what the app owner pays for cannot be reached from outside the app', () => {
+  // The model and video search are paid by the app owner and are only used inside the app's own actions, which require
+  // sign-in and keep the daily limits. Calling them through the open integrations route must be refused before anything is
+  // forwarded, so these requests cost nothing.
+  for (const [name, path, body] of [
+    ['the model', '/api/integrations/anthropic/chat-completion', { model: 'claude-haiku-4-5-20251001', max_tokens: 8, messages: [{ role: 'user', content: 'hi' }] }],
+    ['video search', '/api/integrations/youtube/search-videos', { q: 'yoga' }],
+    ['video details', '/api/integrations/youtube/get-video-details', { id: 'abc' }],
+  ] as const) {
+    test(`refuses ${name} to anyone calling it directly`, async ({ page }) => {
+      const res = await page.request.post(path, { data: body })
+      expect(res.status()).toBe(403)
+      expect(await res.text()).toContain('only available through the app')
+    })
+  }
+  test('still asks for sign-in before anything on a person\'s own Google account', async ({ page }) => {
+    const res = await page.request.post('/api/integrations/google/calendar-list-events', { data: {} })
+    expect(res.status()).toBe(401)
+  })
+})
+
 test.describe('signed-in pages', () => {
   test.skip(loadAllTestAccounts().length < 5, 'Needs 5 usable test accounts.')
 

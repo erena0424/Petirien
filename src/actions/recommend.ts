@@ -13,8 +13,7 @@ import type { RecommendResponse, VideoRef, VideoSourceUsed } from '../contract'
 import { recommend as runPipeline, parseCheckinInput, type Deps, type UserContext } from '../recommend/pipeline'
 import { homeIdeas } from '../recommend/home'
 import { extractText } from '../recommend/parse'
-import { searchVideos as ytSearch, videoDetails as ytDetails } from '../server/youtube-api'
-import { ownKeySource } from '../server/youtube-source'
+import { integrationSource } from '../server/youtube-source'
 
 const LLM_MODEL = 'claude-haiku-4-5'
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000
@@ -38,12 +37,12 @@ async function queryOne(tools: ActionTools, collection: string, where: Row) {
 export function createDeps(
   userId: string,
   tools: ActionTools,
-  env?: { YOUTUBE_API_KEY?: string; OWNER_USER_ID?: string },
+  env?: { OWNER_USER_ID?: string },
 ): Deps {
-  // The app's own Google key is the only video source (no DeepSpace integration, so no visitor needs credits).
+  // DeepSpace's YouTube integration is the only video source (billed to the app owner, with an app-wide daily limit).
   const used: VideoSourceUsed[] = []
   const note = (s: VideoSourceUsed) => void used.push(s)
-  const youtube = ownKeySource(env?.YOUTUBE_API_KEY || undefined, { search: ytSearch, details: ytDetails }, note)
+  const youtube = integrationSource(tools, note)
   return {
     now: () => new Date(),
     sources: () => used,

@@ -19,7 +19,9 @@ export const integrations: Record<string, { billing: 'developer' | 'user' }> = {
   google: { billing: 'user' },
   // Each signed-in person pays for their own check-ins (free plan: 500 credits,
   // 1 credit = $0.01). Sign-in is required anyway; no anonymous spend.
-  youtube: { billing: 'user' },
+  // Video search and details cost about a cent each, so the app owner pays here too (DeepSpace's own YouTube integration is
+  // the only video source), bounded by an app-wide daily limit (src/server/owner-cap.ts).
+  youtube: { billing: 'developer' },
   // The bunny, check-in interpretation and journal entries cost about a tenth of a cent a call, so the app owner pays and
   // nobody needs credits to try Petirien. Bounded two ways: per-account daily limits and an app-wide daily limit (src/server/model-cap.ts).
   anthropic: { billing: 'developer' },

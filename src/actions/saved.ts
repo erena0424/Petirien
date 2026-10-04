@@ -14,8 +14,7 @@ import type { ActionHandler, ActionTools } from 'deepspace/worker'
 import type { Env } from '../../worker'
 import type { VideoRef } from '../contract'
 import { normalizeVideo } from '../recommend/video'
-import { videoDetails as ytDetails } from '../server/youtube-api'
-import { ownKeySource } from '../server/youtube-source'
+import { integrationSource } from '../server/youtube-source'
 import { needsRefresh, type SavedData } from '../lib/saved'
 
 export const MAX_PER_CALL = 5
@@ -81,8 +80,8 @@ export async function refreshStale(deps: RefreshDeps, now: number): Promise<Refr
   return out
 }
 
-export function createRefreshDeps(userId: string, tools: ActionTools, env?: { YOUTUBE_API_KEY?: string }): RefreshDeps {
-  const youtube = ownKeySource(env?.YOUTUBE_API_KEY || undefined, { search: async () => null, details: ytDetails })
+export function createRefreshDeps(userId: string, tools: ActionTools): RefreshDeps {
+  const youtube = integrationSource(tools)
   return {
     async listSaved() {
       // Server actions run with RBAC off: scope to the caller explicitly.
@@ -103,7 +102,7 @@ export function createRefreshDeps(userId: string, tools: ActionTools, env?: { YO
 
 export const refreshSaved: ActionHandler<Env> = async ({ userId, tools, env }) => {
   try {
-    return { success: true, data: await refreshStale(createRefreshDeps(userId, tools, env), Date.now()) }
+    return { success: true, data: await refreshStale(createRefreshDeps(userId, tools), Date.now()) }
   } catch (err) {
     console.error('[refreshSaved] failed', err instanceof Error ? err.name : 'unknown')
     return { success: false, error: 'Could not refresh saved videos right now.' }

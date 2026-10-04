@@ -232,6 +232,11 @@ export function registerAuthAndIntegrationRoutes(app: Hono<AppContext>): void {
     const integrationName = c.req.param('name')
     const billingMode = integrations[integrationName]?.billing ?? 'developer'
 
+    // Owner-paid integrations are reachable only through the app's own server actions, which sign people in, apply per-account
+    // limits and keep the app-wide daily limit. Through this open proxy anyone could spend the owner's credits with no limit.
+    if (billingMode === 'developer') {
+      return c.json({ error: 'This integration is only available through the app' }, 403)
+    }
     const auth = await resolveAuth(c.req.raw, c.env)
     if (!auth && billingMode === 'user') {
       return c.json({ error: 'Sign in required for this integration' }, 401)
@@ -242,14 +247,10 @@ export function registerAuthAndIntegrationRoutes(app: Hono<AppContext>): void {
       'Content-Type': c.req.header('Content-Type') ?? 'application/json',
     }
 
-    // The api-worker bills the JWT subject: developer mode uses the app owner;
-    // user mode forwards the caller. There is no client billing override.
-    if (billingMode === 'developer') {
-      headers['Authorization'] = `Bearer ${c.env.APP_OWNER_JWT}`
-    } else {
-      const token = c.req.header('Authorization')?.slice(7)
-      if (token) headers['Authorization'] = `Bearer ${token}`
-    }
+    // The api-worker bills the JWT subject: through this proxy it is always the caller (owner-paid integrations are refused
+    // above). There is no client billing override.
+    const token = c.req.header('Authorization')?.slice(7)
+    if (token) headers['Authorization'] = `Bearer ${token}`
 
     // Identify this app for per-app integrations. Pre-first-deploy there is no
     // token, so omit both headers and let the api-worker fail closed.
