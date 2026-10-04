@@ -10,7 +10,7 @@ import { useBunnyChat } from '@/lib/bunny-chat'
  */
 export function JournalButton({ className }: { className?: string }) {
   const chat = useBunnyChat()
-  const [status, setStatus] = useState<'idle' | 'writing' | 'done' | 'none' | 'credits'>('idle')
+  const [status, setStatus] = useState<'idle' | 'writing' | 'done' | 'none' | 'unavailable'>('idle')
   const can = !!chat.conversationId && chat.thread.some((m) => m.role === 'user')
   if (!can) return null
 
@@ -34,7 +34,7 @@ export function JournalButton({ className }: { className?: string }) {
           .
         </span>
       )}
-      {status === 'credits' && <span data-testid="journal-credits" className="ml-2 text-sm text-foreground">Your account is out of credits for this, so I can't write it up right now.</span>}
+      {status === 'unavailable' && <span data-testid="journal-unavailable" className="ml-2 text-sm text-foreground">The bunny is resting right now, so I can't write it up. Please try again a little later.</span>}
       {status === 'none' && <span className="ml-2 text-sm text-muted-foreground">Nothing new to write up yet.</span>}
     </div>
   )

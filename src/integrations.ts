@@ -20,7 +20,9 @@ export const integrations: Record<string, { billing: 'developer' | 'user' }> = {
   // Each signed-in person pays for their own check-ins (free plan: 500 credits,
   // 1 credit = $0.01). Sign-in is required anyway; no anonymous spend.
   youtube: { billing: 'user' },
-  anthropic: { billing: 'user' },
+  // The bunny, check-in interpretation and journal entries cost about a tenth of a cent a call, so the app owner pays and
+  // nobody needs credits to try Petirien. Bounded two ways: per-account daily limits and an app-wide daily limit (src/server/model-cap.ts).
+  anthropic: { billing: 'developer' },
   // Places near the person: about 3 cents a search, so it is billed to the person who asks, like the others.
   serpapi: { billing: 'user' },
 }

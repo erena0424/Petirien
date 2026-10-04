@@ -74,10 +74,10 @@ async function overCap(deps: ReflectDeps): Promise<boolean> {
   return !deps.exempt && (await deps.usageToday()) >= REFLECT_DAILY_CAP
 }
 
-/** Thrown by the model call when the person's account has no credits left (a 402 from the platform). */
-export class CreditsError extends Error {
+/** Thrown by the model call when the app cannot use the model right now: its daily limit is reached, or the owner's credits or token are not available. */
+export class UnavailableError extends Error {
   constructor() {
-    super('insufficient_credits')
+    super('model_unavailable')
   }
 }
 
@@ -94,7 +94,7 @@ export async function reflectReply(deps: ReflectDeps, messages: ChatMessage[]): 
   try {
     text = await deps.llm({ ...buildReplyPrompt(messages, earlier, style), maxTokens: 300 })
   } catch (e) {
-    if (e instanceof CreditsError) return { status: 'credits' }
+    if (e instanceof UnavailableError) return { status: 'unavailable' }
     throw e
   }
   const parsed = replySchema.safeParse(parseJsonObject(text))
@@ -125,7 +125,7 @@ export async function reflectSummary(deps: ReflectDeps, messages: ChatMessage[])
   try {
     text = await deps.llm({ ...buildSummaryPrompt(messages), maxTokens: 2400 })
   } catch (e) {
-    if (e instanceof CreditsError) return { status: 'credits' }
+    if (e instanceof UnavailableError) return { status: 'unavailable' }
     throw e
   }
   const parsed = summarySchema.safeParse(parseJsonObject(text))

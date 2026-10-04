@@ -32,6 +32,7 @@ import { apiWorkerFetch, normalizeApiError } from 'deepspace/worker'
 import type { ActionResult, ActionTools, VerifyResult } from 'deepspace/worker'
 import { actions } from '../actions/index.js'
 import { integrations } from '../integrations.js'
+import { MODEL_USAGE_ID, isOwnerPaidModelCall, modelDay, underModelCap } from './model-cap.js'
 import type { AppContext, Env } from '../../worker.js'
 
 type ResolveAuth = (req: Request, env: Env) => Promise<VerifyResult | null>
@@ -92,6 +93,20 @@ export function createActionTools(env: Env, userId: string, callerJwt: string): 
     // The api-worker bills the JWT subject: owner for developer mode, caller
     // for user mode. It does not accept a client-supplied billing override.
     const jwt = billingMode === 'developer' ? env.APP_OWNER_JWT : callerJwt
+    if (billingMode === 'developer') {
+      // No quiet switch to the person's own credits: if the owner's token is missing, say it is unavailable.
+      if (!jwt) return { success: false, error: 'Temporarily unavailable', code: 'unavailable', status: 503 } as ActionResult<T>
+      // The app-wide daily limit on what the owner pays for. Counted before the call, so a burst cannot get past it.
+      if (isOwnerPaidModelCall(endpoint)) {
+        const day = modelDay(new Date())
+        const found = await execTool<{ records: Array<{ recordId: string; data: Record<string, unknown> }> }>('records.query', { collection: 'usage', where: { userId: MODEL_USAGE_ID, day }, limit: 1 })
+        const row = found.success ? found.data.records[0] : undefined
+        const count = typeof row?.data.count === 'number' ? row.data.count : 0
+        if (!underModelCap(count)) return { success: false, error: 'Daily limit reached', code: 'app_limit', status: 429 } as ActionResult<T>
+        if (row) await execTool('records.update', { collection: 'usage', recordId: row.recordId, data: { count: count + 1 } })
+        else await execTool('records.create', { collection: 'usage', data: { userId: MODEL_USAGE_ID, day, count: 1 } })
+      }
+    }
 
     const res = await apiWorkerFetch(env, `/api/integrations/${endpoint}`, {
       method: 'POST',

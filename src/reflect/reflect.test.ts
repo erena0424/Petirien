@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { MAX_MESSAGES, MAX_MESSAGE_CHARS, type ChatMessage } from './contract'
 import { cleanDraft, cleanReply, buildReplyPrompt, buildSummaryPrompt, isGrounded, summarySchema } from './llm'
-import { CreditsError, REFLECT_DAILY_CAP, parseMessages, reflectReply, reflectSummary, type ReflectDeps } from './pipeline'
+import { UnavailableError, REFLECT_DAILY_CAP, parseMessages, reflectReply, reflectSummary, type ReflectDeps } from './pipeline'
 
 const user = (text: string): ChatMessage => ({ role: 'user', text })
 const bunny = (text: string): ChatMessage => ({ role: 'bunny', text })
@@ -319,17 +319,17 @@ describe('plans and the optional offer', () => {
   })
 })
 
-describe('an account with no credits', () => {
+describe('when the model cannot be used right now', () => {
   const said: ChatMessage[] = [{ role: 'user', text: 'Work was a lot today.' }]
-  it('gets a clear "credits" answer to a message, not a vague failure', async () => {
-    const { deps } = makeDeps({ llm: async () => { throw new CreditsError() } })
-    expect(await reflectReply(deps, said)).toEqual({ status: 'credits' })
+  it('gets a clear "unavailable" answer to a message, not a vague failure', async () => {
+    const { deps } = makeDeps({ llm: async () => { throw new UnavailableError() } })
+    expect(await reflectReply(deps, said)).toEqual({ status: 'unavailable' })
   })
-  it('gets a clear "credits" answer when a journal entry is asked for', async () => {
-    const { deps } = makeDeps({ llm: async () => { throw new CreditsError() } })
-    expect(await reflectSummary(deps, said)).toEqual({ status: 'credits' })
+  it('gets a clear "unavailable" answer when a journal entry is asked for', async () => {
+    const { deps } = makeDeps({ llm: async () => { throw new UnavailableError() } })
+    expect(await reflectSummary(deps, said)).toEqual({ status: 'unavailable' })
   })
-  it('still lets any other failure surface as before (it is not swallowed as "credits")', async () => {
+  it('still lets any other failure surface as before (it is not swallowed as "unavailable")', async () => {
     const { deps } = makeDeps({ llm: async () => { throw new Error('boom') } })
     await expect(reflectReply(deps, said)).rejects.toThrow('boom')
   })

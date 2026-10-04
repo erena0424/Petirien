@@ -11,7 +11,7 @@ import { z } from 'zod'
 import { writeAutoNote, type AutoNoteDeps } from '../reflect/auto-notes'
 import type { ChatMessage } from '../reflect/contract'
 import { backgroundRows } from '../plans/reflection'
-import { CreditsError, parseMessages, reflectReply, type ReflectDeps } from '../reflect/pipeline'
+import { UnavailableError, parseMessages, reflectReply, type ReflectDeps } from '../reflect/pipeline'
 import { normalizeStyle } from '../reflect/style'
 
 const LLM_MODEL = 'claude-haiku-4-5'
@@ -39,7 +39,9 @@ export function createReflectDeps(userId: string, tools: ActionTools, env?: { OW
         system,
         messages: [{ role: 'user', content: user }],
       })
-      if (!r.success && (r.code === 'insufficient_credits' || r.status === 402)) throw new CreditsError()
+      // The app owner pays for the model, so the person's own credits are never the reason: this is the app's daily limit,
+      // a missing token, or the owner being out of credits.
+      if (!r.success && (r.code === 'app_limit' || r.code === 'unavailable' || r.code === 'insufficient_credits' || r.status === 402 || r.status === 429 || r.status === 503)) throw new UnavailableError()
       return r.success ? extractText(r.data) : null
     },
 
