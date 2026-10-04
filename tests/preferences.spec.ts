@@ -112,15 +112,30 @@ test('delete everything removes check-ins, saved videos, and preferences', async
   await bob.page.getByRole('button', { name: 'Save preferences' }).click()
   await expect(bob.page.getByTestId('prefs-saved')).toBeVisible()
 
+  // An event added to the calendar by hand is part of what gets deleted too.
+  await bob.page.goto('/journal')
+  await expect(bob.page.getByTestId('journal-range')).toBeVisible()
+  await bob.page.getByTestId('journal-view-month').click()
+  await bob.page.getByTestId('add-event').click()
+  await bob.page.getByTestId('add-event-dialog').getByLabel('What is it?').fill('Event to be deleted')
+  await bob.page.getByTestId('add-event-dialog').getByRole('button', { name: 'Add', exact: true }).click()
+  await expect(bob.page.getByTestId('journal-month')).toContainText('Event to be deleted')
+
   await bob.page.goto('/history')
   await expect(bob.page.getByTestId('history-item').filter({ hasText: 'to be deleted' })).toHaveCount(1, { timeout: 15_000 })
 
   await deleteEverything(bob.page)
 
+
   await bob.page.goto('/history')
   await expect(bob.page.getByTestId('history-empty')).toBeVisible({ timeout: 15_000 })
   await bob.page.goto('/preferences')
   await expect(bob.page.getByLabel('Closing my eyes')).not.toBeChecked({ timeout: 15_000 })
+  await bob.page.goto('/journal')
+  await expect(bob.page.getByTestId('journal-range')).toBeVisible()
+  await bob.page.getByTestId('journal-view-month').click()
+  await bob.page.waitForTimeout(1500)
+  await expect(bob.page.getByTestId('journal-month')).not.toContainText('Event to be deleted')
 })
 
 test('how the bunny talks: choices save at once, persist, can be cleared, and stay private', async ({ users }) => {

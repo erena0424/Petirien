@@ -200,6 +200,7 @@ function DeleteEverything() {
   const messages = useQuery<Record<string, unknown>>('messages')
   const prefs = useQuery<Record<string, unknown>>('preferences')
   const placeRatings = useQuery<Record<string, unknown>>('placeFeedback')
+  const myPlans = useQuery<Record<string, unknown>>('myPlans')
   const mCheckins = useMutations<Record<string, unknown>>('checkins')
   const mSuggestions = useMutations<Record<string, unknown>>('suggestions')
   const mSaved = useMutations<Record<string, unknown>>('savedVideos')
@@ -209,6 +210,7 @@ function DeleteEverything() {
   const mMessages = useMutations<Record<string, unknown>>('messages')
   const mPrefs = useMutations<Record<string, unknown>>('preferences')
   const mPlaces = useMutations<Record<string, unknown>>('placeFeedback')
+  const mMyPlans = useMutations<Record<string, unknown>>('myPlans')
 
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -223,7 +225,8 @@ function DeleteEverything() {
     journal.records.length +
     conversations.records.length +
     messages.records.length +
-    placeRatings.records.length
+    placeRatings.records.length +
+    myPlans.records.length
 
   async function run() {
     setOpen(false)
@@ -237,6 +240,7 @@ function DeleteEverything() {
       for (const r of messages.records) await mMessages.removeConfirmed(r.recordId)
       for (const r of conversations.records) await mConversations.removeConfirmed(r.recordId)
       for (const r of placeRatings.records) await mPlaces.removeConfirmed(r.recordId)
+      for (const r of myPlans.records) await mMyPlans.removeConfirmed(r.recordId)
       for (const r of prefs.records) await mPrefs.removeConfirmed(r.recordId)
       setResult('done')
     } catch {

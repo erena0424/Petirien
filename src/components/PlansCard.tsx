@@ -25,6 +25,7 @@ export function PlansCard({ plans }: Props) {
   const chat = useBunnyChat()
   const [title, setTitle] = useState('')
   const [time, setTime] = useState('')
+  const [date, setDate] = useState('')
   const [adding, setAdding] = useState(false)
   const [formError, setFormError] = useState('')
   const now = new Date()
@@ -47,12 +48,13 @@ export function PlansCard({ plans }: Props) {
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
-    if (plans.addTyped(title, time)) {
+    if (plans.addTyped(title, time, date)) {
       setTitle('')
       setTime('')
+      setDate('')
       setFormError('')
       setAdding(false)
-    } else setFormError('Add what it is, and a time like 14:30 if you like.')
+    } else setFormError('Add what it is, a date if it is not today, and a time like 14:30 if you like.')
   }
 
   return (
@@ -128,6 +130,15 @@ export function PlansCard({ plans }: Props) {
                 onChange={(e) => setTitle(e.target.value)}
                 maxLength={80}
                 className="mt-1 block min-h-11 w-full rounded-xl border border-input bg-card px-3 text-base text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              />
+            </label>
+            <label className="text-sm font-medium text-foreground">
+              Date (optional)
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="mt-1 block min-h-11 rounded-xl border border-input bg-card px-3 text-base text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
               />
             </label>
             <label className="text-sm font-medium text-foreground">

@@ -97,8 +97,13 @@ export function parseEvents(data: unknown): Plan[] {
  * 2 that just finished today so there is something to talk about. Today and tomorrow only. Oldest first.
  */
 export function plansFromCalendar(data: unknown, now: Date): Plan[] {
+  return shortList(parseEvents(data), now)
+}
+
+/** Of any plans, the few worth showing on Home: today's and tomorrow's, up to 4 coming and 2 just finished. Oldest first. */
+export function shortList(all: Plan[], now: Date): Plan[] {
   const { from, to } = planWindow(now)
-  const plans = parseEvents(data).filter((p) => Date.parse(p.end!) > from.getTime() && Date.parse(p.start) < to.getTime())
+  const plans = all.filter((p) => (p.end ? Date.parse(p.end) : Date.parse(p.start) + HOUR) > from.getTime() && Date.parse(p.start) < to.getTime())
   const upcoming = plans.filter((p) => statusOf(p, now) !== 'done').slice(0, MAX_UPCOMING)
   const recent = plans.filter((p) => statusOf(p, now) === 'done').slice(-MAX_RECENT)
   return [...recent, ...upcoming]

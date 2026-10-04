@@ -252,3 +252,23 @@ export const placeFeedbackSchema: CollectionSchema = {
   uniqueOn: ['userId', 'placeId'],
   permissions: ownerOnly,
 }
+
+/**
+ * An event the person added themselves (a plan, an appointment), so the Journal calendar and Home have something to talk
+ * about even without Google Calendar. Only a short title and when it is. Private to its owner like everything else.
+ */
+export const myPlansSchema: CollectionSchema = {
+  name: 'myPlans',
+  ownerField: 'userId',
+  columns: [
+    userId,
+    text('title', true),
+    /** ISO time. For an all-day event, local midnight of the day. */
+    text('start', true),
+    /** ISO time. */
+    text('end', true),
+    /** 1 for an all-day event, else 0. */
+    num('allDay'),
+  ],
+  permissions: ownerOnly,
+}

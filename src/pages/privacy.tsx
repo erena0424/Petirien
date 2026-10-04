@@ -145,6 +145,11 @@ export default function Privacy() {
             says the app can &ldquo;view and edit&rdquo; events; this app only reads, and never changes your calendar. You can
             remove the connection any time in your Google Account settings.
           </p>
+          <p>
+            <strong>Events you add yourself.</strong> You can add an event (a name, a date and an optional time) on Home or in the
+            Journal. It is saved to your account, shown only to you on your Journal calendar and, if it is today or tomorrow, on Home,
+            and you can remove it any time. It is not sent to the AI unless you press the button to talk about it with the bunny.
+          </p>
         </Section>
 
         <Section title="Deleting your data">

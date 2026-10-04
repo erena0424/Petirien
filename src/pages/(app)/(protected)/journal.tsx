@@ -10,6 +10,7 @@ import { Link } from 'react-router-dom'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { ConfirmModal, Button } from '@/components/ui'
 import { Bunny } from '@/components/Bunny'
+import { AddEventDialog } from '@/components/journal/AddEventDialog'
 import { EntryDialog } from '@/components/journal/EntryDialog'
 import { EventDialog } from '@/components/journal/EventDialog'
 import { DayView, MonthView, WeekView, type CheckinItem } from '@/components/journal/JournalCalendar'
@@ -20,6 +21,7 @@ import { useBunnyChat } from '@/lib/bunny-chat'
 import { useCalendarRange } from '@/lib/use-calendar-range'
 import { useCheckins } from '@/lib/use-checkins'
 import { useJournal } from '@/lib/use-journal'
+import { useMyPlans } from '@/lib/use-my-plans'
 import type { Plan } from '../../../plans/plan'
 import { reflectedIds } from '../../../journal/layout'
 import { cn } from '@/lib/utils'
@@ -87,6 +89,8 @@ export default function JournalPage() {
   const [view, setViewState] = useState<View>(savedView)
   const [openEvent, setOpenEvent] = useState<Plan | null>(null)
   const [openEntryId, setOpenEntryId] = useState<string | null>(null)
+  const [adding, setAdding] = useState(false)
+  const mine = useMyPlans()
   const chat = useBunnyChat()
   const [anchor, setAnchor] = useState(() => startOfDay(new Date()))
 
@@ -125,7 +129,7 @@ export default function JournalPage() {
   const common = {
     byDay,
     checkins,
-    events: calendar.events,
+    events: [...calendar.events, ...mine.plans],
     reflected,
     anchor,
     onSelect: select,
@@ -177,6 +181,10 @@ export default function JournalPage() {
                   </button>
                 ))}
               </div>
+
+              <Button variant="outline" className="min-h-10 rounded-full" onClick={() => setAdding(true)} data-testid="add-event">
+                Add an event
+              </Button>
 
               {view !== 'list' && (
                 <div className="flex items-center gap-1">
@@ -237,7 +245,9 @@ export default function JournalPage() {
         entries={openEvent ? records.filter((r) => r.data.eventId === openEvent.id) : []}
         onClose={() => setOpenEvent(null)}
         onReflect={(p) => void chat.startAbout(p)}
+        onRemove={(p) => mine.remove(p.id)}
       />
+      <AddEventDialog open={adding} onClose={() => setAdding(false)} defaultDate={dayKey(anchor)} onAdd={mine.add} />
       <EntryDialog
         record={openEntry}
         onClose={() => setOpenEntryId(null)}

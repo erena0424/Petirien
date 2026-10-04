@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { integration, useAuthStatus } from 'deepspace'
-import { manualPlan, planWindow, plansFromCalendar, type Plan } from '../plans/plan'
+import { planWindow, plansFromCalendar, shortList, type Plan } from '../plans/plan'
 import { safeAuthUrl } from './use-calendar'
+import { useMyPlans } from './use-my-plans'
 
 export type PlansState =
   | { kind: 'idle' }
@@ -45,7 +46,9 @@ export function usePlans() {
   const { userId, isSignedIn } = useAuthStatus()
   const mine = cache && cache.userId === userId ? cache : null
   const [calendarPlans, setCalendarPlans] = useState<Plan[]>(mine?.plans ?? [])
-  const [typed, setTyped] = useState<Plan[]>([])
+  // Plans the person added themselves are saved to their account (and shown on the Journal calendar too).
+  const my = useMyPlans()
+  const typed = shortList(my.plans, new Date())
   const [state, setState] = useState<PlansState>(mine ? { kind: 'ready' } : { kind: 'idle' })
 
   const fetchPlans = useCallback(async (uid: string): Promise<void> => {
@@ -91,14 +94,8 @@ export function usePlans() {
     if (wasUsed()) void load()
   }, [isSignedIn, userId, state.kind, load])
 
-  const addTyped = useCallback((title: string, time: string): boolean => {
-    const plan = manualPlan(title, time, new Date())
-    if (!plan) return false
-    setTyped((t) => [...t, plan])
-    return true
-  }, [])
-
-  const removeTyped = useCallback((id: string) => setTyped((t) => t.filter((p) => p.id !== id)), [])
+  const addTyped = (title: string, time: string, date = ''): boolean => my.add(title, date, time)
+  const removeTyped = (id: string) => my.remove(id)
 
   return { state, calendarPlans, typed, load, addTyped, removeTyped }
 }

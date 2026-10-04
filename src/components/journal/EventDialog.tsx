@@ -15,11 +15,14 @@ export function EventDialog({
   entries,
   onClose,
   onReflect,
+  onRemove,
 }: {
   plan: Plan | null
   entries: JournalRecord[]
   onClose: () => void
   onReflect: (plan: Plan) => void
+  /** Remove an event the person added themselves. Calendar events cannot be removed here. */
+  onRemove?: (plan: Plan) => void
 }) {
   return (
     <Dialog open={plan !== null} onOpenChange={(o) => !o && onClose()}>
@@ -58,6 +61,19 @@ export function EventDialog({
               >
                 Reflect on this
               </Button>
+              {plan.manual && onRemove && (
+                <Button
+                  variant="ghost"
+                  className="min-h-11"
+                  data-testid="remove-event"
+                  onClick={() => {
+                    onRemove(plan)
+                    onClose()
+                  }}
+                >
+                  Remove this event
+                </Button>
+              )}
               <Button variant="ghost" className="min-h-11" onClick={onClose}>
                 Close
               </Button>
