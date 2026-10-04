@@ -154,3 +154,21 @@ test('"Turn this conversation into journal" appears only when there is something
   await expect(page.getByTestId('bunny-words')).toContainText('long day')
   await expect(page.getByTestId('journal-button')).toBeVisible()
 })
+
+test('an account with no credits is told so, plainly, for a reply and for the journal button', async ({ users }) => {
+  const [dana] = await users(['Dana'])
+  const page = dana.page
+  await tuck(page)
+  // The platform answers the model call with "insufficient credits"; the app turns that into a plain status.
+  await page.route('**/api/actions/reflectReply', (r) => r.fulfill(ok({ status: 'credits' })))
+  await page.route('**/api/actions/summarizeConversation', (r) => r.fulfill(ok({ status: 'credits' })))
+  await page.goto('/messages')
+  await page.getByRole('button', { name: 'New conversation' }).click()
+  await page.getByLabel('Tell the bunny something').fill('Work was a lot today.')
+  await page.getByRole('button', { name: 'Send', exact: true }).click()
+  await expect(page.getByTestId('chat-error')).toContainText('out of credits')
+  await expect(page.getByTestId('chat-error')).not.toContainText("couldn't answer")
+  // The journal button says the same, instead of "nothing new to write up".
+  await page.getByTestId('journal-button').click()
+  await expect(page.getByTestId('journal-credits')).toContainText('out of credits')
+})

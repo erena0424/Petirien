@@ -11,7 +11,7 @@ import { z } from 'zod'
 import { writeAutoNote, type AutoNoteDeps } from '../reflect/auto-notes'
 import type { ChatMessage } from '../reflect/contract'
 import { backgroundRows } from '../plans/reflection'
-import { parseMessages, reflectReply, type ReflectDeps } from '../reflect/pipeline'
+import { CreditsError, parseMessages, reflectReply, type ReflectDeps } from '../reflect/pipeline'
 import { normalizeStyle } from '../reflect/style'
 
 const LLM_MODEL = 'claude-haiku-4-5'
@@ -39,6 +39,7 @@ export function createReflectDeps(userId: string, tools: ActionTools, env?: { OW
         system,
         messages: [{ role: 'user', content: user }],
       })
+      if (!r.success && (r.code === 'insufficient_credits' || r.status === 402)) throw new CreditsError()
       return r.success ? extractText(r.data) : null
     },
 

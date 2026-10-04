@@ -10,13 +10,14 @@ import { useBunnyChat } from '@/lib/bunny-chat'
  */
 export function JournalButton({ className }: { className?: string }) {
   const chat = useBunnyChat()
-  const [status, setStatus] = useState<'idle' | 'writing' | 'done' | 'none'>('idle')
+  const [status, setStatus] = useState<'idle' | 'writing' | 'done' | 'none' | 'credits'>('idle')
   const can = !!chat.conversationId && chat.thread.some((m) => m.role === 'user')
   if (!can) return null
 
   async function write() {
     setStatus('writing')
-    setStatus((await chat.writeNotesNow()) ? 'done' : 'none')
+    const result = await chat.writeNotesNow()
+    setStatus(result === 'ok' ? 'done' : result)
   }
 
   return (
@@ -33,6 +34,7 @@ export function JournalButton({ className }: { className?: string }) {
           .
         </span>
       )}
+      {status === 'credits' && <span data-testid="journal-credits" className="ml-2 text-sm text-foreground">Your account is out of credits for this, so I can't write it up right now.</span>}
       {status === 'none' && <span className="ml-2 text-sm text-muted-foreground">Nothing new to write up yet.</span>}
     </div>
   )

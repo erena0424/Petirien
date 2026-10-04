@@ -74,6 +74,13 @@ async function overCap(deps: ReflectDeps): Promise<boolean> {
   return !deps.exempt && (await deps.usageToday()) >= REFLECT_DAILY_CAP
 }
 
+/** Thrown by the model call when the person's account has no credits left (a 402 from the platform). */
+export class CreditsError extends Error {
+  constructor() {
+    super('insufficient_credits')
+  }
+}
+
 export async function reflectReply(deps: ReflectDeps, messages: ChatMessage[]): Promise<ReplyResponse> {
   if (messages[messages.length - 1]?.role !== 'user') return { status: 'error', message: 'Say something first.' }
   // Layer 1: no paid call at all when the person's words suggest a crisis.
@@ -83,7 +90,13 @@ export async function reflectReply(deps: ReflectDeps, messages: ChatMessage[]): 
 
   const earlier = (await deps.recentNotes?.().catch(() => [] as EarlierNote[])) ?? []
   const style = (await deps.loadStyle?.().catch(() => ({}) as BunnyStyle)) ?? {}
-  const text = await deps.llm({ ...buildReplyPrompt(messages, earlier, style), maxTokens: 300 })
+  let text: string | null
+  try {
+    text = await deps.llm({ ...buildReplyPrompt(messages, earlier, style), maxTokens: 300 })
+  } catch (e) {
+    if (e instanceof CreditsError) return { status: 'credits' }
+    throw e
+  }
   const parsed = replySchema.safeParse(parseJsonObject(text))
   if (!parsed.success) {
     // Fail visibly rather than invent a reply: the person's message is still on screen and they can resend.
@@ -108,7 +121,13 @@ export async function reflectSummary(deps: ReflectDeps, messages: ChatMessage[])
   if (await overCap(deps)) return { status: 'capped', resetsAt: nextUtcMidnight(deps.now()) }
   await deps.bumpUsage()
 
-  const text = await deps.llm({ ...buildSummaryPrompt(messages), maxTokens: 2400 })
+  let text: string | null
+  try {
+    text = await deps.llm({ ...buildSummaryPrompt(messages), maxTokens: 2400 })
+  } catch (e) {
+    if (e instanceof CreditsError) return { status: 'credits' }
+    throw e
+  }
   const parsed = summarySchema.safeParse(parseJsonObject(text))
   if (!parsed.success) {
     return { status: 'error', message: "I couldn't write the notes just now. Your chat is still here, so you can try again." }

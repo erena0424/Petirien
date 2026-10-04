@@ -41,6 +41,7 @@ interface MessageRow {
 export function replyProblem(res: ReplyResponse | null): string | null {
   if (!res) return "I couldn't reach the server. Check your connection and try again."
   if (res.status === 'error') return res.message
+  if (res.status === 'credits') return "Your account is out of credits for this, so I can't reply right now."
   if (res.status === 'capped') return `That's enough chatting for today. I'll be back around ${formatResetTime(res.resetsAt)}.`
   return null
 }
@@ -78,7 +79,7 @@ interface BunnyChat {
   focusTick: number
   requestFocus: () => void
   /** Ask for notes about the open conversation now. Resolves true when a note was written. */
-  writeNotesNow: () => Promise<boolean>
+  writeNotesNow: () => Promise<'ok' | 'none' | 'credits'>
 }
 
 const Ctx = createContext<BunnyChat | null>(null)
@@ -293,10 +294,10 @@ export function BunnyChatProvider({ children }: { children: ReactNode }) {
     [conversationId, reset],
   )
 
-  const writeNotesNow = useCallback(async (): Promise<boolean> => {
-    if (!conversationId) return false
+  const writeNotesNow = useCallback(async (): Promise<'ok' | 'none' | 'credits'> => {
+    if (!conversationId) return 'none'
     const res = await callAction<{ status: string }>('summarizeConversation', { conversationId, force: true })
-    return res?.status === 'ok'
+    return res?.status === 'ok' ? 'ok' : res?.status === 'credits' ? 'credits' : 'none'
   }, [conversationId])
 
   // Automatic notes: once per page load, for the oldest chat that has gone quiet and has un-noted messages.

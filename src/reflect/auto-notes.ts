@@ -46,7 +46,7 @@ export interface AutoNoteDeps extends ReflectDeps {
 
 export type AutoNoteResult =
   | { status: 'ok' }
-  | { status: 'nothing_new' | 'too_soon' | 'not_found' | 'capped' | 'error' }
+  | { status: 'nothing_new' | 'too_soon' | 'not_found' | 'capped' | 'credits' | 'error' }
   /** Crisis words in the new messages: no note is written, and the person is not asked again. */
   | { status: 'support' }
 
@@ -70,6 +70,7 @@ export async function writeAutoNote(deps: AutoNoteDeps, conversationId: string, 
     return { status: 'support' }
   }
   if (res.status === 'capped') return { status: 'capped' }
+  if (res.status === 'credits') return { status: 'credits' }
   return { status: 'error' }
 }
 

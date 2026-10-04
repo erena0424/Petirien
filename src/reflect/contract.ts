@@ -24,12 +24,15 @@ export type ReplyResponse =
   /** Crisis language: the app shows the support card and the bunny stops replying. */
   | { status: 'support' }
   | { status: 'capped'; resetsAt: string }
+  /** The person's account has no credits left for the model, so nothing could be written. */
+  | { status: 'credits' }
   | { status: 'error'; message: string }
 
 export type SummaryResponse =
   | { status: 'ok'; draft: JournalDraft }
   | { status: 'support' }
   | { status: 'capped'; resetsAt: string }
+  | { status: 'credits' }
   | { status: 'error'; message: string }
 
 export const MAX_MESSAGES = 30

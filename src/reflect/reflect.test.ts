@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { MAX_MESSAGES, MAX_MESSAGE_CHARS, type ChatMessage } from './contract'
 import { cleanDraft, cleanReply, buildReplyPrompt, buildSummaryPrompt, isGrounded, summarySchema } from './llm'
-import { REFLECT_DAILY_CAP, parseMessages, reflectReply, reflectSummary, type ReflectDeps } from './pipeline'
+import { CreditsError, REFLECT_DAILY_CAP, parseMessages, reflectReply, reflectSummary, type ReflectDeps } from './pipeline'
 
 const user = (text: string): ChatMessage => ({ role: 'user', text })
 const bunny = (text: string): ChatMessage => ({ role: 'bunny', text })
@@ -316,5 +316,21 @@ describe('plans and the optional offer', () => {
     const { deps, calls } = makeDeps({ llm: async () => replyJson('x') })
     expect(await reflectReply(deps, [bunny('You have "Dentist" today. How are you feeling about it?'), user('I want to kill myself')])).toEqual({ status: 'support' })
     expect(calls.llm).toBe(0)
+  })
+})
+
+describe('an account with no credits', () => {
+  const said: ChatMessage[] = [{ role: 'user', text: 'Work was a lot today.' }]
+  it('gets a clear "credits" answer to a message, not a vague failure', async () => {
+    const { deps } = makeDeps({ llm: async () => { throw new CreditsError() } })
+    expect(await reflectReply(deps, said)).toEqual({ status: 'credits' })
+  })
+  it('gets a clear "credits" answer when a journal entry is asked for', async () => {
+    const { deps } = makeDeps({ llm: async () => { throw new CreditsError() } })
+    expect(await reflectSummary(deps, said)).toEqual({ status: 'credits' })
+  })
+  it('still lets any other failure surface as before (it is not swallowed as "credits")', async () => {
+    const { deps } = makeDeps({ llm: async () => { throw new Error('boom') } })
+    await expect(reflectReply(deps, said)).rejects.toThrow('boom')
   })
 })
