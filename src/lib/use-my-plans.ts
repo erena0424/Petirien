@@ -28,13 +28,29 @@ export function useMyPlans() {
     return readyRef.current
   }
 
+  /**
+   * Runs a write, trying again for a few seconds if the database says it is not ready yet. `ready` can turn true a
+   * moment before the room accepts writes, and a write sent in that gap is refused with RecordRoomNotReadyError.
+   */
+  async function retrying<T>(write: () => Promise<T>): Promise<T | undefined> {
+    for (let i = 0; i < 40; i++) {
+      try {
+        return await write()
+      } catch (e) {
+        if (!/NotReady|not ready/i.test(String(e))) throw e
+        await sleep(250)
+      }
+    }
+    return undefined
+  }
+
   /** False when the title, date or time was not usable. True means it is being saved. */
   function add(title: string, date: string, time: string, endTime = ''): boolean {
     const row = newMyPlan(title, date, time, new Date(), endTime)
     if (!row || busy.current) return false
     busy.current = true
     void whenReady()
-      .then((ok) => (ok ? createConfirmed(row) : undefined))
+      .then((ok) => (ok ? retrying(() => createConfirmed(row)) : undefined))
       .catch(() => undefined) // a rejected write is shown as a toast by the data layer
       .finally(() => {
         busy.current = false
@@ -46,7 +62,7 @@ export function useMyPlans() {
     const id = recordIdOf(planId)
     if (!id) return
     void whenReady()
-      .then((ok) => (ok ? removeConfirmed(id) : undefined))
+      .then((ok) => (ok ? retrying(() => removeConfirmed(id)) : undefined))
       .catch(() => undefined)
   }
 
