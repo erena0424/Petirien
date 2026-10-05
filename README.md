@@ -4,11 +4,9 @@ A small web app for everyday emotional support. You say how you feel, a bunny co
 small things to do: a video, a real place nearby, or a simple idea. It can also help you look back on the plans in your
 calendar, and it keeps a journal in your own words.
 
-Petirien is **not therapy, not medical advice, and not crisis care.** It never diagnoses or treats anything. If someone
+Petirien is not therapy, not medical advice, and not crisis care. It never diagnoses or treats anything. If someone
 writes something that suggests they may be in crisis, the app stops, skips recommendations, and shows real support
 (988 call, text and chat, Crisis Text Line, 911). The bunny says plainly that it is an AI.
-
-Built on [DeepSpace](https://deep.space) for the AI-native GTM engineer build exercise.
 
 **Try it:** https://petirien.app.space. The signed-out Home has sample suggestions and a place-to-go card with no account.
 To use the bunny, the journal and check-ins, sign in with Google or GitHub (an account is created the first time). Nothing
@@ -24,7 +22,7 @@ It is a shared account, so please keep it to testing. Anything you add is visibl
 
 ## What it does
 
-- **Check-in:** mood and energy, then optional time, what would help, screen or no screen, inside or outside, and a note.
+- **Check-in & small activity suggestions:** mood and energy, then optional length, what would help, screen or no screen, inside or outside, and a note.
   The default mix is one video, one place to visit, and one other idea. Every suggestion has a good / not for me button,
   and what you say shapes the next ones. Variety is built in, so the same few ideas do not come up every time.
 - **The bunny:** a floating companion on every page, and a full Chat page. Conversations are saved by default, with a
@@ -53,11 +51,8 @@ It is a shared account, so please keep it to testing. Anything you add is visibl
 - **Who pays.** The model and video calls cost a fraction of a cent to about a cent, so the app owner pays and nobody needs
   credits to try it; each account and the whole app have daily limits. Google Calendar cannot work that way: DeepSpace
   reads the calendar of whoever's token the call carries, so it is billed to, and reads from, the signed-in person.
-- **Left out on purpose.** Weather, voice and analytics dashboards (they would not make reflection easier), writing to the
-  calendar (it only reads), and any extra DeepSpace integration added just to have more of them.
-- **What I would do next.** Move and resize events by dragging them; a small hand-checked pool of videos per activity as a
-  fallback when search fails; retry other database writes (like place ratings) the way saving an event now does; test on
-  real phones; give the bunny a more distinctive voice (a tester found it a little generic).
+- **Left out on purpose.** Weather, and voice and analytics dashboards (they would not make reflection easier).
+- **What I would do next.** Expand activity selections; give the bunny a more distinctive voice.
 
 ## How this was built with AI agents
 
@@ -82,7 +77,7 @@ I directed Claude Code and wrote down the rules it worked under, so the process 
 Also DeepSpace platform features: auth, the Records database with per-user permissions, and server actions.
 
 **Billing and limits.** The AI calls (the bunny, check-in interpretation, journal entries) and the video searches are paid
-by the app owner. Per-account daily limits (80 chat messages, 25 check-ins) and app-wide daily limits (600 model calls, 120
+by the app owner so that people can easily try the app. Per-account daily limits (80 chat messages, 25 check-ins) and app-wide daily limits (600 model calls, 120
 video calls) bound the cost; past them the bunny says it is resting and the app shows plain ideas. Place searches, for
 everyone signed in or not, go through the app's own route (`/api/public/places`): fixed kinds of place only, a location
 rounded to about a kilometre, results shared for a day, and 60 fresh searches a day in total. Only Google Calendar is billed
@@ -94,12 +89,9 @@ limits.
 
 - Every collection is private to its owner, including for admins. A test checks it.
 - A check-in note and chat are only sent to the model for that purpose. The model never receives your calendar events
-  unless you press "Reflect on this" for one, and written reflections are never sent to it.
+  unless you press "Reflect on this" for one.
 - Journal entries are written as sentences in the person's own voice and checked in code: a sentence that is not built from what the person actually said is dropped.
 - The bunny's replies are checked for links, medical or treatment language, diagnosis-like labels and stock phrases.
-- YouTube rules are followed: embedded player only, handling for blocked and removed videos, stored details refreshed
-  or hidden within 30 days.
-- Daily limits on paid work, and a calm message when the bunny is resting.
 
 ## Run it locally
 
@@ -124,7 +116,7 @@ the browser's location), so a full run costs nothing. After a run, `npx deepspac
 Entries that only the model would write are put in the local database through a development-only hook, which is not in a
 production build.
 
-## What is and is not verified
+## What is verified
 
 Verified by tests: the recommendation logic and mix, safety checks, permissions and isolation between accounts, the
 calendar layout and adding events by clicking or dragging, places ranking, open hours and the night rule, the Journal
@@ -134,10 +126,6 @@ Checked by hand on the live site: the signed-out preview; signing in with an ema
 getting bunny replies, journal entries from conversations, check-ins with real videos and saved items (so the app owner
 really pays for those); the open integrations route refusing owner-paid calls; real place search and photos with a real
 location.
-
-Not verified: how the real model sounds over many conversations, the real Google sign-in and Google Calendar flow end to
-end, per-person billing of Calendar, whether a brand-new Google account behaves exactly like the email demo account, and
-the app on real phones (only simulated widths are tested).
 
 ## Layout
 
