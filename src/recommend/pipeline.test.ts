@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
-import { getActivity } from '../catalog'
+import { CATALOG, getActivity } from '../catalog'
 import type { CheckinInput } from '../contract'
-import { DAILY_CAP, parseCheckinInput, recommend, type Deps, type SuggestionRow } from './pipeline'
+import { DAILY_CAP, parseCheckinInput, pickShortlist, recommend, type Deps, type SuggestionRow } from './pipeline'
 
 // ── fakes ────────────────────────────────────────────────────────────────
 
@@ -664,5 +664,21 @@ describe('recommend: variety, order and tailoring', () => {
       if (res.status === 'ok' && res.picks[0]) firsts.add(res.picks[0].activityId)
     }
     expect(firsts.size).toBeGreaterThan(2)
+  })
+})
+
+describe('"No screen" suggestions stand on their own', () => {
+  const guided = (a: { video: boolean; tags: string[] }) => a.video && (a.tags.includes('follow-along') || a.tags.includes('guided'))
+  it('prefers plain ideas, and never fills the list with guides to follow on a screen while plain ideas remain', () => {
+    const plain = CATALOG.filter((a) => !a.video)
+    expect(plain.length).toBeGreaterThanOrEqual(3)
+    for (const place of ['auto', 'in', 'out'] as const) {
+      const picked = pickShortlist(CATALOG, 'none', 3, place)
+      expect(picked.filter(guided), `place ${place}`).toEqual([])
+    }
+  })
+  it('still fills the list from guides when there is nothing else', () => {
+    const onlyGuides = CATALOG.filter(guided)
+    expect(pickShortlist(onlyGuides, 'none', 3, 'auto')).toHaveLength(3)
   })
 })

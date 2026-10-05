@@ -4,6 +4,16 @@ import { CATALOG, GOALS, SETTINGS, CATEGORIES } from './catalog'
 const FORBIDDEN = /diagnos|treat|cure|therap|clinical|prescrib|medical device/i
 
 describe('catalog integrity', () => {
+  it('gives every activity that is usually done by following a guide steps of its own, not "follow the tutorial"', () => {
+    for (const a of CATALOG) {
+      expect(a.steps.join(' '), a.id).not.toMatch(/\btutorial\b|follow along one step|copy them/i)
+      if (a.tags.includes('follow-along')) {
+        expect(a.steps.length, a.id).toBeGreaterThanOrEqual(3)
+        expect(a.steps.some((st) => st.length >= 45), `${a.id} has at least one concrete step`).toBe(true)
+      }
+    }
+  })
+
   it('writes steps and tips that read correctly with no video (the preview and "no screen" show them alone)', () => {
     for (const a of CATALOG) {
       for (const line of [...a.steps, a.tip ?? '']) expect(line, a.id).not.toMatch(/\bthe video\b|\bpress play\b|\bthis video\b/i)

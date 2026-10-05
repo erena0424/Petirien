@@ -182,6 +182,18 @@ test.describe('signed-in pages', () => {
     await expect(page.locator('[data-testid="saved-empty"], [data-testid="saved-list"]').first()).toBeVisible()
   })
 
+  test('the Journal and Chat tell the same truth about saved chats', async ({ users }) => {
+    const [dana] = await users(['Dana'])
+    const page = dana.page
+    await tuck(page)
+    await page.goto('/journal')
+    const intro = page.locator('header').first()
+    await expect(intro).toContainText('Your chats are saved in Chat unless you chose not to save them')
+    await expect(page.locator('main')).not.toContainText('never the chat itself')
+    await page.goto('/messages')
+    await expect(page.locator('header').first()).toContainText('saved here unless you choose not to')
+  })
+
   test('the privacy page says the location is remembered on the device only', async ({ page }) => {
     await page.goto('/privacy')
     await expect(page.getByTestId('privacy-page')).toContainText('remembered in this browser only')

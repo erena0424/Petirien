@@ -147,8 +147,8 @@ export default function JournalPage() {
   return (
     <div className="w-full">
       <PageHeader title="Journal">
-        The bunny&apos;s notes from when you talked, and your own reflections on your plans, on the day they belong to. Only you can see them. Only notes
-        are kept for chats, never the chat itself.
+        The bunny&apos;s notes from when you talked, and your own reflections on your plans, on the day they belong to. Only you can see them. Your chats are
+        saved in Chat unless you chose not to save them.
       </PageHeader>
       <div className="mx-auto w-full max-w-6xl px-5 py-10 sm:px-8">
 

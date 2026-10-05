@@ -140,7 +140,11 @@ export function pickShortlist(candidates: Activity[], screen: CheckinInput['scre
   if (screen === 'video') return pool.slice(0, count)
   const walk = pool.find((a) => a.id === WALK_ID)
   if (screen === 'none') {
-    const first = pool.slice(0, count)
+    // Ideas that stand on their own come first. Activities that are really a guide to follow on a screen only fill in
+    // when there is nothing else, because their written steps are the weakest part of them.
+    const rank = (a: Activity) => (!a.video ? 0 : a.tags.includes('follow-along') || a.tags.includes('guided') ? 2 : 1)
+    const ordered = [...pool].sort((x, y) => rank(x) - rank(y))
+    const first = ordered.slice(0, count)
     return !walk || first.includes(walk) ? first : [...first.slice(0, count - 1), walk]
   }
   const videos = pool.filter((a) => a.video)
