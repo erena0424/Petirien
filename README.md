@@ -10,6 +10,11 @@ writes something that suggests they may be in crisis, the app stops, skips recom
 
 Built on [DeepSpace](https://deep.space) for the AI-native GTM engineer build exercise.
 
+**Try it:** https://petirien.app.space. The signed-out Home has sample suggestions and a place-to-go card with no account.
+To use the bunny, the journal and check-ins, sign in with Google or GitHub (an account is created the first time). Nothing
+needs DeepSpace credits: the AI and video calls are paid by the app owner, within daily limits (see below). A demo account
+with invented entries is described in the submission note.
+
 ## What it does
 
 - **Check-in:** mood and energy, then optional time, what would help, screen or no screen, inside or outside, and a note.
@@ -29,6 +34,23 @@ Built on [DeepSpace](https://deep.space) for the AI-native GTM engineer build ex
 - **Home:** (signed out: sample suggestions and a place to go) two video ideas for right now (no history needed), a place to go, your plans, and what you saved.
 - **Saved, History, Preferences, Privacy:** save videos and ideas, review check-ins, set what to avoid, and delete
   everything in one step.
+
+## Design tradeoffs
+
+- **Predictable suggestions over open AI generation.** Activities come from a curated catalog of 28 written ahead of time
+  (`src/catalog.ts`, drafted by Claude Code and reviewed by me), not generated on the fly. Plain code first narrows the
+  catalog by time, energy and preferences; the model only interprets the check-in and ranks among what is left, and any
+  id it returns that is not in that list is dropped. Videos come only from real search results. The cost is less novelty;
+  the gains are that nothing inappropriate can be suggested, links are never invented, and nothing is paid to generate
+  activities. Rotation and the good / not for me buttons keep it from feeling repetitive.
+- **Who pays.** The model and video calls cost a fraction of a cent to about a cent, so the app owner pays and nobody needs
+  credits to try it; each account and the whole app have daily limits. Google Calendar cannot work that way: DeepSpace
+  reads the calendar of whoever's token the call carries, so it is billed to, and reads from, the signed-in person.
+- **Left out on purpose.** Weather, voice and analytics dashboards (they would not make reflection easier), writing to the
+  calendar (it only reads), and any extra DeepSpace integration added just to have more of them.
+- **What I would do next.** Move and resize events by dragging them; a small hand-checked pool of videos per activity as a
+  fallback when search fails; retry other database writes (like place ratings) the way saving an event now does; test on
+  real phones; give the bunny a more distinctive voice (a tester found it a little generic).
 
 ## How this was built with AI agents
 
@@ -50,22 +72,27 @@ I directed Claude Code and wrote down the rules it worked under, so the process 
 | `google/calendar-list-events` | Reading the person's own calendar (they connect it themselves). Only start and end times and names are read. |
 | `serpapi/places-search` | Nearby places, from a location rounded to about a kilometre. |
 
-Also DeepSpace platform features: auth, the Records database with per-user permissions, and server actions. Paid
-integrations that act on a person's own account (Google Calendar) are billed to the signed-in person. The AI calls (the bunny, check-in interpretation, journal entries) and the video searches cost a fraction of a cent to about a cent each, so the app owner pays for them, which means nobody needs DeepSpace credits to try the app. They are bounded by per-account daily limits (80 chat messages, 25 check-ins) and app-wide daily limits (600 model calls, 120 video calls), after which the bunny says it is resting and the app shows plain ideas. The open integrations route refuses owner-paid integrations, so they can only be used through the app's own actions. Place searches for everyone, signed in or not, go through the app's own capped route, paid by the app owner:
-it goes through `/api/public/places`, billed to the app owner, and boxed in (fixed kinds of place, a location rounded to
-about a kilometre, results shared and kept for a day, and 60 fresh searches a day for all visitors together, about $2). An optional Google API key
-(a DeepSpace secret) only backs YouTube up and checks which videos can be embedded.
+Also DeepSpace platform features: auth, the Records database with per-user permissions, and server actions.
+
+**Billing and limits.** The AI calls (the bunny, check-in interpretation, journal entries) and the video searches are paid
+by the app owner. Per-account daily limits (80 chat messages, 25 check-ins) and app-wide daily limits (600 model calls, 120
+video calls) bound the cost; past them the bunny says it is resting and the app shows plain ideas. Place searches, for
+everyone signed in or not, go through the app's own route (`/api/public/places`): fixed kinds of place only, a location
+rounded to about a kilometre, results shared for a day, and 60 fresh searches a day in total. Only Google Calendar is billed
+to the signed-in person, because it reads that person's own Google account. The open integrations route refuses every
+owner-paid integration, so they can only be reached through the app's own actions, which require sign-in and keep the
+limits.
 
 ## Privacy and safety choices
 
 - Every collection is private to its owner, including for admins. A test checks it.
 - A check-in note and chat are only sent to the model for that purpose. The model never receives your calendar events
   unless you press "Reflect on this" for one, and written reflections are never sent to it.
-- Journal notes are checked in code: a bullet that is not built from what the person actually said is dropped.
+- Journal entries are written as sentences in the person's own voice and checked in code: a sentence that is not built from what the person actually said is dropped.
 - The bunny's replies are checked for links, medical or treatment language, diagnosis-like labels and stock phrases.
 - YouTube rules are followed: embedded player only, handling for blocked and removed videos, stored details refreshed
   or hidden within 30 days.
-- Daily limits on paid work, and a calm message when someone is out of credits.
+- Daily limits on paid work, and a calm message when the bunny is resting.
 
 ## Run it locally
 
@@ -75,14 +102,15 @@ npx deepspace auth login          # your own browser
 npx deepspace dev start           # http://localhost:5173
 ```
 
-Optional: `npx deepspace secrets set YOUTUBE_API_KEY --stdin` for the backup YouTube key.
-
 ## Tests
 
 ```bash
 npm run test:unit                                      # logic, with fakes
 npx playwright test -c tests/playwright.config.ts      # real browser, real local database
 ```
+
+The final run had 473 unit tests and 144 browser tests with no failures (one more browser test is skipped on purpose: it
+checks DeepSpace's own debug page, which is not part of this app).
 
 The browser tests use DeepSpace test accounts and mock every paid call (YouTube, the model, Google Calendar, Google Maps,
 the browser's location), so a full run costs nothing. After a run, `npx deepspace app usage` should be unchanged.
@@ -91,17 +119,23 @@ production build.
 
 ## What is and is not verified
 
-Verified by tests: the recommendation logic and mix, safety checks, permissions, the calendar layout, places ranking and
-rotation, the Journal views, every user flow in a browser against the real local database.
+Verified by tests: the recommendation logic and mix, safety checks, permissions and isolation between accounts, the
+calendar layout and adding events by clicking or dragging, places ranking, open hours and the night rule, the Journal
+views, the limits on paid calls, and every user flow in a browser against the real local database.
 
-Not verified by automation, and checked by hand instead: how the real model sounds, the real Google sign-in and calendar
-response, real Google Maps results and the browser's location prompt, and billing of the integrations to the signed-in
-person.
+Checked by hand on the live site: the signed-out preview; signing in with an email account that has no credits and still
+getting bunny replies, journal entries from conversations, check-ins with real videos and saved items (so the app owner
+really pays for those); the open integrations route refusing owner-paid calls; real place search and photos with a real
+location.
+
+Not verified: how the real model sounds over many conversations, the real Google sign-in and Google Calendar flow end to
+end, per-person billing of Calendar, whether a brand-new Google account behaves exactly like the email demo account, and
+the app on real phones (only simulated widths are tested).
 
 ## Layout
 
 ```
-src/pages/        screens (Home, Check-in, Messages, Journal, Saved, History, Preferences, Privacy)
+src/pages/        screens (Home, Check-in, Chat, Journal, Saved, History, Preferences, Privacy)
 src/components/   UI, including the floating bunny and the Journal calendar
 src/recommend/    the check-in pipeline: filter, model steps, video retrieval, ordering
 src/reflect/      the bunny: prompts, guards, style memory, journal notes
