@@ -12,8 +12,15 @@ Built on [DeepSpace](https://deep.space) for the AI-native GTM engineer build ex
 
 **Try it:** https://petirien.app.space. The signed-out Home has sample suggestions and a place-to-go card with no account.
 To use the bunny, the journal and check-ins, sign in with Google or GitHub (an account is created the first time). Nothing
-needs DeepSpace credits: the AI and video calls are paid by the app owner, within daily limits (see below). A demo account
-with invented entries is described in the submission note.
+needs DeepSpace credits: the AI and video calls are paid by the app owner, within daily limits (see below).
+
+**Demo account** (invented entries only: conversations written up as journal entries, events across September and October,
+check-ins and saved items). In the sign-in window choose **Sign in with email**:
+
+- Email: `petirien-demo@deepspace.test`
+- Password: `Pet-omSwl0gwmcZxiV`
+
+It is a shared account, so please keep it to testing. Anything you add is visible to the next visitor.
 
 ## What it does
 
